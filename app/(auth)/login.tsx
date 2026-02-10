@@ -15,10 +15,10 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-export default function SignIn() {
+export default function LogIn() {
   const router = useRouter();
   const { colorScheme } = useColorScheme();
-  const { signIn } = useAuth();
+  const { login } = useAuth();
   const isDark = colorScheme === "dark";
 
   const [identifier, setIdentifier] = useState("");
@@ -58,12 +58,12 @@ export default function SignIn() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignIn = async () => {
+  const handleLogIn = async () => {
     if (!validate()) return;
 
     setIsLoading(true);
     try {
-      await signIn(identifier, password);
+      await login(identifier, password);
       // Redirection is handled by _layout.tsx
     } catch (error: any) {
       const errorMessage =
@@ -172,7 +172,7 @@ export default function SignIn() {
 
         {/* Login Button */}
         <TouchableOpacity
-          onPress={handleSignIn}
+          onPress={handleLogIn}
           disabled={isLoading}
           className={`mt-2 flex h-14 w-full items-center justify-center rounded-xl bg-primary shadow-sm active:opacity-90 ${
             isLoading ? "opacity-70" : ""

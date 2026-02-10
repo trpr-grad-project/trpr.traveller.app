@@ -1,11 +1,12 @@
+import { setOnUnauthenticated } from "@/services/api";
 import { authService } from "@/services/auth";
 import * as SecureStore from "expo-secure-store";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthContextType {
-  signIn: (identifier: string, password: string) => Promise<void>;
-  signUp: (data: any) => Promise<any>;
-  otpVerify: (identifier: string, code: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
+  register: (data: any) => Promise<any>;
+  otpVerify: (identifier: string, value: string) => Promise<void>;
   signOut: () => Promise<void>;
   session: string | null;
   isLoading: boolean;
@@ -41,9 +42,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
     loadSession();
+
+    // Subscribe to forced logout events from API
+    setOnUnauthenticated(() => {
+      signOut();
+    });
   }, []);
 
-  const signIn = async (identifier: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     try {
       const data = await authService.login(identifier, password);
       // Response structure: { accessToken, refreshToken, profileSetupCompleted }
@@ -51,8 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (token) {
         setSession(token);
-        // User profile might need separate fetch if not in login response
-        // setUser(data.user);
         await SecureStore.setItemAsync("access_token", token);
         if (data.refreshToken) {
           await SecureStore.setItemAsync("refresh_token", data.refreshToken);
@@ -66,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (data: {
+  const register = async (data: {
     identifier: string;
     firstName: string;
     lastName: string;
@@ -80,9 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const otpVerify = async (identifier: string, code: string) => {
+  const otpVerify = async (identifier: string, value: string) => {
     try {
-      const data = await authService.verifyOtp(identifier, code);
+      const data = await authService.verifyOtp(identifier, value);
       const token = data.accessToken;
       if (token) {
         setSession(token);
@@ -109,8 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        signIn,
-        signUp,
+        login,
+        register,
         otpVerify,
         signOut,
         session,

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Trippr",
-    "slug": "Trippr",
+    "name": "TouRA",
+    "slug": "TouRA",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo1.png",
-    "scheme": "trippr",
+    "scheme": "toura",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

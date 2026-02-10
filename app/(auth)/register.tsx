@@ -14,9 +14,9 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-export default function SignUp() {
+export default function Register() {
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { register } = useAuth();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const [showPassword, setShowPassword] = useState(false);
@@ -78,7 +78,7 @@ export default function SignUp() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignUp = async () => {
+  const handleRegister = async () => {
     if (!validate()) return;
 
     try {
@@ -89,7 +89,7 @@ export default function SignUp() {
         lastName,
         password,
       };
-      const response = await signUp(data);
+      const response = await register(data);
       if (response.otpId) {
         router.push({
           pathname: "/(auth)/verifyOtp",
@@ -331,7 +331,7 @@ export default function SignUp() {
 
         {/* Sign Up Button */}
         <TouchableOpacity
-          onPress={handleSignUp}
+          onPress={handleRegister}
           disabled={isLoading}
           className={`mt-2 flex h-14 w-full items-center justify-center rounded-xl bg-primary shadow-sm active:opacity-90 ${
             isLoading ? "opacity-70" : ""

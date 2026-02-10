@@ -17,7 +17,6 @@ export const authService = {
   },
 
   verifyOtp: async (identifier: string, value: string) => {
-    // identifier here is the otpId returned from register
     const response = await api.post("/auth/otp/verify", { identifier, value });
     return response.data;
   },

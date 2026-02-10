@@ -31,7 +31,7 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
 
   if (!session && !inAuthGroup) {
     // Redirect to the sign-in page if not authenticated
-    return <Redirect href="/(auth)/signIn" />;
+    return <Redirect href="/(auth)/login" />;
   }
 
   if (session && inAuthGroup) {
