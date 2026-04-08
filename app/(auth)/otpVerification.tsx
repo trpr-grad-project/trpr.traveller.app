@@ -1,137 +1,200 @@
+import BackButton from "@/components/BackButton";
+import OtpInput from "@/components/OtpInput";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useAuth } from "@/context/AuthContext";
+import { useOtpInput } from "@/hooks/useOtpInput";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import Toast from "react-native-toast-message";
+
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useColorScheme } from "nativewind";
-import React, { useRef, useState } from "react";
-import {
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const RESEND_TIMEOUT_SECONDS = 60;
 
 export default function OtpVerification() {
   const router = useRouter();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const insets = useSafeAreaInsets();
+  const { identifier } = useLocalSearchParams<{
+    identifier: string;
+    type: string;
+  }>();
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (value.length > 1) {
-      value = value[0];
-    }
+  const { forgotPassword, verifyResetOtp } = useAuth();
 
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+  const {
+    otp,
+    otpValue,
+    isComplete,
+    inputRefs,
+    handleOtpChange,
+    handleKeyPress,
+  } = useOtpInput();
 
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+  const [secondsLeft, setSecondsLeft] = useState(RESEND_TIMEOUT_SECONDS);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = useCallback(() => {
+    setSecondsLeft(RESEND_TIMEOUT_SECONDS);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(timerRef.current!);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    startTimer();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startTimer]);
+
+  const timerLabel = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
+
+  const handleResend = async () => {
+    if (secondsLeft > 0) return;
+    try {
+      await forgotPassword(identifier);
+      startTimer();
+      Toast.show({ type: "success", text1: "Success", text2: "A new code has been sent." });
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to resend code.";
+      Toast.show({ type: "error", text1: "Error", text2: errorMessage });
     }
   };
 
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+  const handleVerify = async () => {
+    if (!isComplete) {
+      setError("Please enter the 6-digit code");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await verifyResetOtp(identifier, otpValue);
+      // Assuming response contains resetToken or the API returns success
+      const resetToken = res?.resetToken || "valid-reset-token";
+
+      router.push({
+        pathname: "/(auth)/resetPassword",
+        params: { resetToken, identifier },
+      });
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || err.message || "Invalid OTP code";
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (!identifier) {
+    return <Redirect href="/(auth)/forgotPassword" />;
+  }
 
   return (
-    <ScrollView
-      contentContainerStyle={{ flexGrow: 1 }}
+    <KeyboardAwareScrollView
+      enableOnAndroid
+      extraScrollHeight={20}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom + 20,
+      }}
       className="bg-background-light dark:bg-background-dark"
     >
       <View className="flex-1">
         {/* Header */}
         <View className="flex items-start p-4">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800"
-          >
-            <MaterialIcons
-              name="arrow-back-ios"
-              size={24}
-              color={isDark ? "#E2E8F0" : "#0F172A"}
-            />
-          </TouchableOpacity>
+          <BackButton />
         </View>
 
         {/* Content */}
-        <View className="flex-1 flex-col items-center px-6 pt-4 pb-8">
+        <View className="flex-1 flex-col items-center px-6 pb-8 pt-4">
           {/* Icon */}
           <View className="mb-8 flex h-40 w-full items-center justify-center">
             <View className="relative flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/5">
               <View className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-transparent blur-xl" />
               <MaterialIcons name="lock-open" size={64} color="#359EFF" />
-              <View className="absolute -bottom-2 -right-2 flex size-10 items-center justify-center rounded-full bg-background-light dark:bg-background-dark shadow-sm">
+              <View className="absolute -bottom-2 -right-2 flex size-10 items-center justify-center rounded-full bg-background-light shadow-sm dark:bg-background-dark">
                 <MaterialIcons name="flight" size={20} color="#94A3B8" />
               </View>
             </View>
           </View>
 
-          {/* Title and Description */}
-          <View className="mb-8 w-full text-center">
-            <Text className="text-slate-900 dark:text-white text-[28px] font-bold leading-tight tracking-tight mb-3 text-center">
+          {/* Title */}
+          <View className="mb-8 w-full">
+            <Text className="mb-3 text-center text-[28px] font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
               Verification Code
             </Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-base font-normal leading-relaxed text-center">
+            <Text className="text-center text-base font-normal leading-relaxed text-slate-500 dark:text-slate-400">
               We sent a code to{" "}
               <Text className="font-medium text-slate-700 dark:text-slate-300">
-                user@email.com
+                {identifier || "your email"}
               </Text>
-              .{"\n"}
-              Please enter the code to verify your identity.
+              .{"\n"}Please enter the code to verify your identity.
             </Text>
           </View>
 
-          {/* OTP Input Fields */}
-          <View className="w-full space-y-6">
-            <View className="flex-row justify-between gap-2">
-              {otp.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => {
-                    inputRefs.current[index] = ref;
-                  }}
-                  className="flex h-14 w-full flex-1 text-center rounded-xl border border-primary bg-white dark:bg-slate-800 text-2xl font-semibold text-slate-900 dark:text-white shadow-sm"
-                  maxLength={1}
-                  keyboardType="number-pad"
-                  value={digit}
-                  onChangeText={(value) => handleOtpChange(value, index)}
-                  onKeyPress={(e) => handleKeyPress(e, index)}
-                />
-              ))}
-            </View>
+          {/* OTP */}
+          <View className="w-full gap-5">
+            <OtpInput
+              otp={otp}
+              inputRefs={inputRefs}
+              onChange={handleOtpChange}
+              onKeyPress={handleKeyPress}
+              error={Boolean(error)}
+              editable={!isLoading}
+            />
 
-            {/* Verify Button */}
-            <View className="w-full">
-              <TouchableOpacity
-                onPress={() => router.push("/(auth)/resetPassword")}
-                className="w-full rounded-xl bg-primary py-4 px-6 text-center shadow-md shadow-primary/20 active:scale-[0.98]"
-              >
-                <Text className="text-base font-bold text-white text-center">
-                  Verify Identity
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Timer and Resend */}
-            <View className="flex-row items-center justify-between w-full px-1">
-              <Text className="text-sm font-medium text-[#4F4F4F] dark:text-slate-400">
-                00:45
+            {error && (
+              <Text className="text-center font-display text-sm text-red-500">
+                {error}
               </Text>
-              <TouchableOpacity>
-                <Text className="text-sm font-bold text-primary">
+            )}
+
+            <PrimaryButton
+              title="Verify Identity"
+              onPress={handleVerify}
+              isLoading={isLoading}
+            />
+
+            {/* Timer & Resend */}
+            <View className="mt-2 flex-row items-center justify-between w-full px-1">
+              <Text className="font-display text-sm font-medium text-gray-custom dark:text-slate-400">
+                {timerLabel}
+              </Text>
+              <Pressable
+                onPress={handleResend}
+                disabled={secondsLeft > 0 || isLoading}
+                style={({ pressed }) => ({
+                  opacity: pressed && !(secondsLeft > 0 || isLoading) ? 0.6 : 1,
+                })}
+              >
+                <Text
+                  className={`font-display text-sm font-bold ${secondsLeft > 0 ? "text-gray-custom" : "text-primary"}`}
+                >
                   Resend code
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }

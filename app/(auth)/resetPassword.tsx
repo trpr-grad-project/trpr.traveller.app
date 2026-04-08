@@ -1,73 +1,77 @@
+import BackButton from "@/components/BackButton";
+import FormInput from "@/components/FormInput";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useAuth } from "@/context/AuthContext";
+import {
+  resetPasswordSchema,
+  type ResetPasswordFormData,
+} from "@/utils/validation";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter as useExpoRouter } from "expo-router";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useColorScheme } from "nativewind";
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Controller, useForm } from "react-hook-form";
+import { Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import Toast from "react-native-toast-message";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// Password requirement row
+function PasswordRequirement({
+  label,
+  met,
+  isDark,
+}: {
+  label: string;
+  met: boolean;
+  isDark: boolean;
+}) {
+  return (
+    <View className="flex-row items-center gap-2">
+      <MaterialIcons
+        name={met ? "check-circle" : "circle"}
+        size={16}
+        color={met ? "#10B981" : isDark ? "#475569" : "#CBD5E1"}
+      />
+      <Text
+        className={`font-display text-xs ${
+          met
+            ? "font-medium text-emerald-600 dark:text-emerald-400"
+            : "text-slate-500 dark:text-slate-400"
+        }`}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 export default function ResetPassword() {
-  const router = useExpoRouter();
+  const router = useRouter();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{
-    password?: string;
-    confirmPassword?: string;
-  }>({});
+  const insets = useSafeAreaInsets();
 
-  const validate = () => {
-    const newErrors: typeof errors = {};
+  const { resetToken, identifier } = useLocalSearchParams<{
+    resetToken: string;
+    identifier: string;
+  }>();
 
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else {
-      if (password.length < 8) {
-        newErrors.password = "Min 8 characters";
-      } else if (!/\d/.test(password)) {
-        newErrors.password = "Must contain a number";
-      } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-        newErrors.password = "Must contain a special character";
-      }
-    }
+  const { resetPassword } = useAuth();
+  const [error, setError] = useState<string | null>(null);
 
-    if (!confirmPassword) {
-      newErrors.confirmPassword = "Please confirm password";
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ResetPasswordFormData>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: { password: "", confirmPassword: "" },
+  });
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleUpdatePassword = async () => {
-    if (!validate()) return;
-
-    setIsLoading(true);
-    try {
-      // Mock API call
-      setTimeout(() => {
-        setIsLoading(false);
-        Alert.alert("Success", "Your password has been reset successfully.", [
-          { text: "OK", onPress: () => router.replace("/(auth)/signIn") },
-        ]);
-      }, 1500);
-    } catch {
-      setIsLoading(false);
-      Alert.alert("Error", "Failed to reset password. Please try again.");
-    }
-  };
+  const password = watch("password");
 
   const passwordRequirements = [
     { label: "At least 8 characters", met: password.length >= 8 },
@@ -78,194 +82,122 @@ export default function ResetPassword() {
     },
   ];
 
+  const onSubmit = async (data: ResetPasswordFormData) => {
+    try {
+      setError(null);
+      await resetPassword(resetToken, data.password);
+      Toast.show({ type: "success", text1: "Success", text2: "Your password has been reset successfully." });
+      router.replace("/(auth)/login");
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to reset password.";
+      setError(errorMessage);
+    }
+  };
+
+  if (!resetToken || !identifier) {
+    return <Redirect href="/(auth)/forgotPassword" />;
+  }
+
   return (
-    <ScrollView
-      contentContainerStyle={{ flexGrow: 1 }}
+    <KeyboardAwareScrollView
+      enableOnAndroid
+      extraScrollHeight={20}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom + 20,
+      }}
       className="bg-background-light dark:bg-background-dark"
     >
       <View className="flex-1 px-6">
         {/* Header */}
-        <View className="flex-row items-center justify-between pt-6 pb-2">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800"
-          >
-            <MaterialIcons
-              name="arrow-back-ios"
-              size={24}
-              color={isDark ? "#E2E8F0" : "#0F172A"}
-            />
-          </TouchableOpacity>
+        <View className="pt-6 pb-2">
+          <BackButton />
         </View>
 
-        {/* Title and Description */}
-        <View className="pt-2 pb-8">
-          <Text className="text-[#0F172A] dark:text-[#E2E8F0] tracking-tight text-[32px] font-bold leading-tight pb-3 font-display">
+        {/* Title */}
+        <View className="pb-8 pt-2">
+          <Text className="pb-3 font-display text-[32px] font-bold leading-tight tracking-tight text-[#0F172A] dark:text-[#E2E8F0]">
             Create New Password
           </Text>
-          <Text className="text-slate-500 dark:text-slate-400 text-base font-normal leading-relaxed font-display">
+          <Text className="font-display text-base font-normal leading-relaxed text-slate-500 dark:text-slate-400">
             Your new password must be different from previous used passwords.
           </Text>
         </View>
 
         {/* Password Fields */}
-        <View className="flex-col gap-6 mb-8">
-          {/* New Password */}
-          <View className="flex-col">
-            <Text className="text-slate-900 dark:text-white text-sm font-semibold leading-normal pb-2 ml-1 font-display">
-              New Password
-            </Text>
-            <View className="relative">
-              <View className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                <MaterialIcons
-                  name="lock"
-                  size={24}
-                  color={
-                    errors.password ? "#EF4444" : isDark ? "#94A3B8" : "#0F172A"
-                  }
-                />
-              </View>
-              <TextInput
-                className={`flex w-full rounded-xl text-[#0F172A] dark:text-white border bg-white dark:bg-slate-800 h-14 pl-12 pr-12 text-base font-medium leading-normal ${
-                  errors.password
-                    ? "border-red-500"
-                    : "border-slate-200 dark:border-slate-700"
-                }`}
+        <View className="mb-8 gap-6">
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, value } }) => (
+              <FormInput
+                label="New Password"
+                icon="lock-outline"
+                value={value}
+                onChangeText={onChange}
+                error={errors.password?.message}
                 placeholder="••••••••"
-                placeholderTextColor="#94A3B8"
-                secureTextEntry={!showPassword}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password)
-                    setErrors({ ...errors, password: undefined });
-                }}
-                value={password}
-                editable={!isLoading}
-                autoCapitalize="none"
+                secure
+                editable={!isSubmitting}
               />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center"
-                disabled={isLoading}
-              >
-                <MaterialIcons
-                  name={showPassword ? "visibility" : "visibility-off"}
-                  size={24}
-                  color={isDark ? "#94A3B8" : "#64748B"}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.password && (
-              <Text className="ml-1 mt-1 text-xs text-red-500 font-display">
-                {errors.password}
-              </Text>
             )}
-          </View>
+          />
 
-          {/* Confirm Password */}
-          <View className="flex-col">
-            <Text className="text-slate-900 dark:text-white text-sm font-semibold leading-normal pb-2 ml-1 font-display">
-              Confirm New Password
-            </Text>
-            <View className="relative">
-              <View className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-                <MaterialIcons
-                  name="lock"
-                  size={24}
-                  color={
-                    errors.confirmPassword
-                      ? "#EF4444"
-                      : isDark
-                        ? "#94A3B8"
-                        : "#0F172A"
-                  }
-                />
-              </View>
-              <TextInput
-                className={`flex w-full rounded-xl text-[#0F172A] dark:text-white border bg-white dark:bg-slate-800 h-14 pl-12 pr-12 text-base font-medium leading-normal ${
-                  errors.confirmPassword
-                    ? "border-red-500"
-                    : "border-slate-200 dark:border-slate-700"
-                }`}
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({ field: { onChange, value } }) => (
+              <FormInput
+                label="Confirm New Password"
+                icon="lock-outline"
+                value={value}
+                onChangeText={onChange}
+                error={errors.confirmPassword?.message}
                 placeholder="••••••••"
-                placeholderTextColor="#94A3B8"
-                secureTextEntry={!showConfirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (errors.confirmPassword)
-                    setErrors({ ...errors, confirmPassword: undefined });
-                }}
-                value={confirmPassword}
-                editable={!isLoading}
-                autoCapitalize="none"
+                secure
+                editable={!isSubmitting}
               />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center"
-                disabled={isLoading}
-              >
-                <MaterialIcons
-                  name={showConfirmPassword ? "visibility" : "visibility-off"}
-                  size={24}
-                  color={isDark ? "#94A3B8" : "#64748B"}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.confirmPassword && (
-              <Text className="ml-1 mt-1 text-xs text-red-500 font-display">
-                {errors.confirmPassword}
-              </Text>
             )}
-          </View>
+          />
         </View>
 
+        {error && (
+          <Text className="mb-4 text-center font-display text-sm text-red-500">
+            {error}
+          </Text>
+        )}
+
         {/* Password Requirements */}
-        <View className="mb-8 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-700/50">
-          <Text className="text-slate-900 dark:text-white text-sm font-bold mb-3 font-display">
+        <View className="mb-8 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700/50 dark:bg-slate-800/30">
+          <Text className="mb-3 font-display text-sm font-bold text-slate-900 dark:text-white">
             Password Requirements:
           </Text>
           <View className="gap-2">
-            {passwordRequirements.map((req, index) => (
-              <View key={index} className="flex-row items-center gap-2">
-                <MaterialIcons
-                  name={req.met ? "check-circle" : "circle"}
-                  size={16}
-                  color={req.met ? "#10B981" : isDark ? "#475569" : "#CBD5E1"}
-                />
-                <Text
-                  className={`text-xs font-display ${
-                    req.met
-                      ? "text-emerald-600 dark:text-emerald-400 font-medium"
-                      : "text-slate-500 dark:text-slate-400"
-                  }`}
-                >
-                  {req.label}
-                </Text>
-              </View>
+            {passwordRequirements.map((req) => (
+              <PasswordRequirement
+                key={req.label}
+                label={req.label}
+                met={req.met}
+                isDark={isDark}
+              />
             ))}
           </View>
         </View>
 
-        {/* Update Password Button */}
-        <TouchableOpacity
-          onPress={handleUpdatePassword}
-          disabled={isLoading}
-          className={`w-full h-14 bg-primary active:scale-[0.98] rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20 ${
-            isLoading ? "opacity-70" : ""
-          }`}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="text-white font-bold text-lg font-display">
-              Update Password
-            </Text>
-          )}
-        </TouchableOpacity>
+        <PrimaryButton
+          title="Update Password"
+          onPress={handleSubmit(onSubmit)}
+          isLoading={isSubmitting}
+        />
 
         <View className="flex-1" />
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }

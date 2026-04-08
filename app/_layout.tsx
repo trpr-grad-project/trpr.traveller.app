@@ -1,3 +1,4 @@
+import "@/global.css";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import {
   PlusJakartaSans_400Regular,
@@ -9,7 +10,8 @@ import {
 import { Redirect, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import "../global.css";
+import Toast from "react-native-toast-message";
+import { toastConfig } from "@/utils/toastConfig";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -17,6 +19,7 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
   const { session, isLoading } = useAuth();
   const segments = useSegments();
 
+  // Hide splash screen when fonts are loaded and authentication is complete
   useEffect(() => {
     if (fontsLoaded && !isLoading) {
       SplashScreen.hideAsync();
@@ -30,7 +33,7 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
   const inAuthGroup = segments[0] === "(auth)";
 
   if (!session && !inAuthGroup) {
-    // Redirect to the sign-in page if not authenticated
+    // Redirect to the login page if not authenticated
     return <Redirect href="/(auth)/login" />;
   }
 
@@ -51,8 +54,11 @@ export default function RootLayoutNav() {
   });
 
   return (
-    <AuthProvider>
-      <RootLayoutContent fontsLoaded={fontsLoaded} />
-    </AuthProvider>
+    <>
+      <AuthProvider>
+        <RootLayoutContent fontsLoaded={fontsLoaded} />
+      </AuthProvider>
+      <Toast config={toastConfig} />
+    </>
   );
 }

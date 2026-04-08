@@ -1,61 +1,41 @@
+import BackButton from "@/components/BackButton";
+import OtpInput from "@/components/OtpInput";
+import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
+import { useOtpInput } from "@/hooks/useOtpInput";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useColorScheme } from "nativewind";
-import React, { useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function VerifyOtp() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { otpVerify } = useAuth();
-  const { otpId, phone } = useLocalSearchParams<{
+  const { otpId, email } = useLocalSearchParams<{
     otpId: string;
-    phone: string;
+    email: string;
   }>();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [isLoading, setIsLoading] = useState(false);
-  const inputRefs = useRef<(TextInput | null)[]>([]);
 
+  const {
+    otp,
+    otpValue,
+    isComplete,
+    inputRefs,
+    handleOtpChange,
+    handleKeyPress,
+  } = useOtpInput();
+
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (error) setError(null);
-    if (value.length > 1) {
-      value = value[value.length - 1];
-    }
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
   const handleVerify = async () => {
-    const otpValue = otp.join("");
-    if (otpValue.length < 6) {
+    if (!isComplete) {
       setError("Please enter the 6-digit code");
       return;
     }
-
     if (!otpId) {
       setError("OTP ID is missing. Please sign up again.");
       return;
@@ -65,124 +45,106 @@ export default function VerifyOtp() {
       setIsLoading(true);
       setError(null);
       await otpVerify(otpId, otpValue);
-      // AuthContext handles session state, which should trigger root navigation update
       router.replace("/");
-    } catch (error: any) {
+    } catch (err: any) {
       const errorMessage =
-        error.response?.data?.message || error.message || "Invalid OTP code";
+        err.response?.data?.message || err.message || "Invalid OTP code";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (!otpId) {
+    return <Redirect href="/(auth)/register" />;
+  }
+
   return (
-    <ScrollView
-      contentContainerStyle={{ flexGrow: 1 }}
+    <KeyboardAwareScrollView
+      enableOnAndroid
+      extraScrollHeight={20}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom + 20,
+      }}
       className="bg-background-light dark:bg-background-dark"
     >
       <View className="flex-1">
         {/* Header */}
         <View className="flex items-start p-4">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="flex size-12 shrink-0 items-center justify-center rounded-full active:bg-slate-200 dark:active:bg-slate-800"
-          >
-            <MaterialIcons
-              name="arrow-back-ios"
-              size={24}
-              color={isDark ? "#E2E8F0" : "#0F172A"}
-            />
-          </TouchableOpacity>
+          <BackButton />
         </View>
 
         {/* Content */}
-        <View className="flex-1 flex-col items-center px-6 pt-4 pb-8">
+        <View className="flex-1 flex-col items-center px-6 pb-8 pt-4">
           {/* Icon */}
           <View className="mb-8 flex h-40 w-full items-center justify-center">
             <View className="relative flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/5">
               <View className="absolute inset-0 rounded-full bg-primary/20 blur-xl" />
               <MaterialIcons name="lock-open" size={64} color="#359EFF" />
-              <View className="absolute -bottom-2 -right-2 flex size-10 items-center justify-center rounded-full bg-background-light dark:bg-background-dark shadow-sm border border-neutral-light dark:border-neutral-dark">
+              <View className="absolute -bottom-2 -right-2 flex size-10 items-center justify-center rounded-full border border-neutral-light bg-background-light shadow-sm dark:border-neutral-dark dark:bg-background-dark">
                 <MaterialIcons name="flight" size={20} color="#94A3B8" />
               </View>
             </View>
           </View>
 
-          {/* Title and Description */}
-          <View className="mb-8 w-full text-center">
-            <Text className="text-slate-900 dark:text-white text-[28px] font-bold leading-tight tracking-tight mb-3 text-center font-display">
+          {/* Title */}
+          <View className="mb-8 w-full">
+            <Text className="mb-3 text-center font-display text-[28px] font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
               Verification Code
             </Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-base font-normal leading-relaxed text-center font-display">
+            <Text className="text-center font-display text-base font-normal leading-relaxed text-slate-500 dark:text-slate-400">
               We sent a code to{"\n"}
               <Text className="font-medium text-slate-700 dark:text-slate-300">
-                {phone || "your phone"}
+                {email || "your email"}
               </Text>
               . Please enter it below.
             </Text>
           </View>
 
-          {/* OTP Input Fields */}
-          <View className="w-full space-y-6">
-            <View className="flex-row justify-between gap-2 mb-4">
-              {otp.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => {
-                    inputRefs.current[index] = ref;
-                  }}
-                  className={`flex h-14 w-full flex-1 text-center rounded-xl border-2 bg-white dark:bg-neutral-dark text-2xl font-semibold text-text-main-light dark:text-text-main-dark shadow-sm ${
-                    error ? "border-red-500" : "border-primary"
-                  }`}
-                  maxLength={1}
-                  keyboardType="number-pad"
-                  value={digit}
-                  onChangeText={(value) => handleOtpChange(value, index)}
-                  onKeyPress={(e) => handleKeyPress(e, index)}
-                  editable={!isLoading}
-                />
-              ))}
-            </View>
+          {/* OTP */}
+          <View className="w-full gap-4">
+            <OtpInput
+              otp={otp}
+              inputRefs={inputRefs}
+              onChange={handleOtpChange}
+              onKeyPress={handleKeyPress}
+              error={Boolean(error)}
+              editable={!isLoading}
+            />
 
             {error && (
-              <Text className="text-red-500 text-sm mb-6 text-center font-display">
+              <Text className="text-center font-display text-sm text-red-500">
                 {error}
               </Text>
             )}
 
-            {/* Verify Button */}
-            <TouchableOpacity
+            <PrimaryButton
+              title="Verify & Sign In"
               onPress={handleVerify}
-              disabled={isLoading}
-              className={`w-full rounded-xl bg-primary py-4 px-6 shadow-md shadow-primary/20 active:scale-[0.98] ${
-                isLoading ? "opacity-70" : ""
-              }`}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-base font-bold text-white text-center font-display">
-                  Verify & Sign In
-                </Text>
-              )}
-            </TouchableOpacity>
+              isLoading={isLoading}
+            />
 
             {/* Resend */}
-            <View className="flex-row items-center justify-between w-full px-1 mt-6">
-              <Text className="text-sm font-medium text-gray-custom font-display">
+            <View className="mt-4 flex-row items-center justify-between w-full px-1">
+              <Text className="font-display text-sm font-medium text-gray-custom">
                 Didn&apos;t receive code?
               </Text>
-              <TouchableOpacity disabled={isLoading}>
-                <Text className="text-sm font-bold text-primary font-display">
+              <Pressable
+                disabled={isLoading}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              >
+                <Text className="font-display text-sm font-bold text-primary">
                   Resend
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }

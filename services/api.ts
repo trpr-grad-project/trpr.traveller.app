@@ -1,16 +1,13 @@
+import { STORAGE_KEYS } from "@/utils/constants";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 // Platform-specific API URL
-const getApiUrl = () => {
-  if (Platform.OS === "android") {
-    return "http://192.168.100.6:5001/api/v1";
-  }
-  return "http://localhost:5001/api/v1";
-};
-
-const API_URL = getApiUrl();
+export const API_URL =
+  Platform.OS === "android"
+    ? "http://192.168.100.6:5001/api/v1"
+    : "http://localhost:5001/api/v1";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -19,36 +16,37 @@ const api = axios.create({
   },
 });
 
-// Add token to request headers
+// Request interceptor: attach access token
 api.interceptors.request.use(
   async (config) => {
-    const token = await SecureStore.getItemAsync("access_token");
+    const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 let isRefreshing = false;
-let pendingPromises: any[] = [];
 
-const handlePendingPromises = (error: any, token: string | null = null) => {
+let pendingPromises: {
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}[] = [];
+
+const handlePendingPromises = (error: unknown, token: string | null = null) => {
   pendingPromises.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
-      prom.resolve(token);
+      prom.resolve(token!);
     }
   });
-
   pendingPromises = [];
 };
 
-// Allowing AuthContext to be notified when the user must be logged out
+// Unauthenticated callback (set by AuthContext)
 type AuthCallback = () => void;
 let onUnauthenticated: AuthCallback | null = null;
 
@@ -56,6 +54,7 @@ export const setOnUnauthenticated = (callback: AuthCallback) => {
   onUnauthenticated = callback;
 };
 
+// Response interceptor: handle 401 + token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -63,23 +62,23 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise(function (resolve, reject) {
+        return new Promise<string>((resolve, reject) => {
           pendingPromises.push({ resolve, reject });
         })
           .then((token) => {
             originalRequest.headers.Authorization = `Bearer ${token}`;
             return api(originalRequest);
           })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        const refreshToken = await SecureStore.getItemAsync("refresh_token");
+        const refreshToken = await SecureStore.getItemAsync(
+          STORAGE_KEYS.REFRESH_TOKEN,
+        );
 
         if (refreshToken) {
           const response = await axios.post(`${API_URL}/auth/refresh-token`, {
@@ -89,9 +88,16 @@ api.interceptors.response.use(
           const { accessToken, refreshToken: newRefreshToken } = response.data;
 
           if (accessToken) {
-            await SecureStore.setItemAsync("access_token", accessToken);
+            await SecureStore.setItemAsync(
+              STORAGE_KEYS.ACCESS_TOKEN,
+              accessToken,
+            );
+
             if (newRefreshToken) {
-              await SecureStore.setItemAsync("refresh_token", newRefreshToken);
+              await SecureStore.setItemAsync(
+                STORAGE_KEYS.REFRESH_TOKEN,
+                newRefreshToken,
+              );
             }
 
             api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
@@ -102,21 +108,18 @@ api.interceptors.response.use(
           }
         }
 
-        // No refresh token or no access token in response
-        if (onUnauthenticated) {
-          onUnauthenticated();
-        }
+        // No refresh token or no new access token
+        onUnauthenticated?.();
         return Promise.reject(error);
       } catch (refreshError) {
         handlePendingPromises(refreshError, null);
-        if (onUnauthenticated) {
-          onUnauthenticated();
-        }
+        onUnauthenticated?.();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   },
 );

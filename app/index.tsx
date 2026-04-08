@@ -1,60 +1,30 @@
 import { useAuth } from "@/context/AuthContext";
 import { MaterialIcons } from "@expo/vector-icons";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 export default function Index() {
   const { signOut } = useAuth();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
+    <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-dark">
+      <View className="items-center gap-4">
         <MaterialIcons name="check-circle" size={80} color="#359EFF" />
-        <Text style={styles.title}>Welcome!</Text>
-        <Text style={styles.subtitle}>You are successfully logged in</Text>
+        <Text className="mt-4 text-3xl font-bold text-gray-800 dark:text-white font-display">
+          Welcome!
+        </Text>
+        <Text className="mb-8 text-base text-gray-600 dark:text-gray-400 font-display">
+          You are successfully logged in
+        </Text>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+        <Pressable
+          style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}
+          className="flex-row items-center gap-2 rounded-xl bg-primary px-6 py-3"
+          onPress={signOut}
+        >
           <MaterialIcons name="logout" size={24} color="white" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+          <Text className="text-base font-semibold text-white font-display">Logout</Text>
+        </Pressable>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  content: {
-    alignItems: "center",
-    gap: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 32,
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#359EFF",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  logoutText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

@@ -21,6 +21,27 @@ export const authService = {
     return response.data;
   },
 
+  forgotPassword: async (identifier: string) => {
+    const response = await api.post("/auth/password/forgot", { identifier });
+    return response.data;
+  },
+
+  verifyResetOtp: async (identifier: string, value: string) => {
+    const response = await api.post("/auth/password/verify-reset-otp", {
+      identifier,
+      value,
+    });
+    return response.data;
+  },
+
+  resetPassword: async (resetToken: string, password: string) => {
+    const response = await api.post("/auth/password/reset", {
+      resetToken,
+      password,
+    });
+    return response.data;
+  },
+
   refreshToken: async (token: string) => {
     const response = await api.post("/auth/refresh-token", { token });
     return response.data;

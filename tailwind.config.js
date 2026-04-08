@@ -22,8 +22,12 @@ module.exports = {
         "tagline-prominent": "#0F172A",
       },
       fontFamily: {
-        display: "Plus Jakarta Sans",
+        regular: ["PlusJakartaSans_400Regular"],
+        medium: ["PlusJakartaSans_500Medium"],
+        semibold: ["PlusJakartaSans_600SemiBold"],
+        bold: ["PlusJakartaSans_700Bold"],
       },
+      
     },
   },
   plugins: [],

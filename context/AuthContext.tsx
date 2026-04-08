@@ -1,16 +1,45 @@
 import { setOnUnauthenticated } from "@/services/api";
 import { authService } from "@/services/auth";
+import { STORAGE_KEYS } from "@/utils/constants";
 import * as SecureStore from "expo-secure-store";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  [key: string]: any;
+}
+
+interface RegisterData {
+  identifier: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+}
 
 interface AuthContextType {
   login: (identifier: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<any>;
+  register: (data: RegisterData) => Promise<any>;
   otpVerify: (identifier: string, value: string) => Promise<void>;
+  forgotPassword: (identifier: string) => Promise<void>;
+  verifyResetOtp: (
+    identifier: string,
+    value: string,
+  ) => Promise<{ resetToken: string }>;
+  resetPassword: (resetToken: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   session: string | null;
   isLoading: boolean;
-  user: any | null;
+  user: User | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -25,13 +54,20 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<string | null>(null);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const signOut = useCallback(async () => {
+    setSession(null);
+    setUser(null);
+    await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+    await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+  }, []);
 
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const token = await SecureStore.getItemAsync("access_token");
+        const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
         if (token) {
           setSession(token);
         }
@@ -41,87 +77,126 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     };
+
     loadSession();
+    setOnUnauthenticated(signOut);
+  }, [signOut]);
 
-    // Subscribe to forced logout events from API
-    setOnUnauthenticated(() => {
-      signOut();
-    });
-  }, []);
-
-  const login = async (identifier: string, password: string) => {
-    try {
-      const data = await authService.login(identifier, password);
-      // Response structure: { accessToken, refreshToken, profileSetupCompleted }
-      const token = data.accessToken;
-
-      if (token) {
-        setSession(token);
-        await SecureStore.setItemAsync("access_token", token);
-        if (data.refreshToken) {
-          await SecureStore.setItemAsync("refresh_token", data.refreshToken);
-        }
-      } else {
-        throw new Error("No token received");
+  const persistTokens = useCallback(
+    async (accessToken: string, refreshToken?: string) => {
+      setSession(accessToken);
+      await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      if (refreshToken) {
+        await SecureStore.setItemAsync(
+          STORAGE_KEYS.REFRESH_TOKEN,
+          refreshToken,
+        );
       }
-    } catch (error) {
-      console.error("Sign in failed", error);
-      throw error;
-    }
-  };
+    },
+    [],
+  );
 
-  const register = async (data: {
-    identifier: string;
-    firstName: string;
-    lastName: string;
-    password: string;
-  }) => {
+  const login = useCallback(
+    async (identifier: string, password: string) => {
+      try {
+        const data = await authService.login(identifier, password);
+        const token = data.accessToken;
+        if (!token) throw new Error("No token received");
+        await persistTokens(token, data.refreshToken);
+      } catch (error) {
+        console.error("Sign in failed", error);
+        throw error;
+      }
+    },
+    [persistTokens],
+  );
+
+  const register = useCallback(async (data: RegisterData) => {
     try {
       return await authService.register(data);
     } catch (error) {
       console.error("Sign up failed", error);
       throw error;
     }
-  };
+  }, []);
 
-  const otpVerify = async (identifier: string, value: string) => {
-    try {
-      const data = await authService.verifyOtp(identifier, value);
-      const token = data.accessToken;
-      if (token) {
-        setSession(token);
-        await SecureStore.setItemAsync("access_token", token);
-        if (data.refreshToken) {
-          await SecureStore.setItemAsync("refresh_token", data.refreshToken);
-        }
-      } else {
-        throw new Error("No token received from OTP verification");
+  const otpVerify = useCallback(
+    async (identifier: string, value: string) => {
+      try {
+        const data = await authService.verifyOtp(identifier, value);
+        const token = data.accessToken;
+        if (!token) throw new Error("No token received from OTP verification");
+        await persistTokens(token, data.refreshToken);
+      } catch (error) {
+        console.error("OTP Verify failed", error);
+        throw error;
       }
+    },
+    [persistTokens],
+  );
+
+  const forgotPassword = useCallback(async (identifier: string) => {
+    try {
+      await authService.forgotPassword(identifier);
     } catch (error) {
-      console.error("OTP Verify failed", error);
+      console.error("Forgot Password failed", error);
       throw error;
     }
-  };
+  }, []);
 
-  const signOut = async () => {
-    setSession(null);
-    setUser(null);
-    await SecureStore.deleteItemAsync("access_token");
-    await SecureStore.deleteItemAsync("refresh_token");
-  };
+  const verifyResetOtp = useCallback(
+    async (identifier: string, value: string) => {
+      try {
+        return await authService.verifyResetOtp(identifier, value);
+      } catch (error) {
+        console.error("Verify Reset OTP failed", error);
+        throw error;
+      }
+    },
+    [],
+  );
+
+  const resetPassword = useCallback(
+    async (resetToken: string, password: string) => {
+      try {
+        await authService.resetPassword(resetToken, password);
+      } catch (error) {
+        console.error("Reset Password failed", error);
+        throw error;
+      }
+    },
+    [],
+  );
+
+  const contextValue = useMemo(
+    () => ({
+      login,
+      register,
+      otpVerify,
+      forgotPassword,
+      verifyResetOtp,
+      resetPassword,
+      signOut,
+      session,
+      isLoading,
+      user,
+    }),
+    [
+      login,
+      register,
+      otpVerify,
+      forgotPassword,
+      verifyResetOtp,
+      resetPassword,
+      signOut,
+      session,
+      isLoading,
+      user,
+    ]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        login,
-        register,
-        otpVerify,
-        signOut,
-        session,
-        isLoading,
-        user,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

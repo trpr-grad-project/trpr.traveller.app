@@ -1,140 +1,54 @@
-import DarkModeToggle from "@/components/DarkModeToggle";
-import { MaterialIcons } from "@expo/vector-icons";
-import SegmentedControl from "@react-native-segmented-control/segmented-control";
-import { LinearGradient } from "expo-linear-gradient";
-import { Slot, usePathname, useRouter } from "expo-router";
+import React from "react";
+import { Slot, usePathname } from "expo-router";
 import { useColorScheme } from "nativewind";
-import React, { useEffect, useState, startTransition } from "react";
-import { ImageBackground, Text, View } from "react-native";
+import { StatusBar, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import AuthHeader from "@/components/auth/AuthHeader";
+import AuthFooter from "@/components/auth/AuthFooter";
 
 export default function AuthLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const pathname = usePathname();
-  const router = useRouter();
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const insets = useSafeAreaInsets();
 
-  // Only apply this layout for the sign in / sign up forms
-  const isLogin = pathname === "/login";
-  const isRegister = pathname === "/register";
-  const isAuthForm = isLogin || isRegister;
-
-  // Show the segmented toggle only when on login/register
-  const showToggle = isAuthForm;
-
-  // Sync selectedIndex with pathname
-  useEffect(() => {
-    setSelectedIndex(pathname.includes("register") ? 1 : 0);
-  }, [pathname]);
-
-  // Handle segment change with proper navigation timing
-  const handleSegmentChange = (event: any) => {
-  const index = event.nativeEvent.selectedSegmentIndex;
-  setSelectedIndex(index);
-
-  startTransition(() => {
-    router.replace(index === 0 ? "/(auth)/login" : "/(auth)/register");
-  });
-};
-
-  // If we are on other auth routes (forgot password, otp, etc) render a simple layout without header
-  if (!isAuthForm) {
-    return <Slot />;
-  }
+  const isAuthForm =
+    pathname.endsWith("/login") || pathname.endsWith("/register");
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark">
-      <View className="relative flex-1 w-full flex-col overflow-hidden">
-        {/* Header Section with Background */}
-        <View className="relative h-72 w-full shrink-0 overflow-hidden">
-          <ImageBackground
-            source={require("@/assets/images/landscape.png")}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 0,
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle={isDark ? "light-content" : "dark-content"}
+      />
+      {!isAuthForm ? (
+        // Non-form auth screens render without shared layout
+        <Slot />
+      ) : (
+        <>
+          <AuthHeader />
+
+          {/* Only form section scrolls + moves with keyboard */}
+          <KeyboardAwareScrollView
+            enableOnAndroid
+            extraScrollHeight={20}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingBottom: insets.bottom + 20,
+              flexGrow: 1,
             }}
-            resizeMode="cover"
           >
-            <View className="absolute inset-0 bg-[#003B46] opacity-40" />
-            <View className="absolute inset-0 bg-primary opacity-60" />
-          </ImageBackground>
-
-          <LinearGradient
-            colors={["rgba(26, 43, 60, 0.4)", "transparent", "transparent"]}
-            style={{
-              width: "100%",
-              height: "100%",
-              position: "absolute",
-              zIndex: 10,
-            }}
-          />
-          <LinearGradient
-            colors={[
-              "transparent",
-              isDark ? "rgba(17, 31, 33, 0.2)" : "rgba(246, 248, 248, 0.2)",
-              isDark ? "#111f21" : "#f6f8f8",
-            ]}
-            style={{
-              width: "100%",
-              height: "100%",
-              position: "absolute",
-              zIndex: 10,
-            }}
-          />
-
-          {/* Header Content */}
-          <View className="relative z-20 flex h-full flex-col justify-end px-6 pb-6">
-            <View className="absolute top-12 right-6 z-50">
-              <DarkModeToggle />
+            <View className="flex flex-col px-6 pt-2">
+              <Slot />
+              <AuthFooter />
             </View>
-            <View className="mb-2 flex-row items-center gap-2">
-              <MaterialIcons name="explore" size={32} color="#359EFF" />
-              <Text className="text-3xl font-bold tracking-tight text-text-main-light dark:text-text-main-dark font-display">
-                TouRA
-              </Text>
-            </View>
-            <Text className="text-lg font-bold text-tagline-prominent dark:text-text-main-dark font-display">
-              Start your adventure today.
-            </Text>
-          </View>
-        </View>
-
-        {/* Content Container */}
-        <View className="flex flex-1 flex-col px-6 pt-2">
-          {/* Segmented Control - Only show for login/register */}
-          {showToggle && (
-            <View className="mb-6 w-full">
-              <SegmentedControl
-                values={["Log In", "Sign Up"]}
-                selectedIndex={selectedIndex}
-                onChange={handleSegmentChange}
-                style={{
-                  height: 45,
-                }}
-                backgroundColor={isDark ? "#1E2D2D" : "#E5E7EB"}
-                tintColor={isDark ? "#2C3E3E" : "#FFFFFF"}
-                fontStyle={{
-                  color: "#4F4F4F",
-                  fontSize: 12,
-                  fontWeight: "600",
-                }}
-                activeFontStyle={{
-                  color: "#359EFF",
-                  fontSize: 12,
-                  fontWeight: "600",
-                }}
-              />
-            </View>
-          )}
-
-          {/* Form Content Slot */}
-          <Slot />
-        </View>
-      </View>
+          </KeyboardAwareScrollView>
+        </>
+      )}
     </View>
   );
 }
