@@ -17,12 +17,13 @@ const RESEND_TIMEOUT_SECONDS = 60;
 export default function OtpVerification() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { identifier } = useLocalSearchParams<{
+  const { identifier, action, otpId } = useLocalSearchParams<{
     identifier: string;
-    type: string;
+    action: "register" | "reset";
+    otpId?: string;
   }>();
 
-  const { forgotPassword, verifyResetOtp } = useAuth();
+  const { forgotPassword, verifyResetOtp, otpVerify } = useAuth();
 
   const {
     otp,
@@ -64,9 +65,14 @@ export default function OtpVerification() {
   const handleResend = async () => {
     if (secondsLeft > 0) return;
     try {
-      await forgotPassword(identifier);
-      startTimer();
-      Toast.show({ type: "success", text1: "Success", text2: "A new code has been sent." });
+      if (action === "register") {
+        // TODO: Call resend OTP endpoint when available
+        Toast.show({ type: "info", text1: "Info", text2: "Resend not yet implemented." });
+      } else {
+        await forgotPassword(identifier);
+        startTimer();
+        Toast.show({ type: "success", text1: "Success", text2: "A new code has been sent." });
+      }
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || err.message || "Failed to resend code.";
@@ -83,14 +89,26 @@ export default function OtpVerification() {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await verifyResetOtp(identifier, otpValue);
-      // Assuming response contains resetToken or the API returns success
-      const resetToken = res?.resetToken || "valid-reset-token";
 
-      router.push({
-        pathname: "/(auth)/resetPassword",
-        params: { resetToken, identifier },
-      });
+      if (action === "register") {
+        if (!otpId) {
+          setError("OTP ID is missing. Please sign up again.");
+          return;
+        }
+        await otpVerify(otpId, otpValue);
+        router.replace("/(traveler)");
+      } else {
+        const res = await verifyResetOtp(identifier, otpValue);
+
+        if (!res?.resetToken) {
+          throw new Error("No reset token received from server");
+        }
+
+        router.push({
+          pathname: "/(auth)/resetPassword",
+          params: { resetToken: res.resetToken, identifier },
+        });
+      }
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || err.message || "Invalid OTP code";
@@ -101,7 +119,7 @@ export default function OtpVerification() {
   };
 
   if (!identifier) {
-    return <Redirect href="/(auth)/forgotPassword" />;
+    return <Redirect href={action === "register" ? "/(auth)/register" : "/(auth)/forgotPassword"} />;
   }
 
   return (
@@ -128,9 +146,9 @@ export default function OtpVerification() {
           {/* Icon */}
           <View className="mb-8 flex h-40 w-full items-center justify-center">
             <View className="relative flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/5">
-              <View className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-transparent blur-xl" />
+              <View className="absolute inset-0 rounded-full bg-primary/20 blur-xl" />
               <MaterialIcons name="lock-open" size={64} color="#359EFF" />
-              <View className="absolute -bottom-2 -right-2 flex size-10 items-center justify-center rounded-full bg-background-light shadow-sm dark:bg-background-dark">
+              <View className="absolute -bottom-2 -right-2 flex size-10 items-center justify-center rounded-full border border-neutral-light bg-background-light shadow-sm dark:border-neutral-dark dark:bg-background-dark">
                 <MaterialIcons name="flight" size={20} color="#94A3B8" />
               </View>
             </View>
@@ -138,7 +156,7 @@ export default function OtpVerification() {
 
           {/* Title */}
           <View className="mb-8 w-full">
-            <Text className="mb-3 text-center text-[28px] font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
+            <Text className="mb-3 text-center font-display text-[28px] font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
               Verification Code
             </Text>
             <Text className="text-center text-base font-normal leading-relaxed text-slate-500 dark:text-slate-400">
@@ -168,7 +186,7 @@ export default function OtpVerification() {
             )}
 
             <PrimaryButton
-              title="Verify Identity"
+              title={action === "register" ? "Verify & Sign In" : "Verify Identity"}
               onPress={handleVerify}
               isLoading={isLoading}
             />

@@ -26,6 +26,7 @@ export default function AuthFooter() {
       </View>
 
       {/* Continue as Guest */}
+      {/* TODO: Implement guest mode — navigate to a limited traveler experience */}
       <Pressable
         onPress={() => {}}
         className="flex flex-row items-center justify-center gap-1"

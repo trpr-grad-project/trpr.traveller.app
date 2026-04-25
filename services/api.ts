@@ -1,126 +1,151 @@
-import { STORAGE_KEYS } from "@/utils/constants";
-import axios from "axios";
-import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  InternalAxiosRequestConfig,
+} from "axios";
 
-// Platform-specific API URL
-export const API_URL =
-  Platform.OS === "android"
-    ? "http://192.168.100.6:5001/api/v1"
-    : "http://localhost:5001/api/v1";
+import { API_URL } from "@/utils/constants";
+import {
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+  clearTokens,
+} from "@/utils/storage";
 
-const api = axios.create({
+// Types
+interface CustomAxiosRequestConfig extends AxiosRequestConfig {
+  _retry?: boolean;
+}
+
+type PendingRequest = {
+  resolve: (token: string | null) => void;
+  reject: (error: unknown) => void;
+};
+
+type AuthCallback = () => void;
+type TokenRefreshCallback = (token: string) => void;
+
+// Axios Instance
+const api: AxiosInstance = axios.create({
   baseURL: API_URL,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor: attach access token
-api.interceptors.request.use(
-  async (config) => {
-    const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
+const isAuthRoute = (url?: string) => url?.startsWith("/auth/") ?? false;
 
-let isRefreshing = false;
-
-let pendingPromises: {
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}[] = [];
-
-const handlePendingPromises = (error: unknown, token: string | null = null) => {
-  pendingPromises.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token!);
-    }
-  });
-  pendingPromises = [];
-};
-
-// Unauthenticated callback (set by AuthContext)
-type AuthCallback = () => void;
+// Auth Callback
 let onUnauthenticated: AuthCallback | null = null;
 
 export const setOnUnauthenticated = (callback: AuthCallback) => {
   onUnauthenticated = callback;
 };
 
-// Response interceptor: handle 401 + token refresh
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+let onTokenRefresh: TokenRefreshCallback | null = null;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise<string>((resolve, reject) => {
-          pendingPromises.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return api(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
+export const setOnTokenRefresh = (callback: TokenRefreshCallback) => {
+  onTokenRefresh = callback;
+};
 
-      originalRequest._retry = true;
-      isRefreshing = true;
+// Refresh Control
+let isRefreshing = false;
+let pendingPromises: PendingRequest[] = [];
 
-      try {
-        const refreshToken = await SecureStore.getItemAsync(
-          STORAGE_KEYS.REFRESH_TOKEN,
-        );
+const processQueue = (error: unknown, token: string | null = null) => {
+  pendingPromises.forEach((prom) => {
+    if (error) prom.reject(error);
+    else prom.resolve(token!);
+  });
+  pendingPromises = [];
+};
 
-        if (refreshToken) {
-          const response = await axios.post(`${API_URL}/auth/refresh-token`, {
-            token: refreshToken,
-          });
+// Request Interceptor
+api.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    const token = getAccessToken();
 
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
-
-          if (accessToken) {
-            await SecureStore.setItemAsync(
-              STORAGE_KEYS.ACCESS_TOKEN,
-              accessToken,
-            );
-
-            if (newRefreshToken) {
-              await SecureStore.setItemAsync(
-                STORAGE_KEYS.REFRESH_TOKEN,
-                newRefreshToken,
-              );
-            }
-
-            api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
-            handlePendingPromises(null, accessToken);
-            return api(originalRequest);
-          }
-        }
-
-        // No refresh token or no new access token
-        onUnauthenticated?.();
-        return Promise.reject(error);
-      } catch (refreshError) {
-        handlePendingPromises(refreshError, null);
-        onUnauthenticated?.();
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
-    return Promise.reject(error);
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+// Response Interceptor
+api.interceptors.response.use(
+  (response) => response,
+
+  async (error: AxiosError) => {
+    const originalRequest = error.config as CustomAxiosRequestConfig;
+
+    if (!error.response) {
+      return Promise.reject(error); // network error
+    }
+
+    if (isAuthRoute(originalRequest.url)) {
+      return Promise.reject(error);
+    }
+
+    // Only handle 401
+    if (error.response.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      return new Promise<string | null>((resolve, reject) => {
+        pendingPromises.push({ resolve, reject });
+      })
+        .then((token) => {
+          (originalRequest.headers as any).Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        })
+        .catch((err) => Promise.reject(err));
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      const refreshToken = getRefreshToken();
+
+      if (!refreshToken) {
+        throw new Error("No refresh token");
+      }
+
+      const response = await axios.post(`${API_URL}/auth/refresh-token`, {
+        token: refreshToken,
+      });
+
+      const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+      if (!accessToken) {
+        throw new Error("Invalid refresh response");
+      }
+
+      await setTokens(accessToken, newRefreshToken);
+      onTokenRefresh?.(accessToken);
+      processQueue(null, accessToken);
+
+      if (originalRequest.headers) {
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+      }
+
+      return api(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+
+      await clearTokens();
+      onUnauthenticated?.();
+
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   },
 );
 

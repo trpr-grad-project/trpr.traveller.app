@@ -46,8 +46,8 @@ export default function Register() {
 
         if (response.otpId) {
           router.push({
-            pathname: "/(auth)/verifyOtp",
-            params: { otpId: response.otpId, email: data.email },
+            pathname: "/(auth)/otpVerification",
+            params: { action: "register", identifier: data.email, otpId: response.otpId },
           });
         }
       } catch (error: any) {

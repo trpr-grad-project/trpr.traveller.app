@@ -1,4 +1,5 @@
 import api from "./api";
+import { RegisterData } from "@/types/auth";
 
 export const authService = {
   login: async (identifier: string, password: string) => {
@@ -6,12 +7,7 @@ export const authService = {
     return response.data;
   },
 
-  register: async (data: {
-    identifier: string;
-    firstName: string;
-    lastName: string;
-    password: string;
-  }) => {
+  register: async (data: RegisterData) => {
     const response = await api.post("/auth/register", data);
     return response.data;
   },

@@ -3,7 +3,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Text, useColorScheme, View, type NativeSyntheticEvent } from "react-native";
+import { Text, View, type NativeSyntheticEvent } from "react-native";
+import { useColorScheme } from "nativewind";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Toast from "react-native-toast-message";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,7 +26,7 @@ export default function ForgotPassword() {
   const router = useRouter();
   const { forgotPassword } = useAuth();
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const [selectedMethod, setSelectedMethod] = useState<Method>("email");
 
@@ -60,7 +61,7 @@ export default function ForgotPassword() {
         await forgotPassword(data.inputValue);
         router.push({
           pathname: "/(auth)/otpVerification",
-          params: { identifier: data.inputValue, type: selectedMethod },
+          params: { identifier: data.inputValue, action: "reset" },
         });
       } catch (error: any) {
         const message =
@@ -81,29 +82,29 @@ export default function ForgotPassword() {
       extraScrollHeight={20}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      style={{ backgroundColor: isDark ? "#0F172A" : "#FFFFFF" }}
+      className="bg-background-light dark:bg-background-dark"
       contentContainerStyle={{
         flexGrow: 1,
         paddingTop: insets.top,
         paddingBottom: insets.bottom + 20,
       }}
     >
-      <View style={{ flex: 1, paddingHorizontal: 24 }}>
+      <View className="flex-1 px-6">
         {/* Header */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 24, paddingBottom: 8 }}>
+        <View className="flex-row items-center justify-between py-6">
           <BackButton />
         </View>
 
         {/* Icon */}
-        <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 8 }}>
-          <View style={{ marginBottom: 16, height: 128, width: 128, alignItems: "center", justifyContent: "center", borderRadius: 64, backgroundColor: isDark ? "rgba(53,158,255,0.1)" : "rgba(53,158,255,0.2)" }}>
+        <View className="items-center justify-center py-2">
+          <View className="mb-4 h-32 w-32 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/5">
             <MaterialIcons name="lock-reset" size={64} color="#359EFF" />
           </View>
         </View>
 
         {/* Title and Description */}
-        <View style={{ paddingBottom: 32, paddingTop: 8 }}>
-          <Text className="pb-3 font-display text-[32px] font-bold leading-tight tracking-tight text-[#0F172A] dark:text-[#E2E8F0]">
+        <View className="pb-8 pt-2">
+          <Text className="pb-3 font-display text-[32px] font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
             Forgot Password?
           </Text>
           <Text className="font-display text-base font-normal leading-relaxed text-slate-500 dark:text-slate-400">
@@ -113,7 +114,7 @@ export default function ForgotPassword() {
         </View>
 
         {/* Method Selector */}
-        <View style={{ marginBottom: 24 }}>
+        <View className="mb-6">
           <SegmentedControl
             values={["Email", "Phone"]}
             selectedIndex={isEmail ? 0 : 1}
@@ -121,8 +122,16 @@ export default function ForgotPassword() {
             style={{ height: 45 }}
             backgroundColor={isDark ? "#1E2D2D" : "#E5E7EB"}
             tintColor={isDark ? "#2C3E3E" : "#FFFFFF"}
-            fontStyle={{ color: "#4F4F4F", fontSize: 13, fontWeight: "600" }}
-            activeFontStyle={{ color: "#359EFF", fontSize: 13, fontWeight: "600" }}
+            fontStyle={{
+              color: isDark ? "#A0AEC0" : "#4F4F4F",
+              fontSize: 13,
+              fontWeight: "600",
+            }}
+            activeFontStyle={{
+              color: "#359EFF",
+              fontSize: 13,
+              fontWeight: "600",
+            }}
           />
         </View>
 
@@ -145,7 +154,7 @@ export default function ForgotPassword() {
           )}
         />
 
-        <View style={{ marginTop: 32 }}>
+        <View className="mt-8">
           <PrimaryButton
             title="Send Code"
             onPress={handleSubmit(onSubmit)}
@@ -153,10 +162,10 @@ export default function ForgotPassword() {
           />
         </View>
 
-        <View style={{ flex: 1 }} />
+        <View className="flex-1" />
 
         {/* Footer */}
-        <View style={{ width: "100%", paddingVertical: 32 }}>
+        <View className="w-full py-8">
           <Text className="text-center font-display text-sm text-slate-500 dark:text-slate-400">
             Remember password?{" "}
             <Text

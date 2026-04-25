@@ -30,7 +30,7 @@ export const passwordSchema = z
   .regex(/\d/, "Must contain a number")
   .regex(/[!@#$%^&*(),.?":{}|<>]/, "Must contain a special character");
 
-export const usernameSchema = z
+export const fullNameSchema = z
   .string()
   .min(1, "Full name is required")
   .min(3, "Min 3 characters");
@@ -44,7 +44,7 @@ export const loginSchema = z.object({
 
 export const registerSchema = z
   .object({
-    username: usernameSchema,
+    username: fullNameSchema,
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: passwordSchema,

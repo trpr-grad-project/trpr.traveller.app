@@ -92,7 +92,7 @@ const FormInput = forwardRef<TextInput, FormInputProps>(
             placeholderTextColor="#BDBDBD"
             autoCapitalize={secure ? "none" : "sentences"}
             autoCorrect={!secure}
-            className="flex-1 text-base text-text-main-light dark:text-text-main-dark"
+            className={`flex-1 text-base text-text-main-light dark:text-text-main-dark ${!icon ? "pl-4" : ""}`}
             style={{ paddingVertical: 0 }}
           />
 

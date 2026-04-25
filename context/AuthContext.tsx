@@ -1,7 +1,3 @@
-import { setOnUnauthenticated } from "@/services/api";
-import { authService } from "@/services/auth";
-import { STORAGE_KEYS } from "@/utils/constants";
-import * as SecureStore from "expo-secure-store";
 import React, {
   createContext,
   useCallback,
@@ -11,20 +7,22 @@ import React, {
   useState,
 } from "react";
 
-interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  [key: string]: any;
-}
+import { authService } from "@/services/auth";
+import {
+  setTokens,
+  clearTokens,
+  loadTokens,
+  getAccessToken,
+  setProfileSetupCompleted,
+  getProfileSetupCompleted,
+  loadProfileSetupCompleted,
+  clearProfileSetupCompleted,
+} from "@/utils/storage";
+import { User, RegisterData } from "@/types/auth";
 
-interface RegisterData {
-  identifier: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-}
+import { setOnUnauthenticated, setOnTokenRefresh } from "@/services/api";
+
+// Types
 
 interface AuthContextType {
   login: (identifier: string, password: string) => Promise<void>;
@@ -37,39 +35,53 @@ interface AuthContextType {
   ) => Promise<{ resetToken: string }>;
   resetPassword: (resetToken: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  completeProfileSetup: () => Promise<void>;
   session: string | null;
   isLoading: boolean;
   user: User | null;
+  profileSetupCompleted: boolean | null;
 }
 
+// Context
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
-}
+};
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+// Provider
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileSetupCompletedState, setProfileSetupCompletedState] = useState<
+    boolean | null
+  >(null);
 
   const signOut = useCallback(async () => {
     setSession(null);
     setUser(null);
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+    setProfileSetupCompletedState(null);
+    await clearTokens();
+    await clearProfileSetupCompleted();
   }, []);
 
+  // Init session and load profile flag
   useEffect(() => {
-    const loadSession = async () => {
+    const init = async () => {
       try {
-        const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+        setIsLoading(true);
+        await loadTokens();
+        await loadProfileSetupCompleted();
+        const token = getAccessToken();
+
         if (token) {
           setSession(token);
+          setProfileSetupCompletedState(getProfileSetupCompleted());
         }
       } catch (e) {
         console.error("Failed to load session", e);
@@ -78,97 +90,80 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    loadSession();
+    init();
+  }, []);
+
+  useEffect(() => {
     setOnUnauthenticated(signOut);
   }, [signOut]);
 
-  const persistTokens = useCallback(
-    async (accessToken: string, refreshToken?: string) => {
-      setSession(accessToken);
-      await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-      if (refreshToken) {
-        await SecureStore.setItemAsync(
-          STORAGE_KEYS.REFRESH_TOKEN,
-          refreshToken,
-        );
-      }
-    },
-    [],
-  );
+  useEffect(() => {
+    setOnTokenRefresh((token) => {
+      setSession(token);
+    });
+  }, [setSession]);
 
-  const login = useCallback(
-    async (identifier: string, password: string) => {
-      try {
-        const data = await authService.login(identifier, password);
-        const token = data.accessToken;
-        if (!token) throw new Error("No token received");
-        await persistTokens(token, data.refreshToken);
-      } catch (error) {
-        console.error("Sign in failed", error);
-        throw error;
-      }
-    },
-    [persistTokens],
-  );
+  // Auth methods
 
-  const register = useCallback(async (data: RegisterData) => {
-    try {
-      return await authService.register(data);
-    } catch (error) {
-      console.error("Sign up failed", error);
-      throw error;
+  const login = useCallback(async (identifier: string, password: string) => {
+    const data = await authService.login(identifier, password);
+
+    if (!data?.accessToken) {
+      throw new Error("No access token received");
     }
+
+    await setTokens(data.accessToken, data.refreshToken);
+    setSession(data.accessToken);
+
+    const setupCompleted = data.profileSetupCompleted ?? false;
+    await setProfileSetupCompleted(setupCompleted);
+    setProfileSetupCompletedState(setupCompleted);
   }, []);
 
-  const otpVerify = useCallback(
-    async (identifier: string, value: string) => {
-      try {
-        const data = await authService.verifyOtp(identifier, value);
-        const token = data.accessToken;
-        if (!token) throw new Error("No token received from OTP verification");
-        await persistTokens(token, data.refreshToken);
-      } catch (error) {
-        console.error("OTP Verify failed", error);
-        throw error;
-      }
-    },
-    [persistTokens],
-  );
+  const register = useCallback(async (data: RegisterData) => {
+    return await authService.register(data);
+  }, []);
+
+  const otpVerify = useCallback(async (identifier: string, value: string) => {
+    const data = await authService.verifyOtp(identifier, value);
+
+    if (!data?.accessToken) {
+      throw new Error("No token from OTP verification");
+    }
+
+    await setTokens(data.accessToken, data.refreshToken);
+    setSession(data.accessToken);
+
+    const setupCompleted = data.profileSetupCompleted ?? false;
+    await setProfileSetupCompleted(setupCompleted);
+    setProfileSetupCompletedState(setupCompleted);
+  }, []);
 
   const forgotPassword = useCallback(async (identifier: string) => {
-    try {
-      await authService.forgotPassword(identifier);
-    } catch (error) {
-      console.error("Forgot Password failed", error);
-      throw error;
-    }
+    await authService.forgotPassword(identifier);
   }, []);
 
   const verifyResetOtp = useCallback(
     async (identifier: string, value: string) => {
-      try {
-        return await authService.verifyResetOtp(identifier, value);
-      } catch (error) {
-        console.error("Verify Reset OTP failed", error);
-        throw error;
-      }
+      return await authService.verifyResetOtp(identifier, value);
     },
     [],
   );
 
   const resetPassword = useCallback(
     async (resetToken: string, password: string) => {
-      try {
-        await authService.resetPassword(resetToken, password);
-      } catch (error) {
-        console.error("Reset Password failed", error);
-        throw error;
-      }
+      await authService.resetPassword(resetToken, password);
     },
     [],
   );
 
-  const contextValue = useMemo(
+  const completeProfileSetup = useCallback(async () => {
+    await setProfileSetupCompleted(true);
+    setProfileSetupCompletedState(true);
+  }, []);
+
+  // Context value
+  const value = useMemo(
     () => ({
       login,
       register,
@@ -177,9 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       verifyResetOtp,
       resetPassword,
       signOut,
+      completeProfileSetup,
       session,
       isLoading,
       user,
+      profileSetupCompleted: profileSetupCompletedState,
     }),
     [
       login,
@@ -189,15 +186,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       verifyResetOtp,
       resetPassword,
       signOut,
+      completeProfileSetup,
       session,
       isLoading,
       user,
-    ]
+      profileSetupCompletedState,
+    ],
   );
 
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
