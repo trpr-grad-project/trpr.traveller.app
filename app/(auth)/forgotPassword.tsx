@@ -1,19 +1,20 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
+import SegmentedControl from "@react-native-segmented-control/segmented-control";
 import { useRouter } from "expo-router";
+import { useColorScheme } from "nativewind";
 import React, { useCallback, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Text, View, type NativeSyntheticEvent } from "react-native";
-import { useColorScheme } from "nativewind";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import Toast from "react-native-toast-message";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import SegmentedControl from "@react-native-segmented-control/segmented-control";
+import Toast from "react-native-toast-message";
 
 import BackButton from "@/components/BackButton";
 import FormInput from "@/components/FormInput";
 import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage } from "@/utils/errorHandler";
 import {
   forgotPasswordEmailSchema,
   forgotPasswordPhoneSchema,
@@ -58,20 +59,20 @@ export default function ForgotPassword() {
   const onSubmit = useCallback(
     async (data: FormValues) => {
       try {
-        await forgotPassword(data.inputValue);
+        const otpId = await forgotPassword(data.inputValue);
         router.push({
           pathname: "/(auth)/otpVerification",
-          params: { identifier: data.inputValue, action: "reset" },
+          params: { identifier: data.inputValue, action: "reset", otpId },
         });
-      } catch (error: any) {
-        const message =
-          error?.response?.data?.message ||
-          error?.message ||
-          "Failed to send reset code. Please try again.";
-        Toast.show({ type: "error", text1: "Error", text2: message });
+      } catch (error) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: getErrorMessage(error, "Failed to send reset code. Please try again."),
+        });
       }
     },
-    [forgotPassword, router, selectedMethod],
+    [forgotPassword, router],
   );
 
   const isEmail = selectedMethod === "email";
@@ -137,7 +138,6 @@ export default function ForgotPassword() {
 
         {/* Input */}
         <Controller
-          key={selectedMethod}
           control={control}
           name="inputValue"
           render={({ field: { onChange, value } }) => (

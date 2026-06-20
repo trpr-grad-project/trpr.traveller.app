@@ -17,18 +17,14 @@ export const identifierSchema = z
   .string()
   .min(1, "Email or phone is required")
   .refine(
-    (val) =>
-      emailRegex.test(val) ||
-      phoneRegex.test(val.replace(/\s/g, "")),
+    (val) => emailRegex.test(val) || phoneRegex.test(val.replace(/\s/g, "")),
     { message: "Please enter a valid email or phone number" },
   );
 
 export const passwordSchema = z
   .string()
   .min(1, "Password is required")
-  .min(8, "Min 8 characters")
-  .regex(/\d/, "Must contain a number")
-  .regex(/[!@#$%^&*(),.?":{}|<>]/, "Must contain a special character");
+  .min(8, "Min 8 characters");
 
 export const fullNameSchema = z
   .string()

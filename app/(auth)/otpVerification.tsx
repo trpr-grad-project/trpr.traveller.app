@@ -3,8 +3,15 @@ import OtpInput from "@/components/OtpInput";
 import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
 import { useOtpInput } from "@/hooks/useOtpInput";
+import { getErrorMessage } from "@/utils/errorHandler";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Pressable, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Toast from "react-native-toast-message";
@@ -23,7 +30,7 @@ export default function OtpVerification() {
     otpId?: string;
   }>();
 
-  const { forgotPassword, verifyResetOtp, otpVerify } = useAuth();
+  const { forgotPassword, otpVerify, verifyResetOtp } = useAuth();
 
   const {
     otp,
@@ -60,25 +67,43 @@ export default function OtpVerification() {
     };
   }, [startTimer]);
 
-  const timerLabel = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
+  // Clear error as soon as the user starts retyping
+  useEffect(() => {
+    if (error) setError(null);
+  }, [otpValue]);
 
-  const handleResend = async () => {
+  const timerLabel = useMemo(
+    () =>
+      `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`,
+    [secondsLeft],
+  );
+
+  const handleResend = useCallback(async () => {
     if (secondsLeft > 0) return;
     try {
       if (action === "register") {
-        // TODO: Call resend OTP endpoint when available
-        Toast.show({ type: "info", text1: "Info", text2: "Resend not yet implemented." });
+        Toast.show({
+          type: "info",
+          text1: "Info",
+          text2: "Resend not yet implemented.",
+        });
       } else {
         await forgotPassword(identifier);
         startTimer();
-        Toast.show({ type: "success", text1: "Success", text2: "A new code has been sent." });
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "A new code has been sent.",
+        });
       }
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || err.message || "Failed to resend code.";
-      Toast.show({ type: "error", text1: "Error", text2: errorMessage });
+    } catch (err) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: getErrorMessage(err),
+      });
     }
-  };
+  }, [secondsLeft, action, forgotPassword, identifier, startTimer]);
 
   const handleVerify = async () => {
     if (!isComplete) {
@@ -96,30 +121,31 @@ export default function OtpVerification() {
           return;
         }
         await otpVerify(otpId, otpValue);
-        router.replace("/(traveler)");
+        router.replace("/(onboarding)/welcome");
       } else {
-        const res = await verifyResetOtp(identifier, otpValue);
-
-        if (!res?.resetToken) {
-          throw new Error("No reset token received from server");
+        if (!otpId) {
+          setError("OTP ID is missing. Please try again.");
+          return;
         }
-
+        await verifyResetOtp(otpId, otpValue);
         router.push({
           pathname: "/(auth)/resetPassword",
-          params: { resetToken: res.resetToken, identifier },
+          params: { identifier },
         });
       }
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || err.message || "Invalid OTP code";
-      setError(errorMessage);
+    } catch (err) {
+      setError(getErrorMessage(err, "Invalid OTP code"));
     } finally {
       setIsLoading(false);
     }
   };
 
   if (!identifier) {
-    return <Redirect href={action === "register" ? "/(auth)/register" : "/(auth)/forgotPassword"} />;
+    return (
+      <Redirect
+        href={action === "register" ? "/(auth)" : "/(auth)/forgotPassword"}
+      />
+    );
   }
 
   return (
@@ -186,7 +212,9 @@ export default function OtpVerification() {
             )}
 
             <PrimaryButton
-              title={action === "register" ? "Verify & Sign In" : "Verify Identity"}
+              title={
+                action === "register" ? "Verify & Sign In" : "Verify Identity"
+              }
               onPress={handleVerify}
               isLoading={isLoading}
             />

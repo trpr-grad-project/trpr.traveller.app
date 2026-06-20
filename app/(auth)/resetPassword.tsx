@@ -2,6 +2,7 @@ import BackButton from "@/components/BackButton";
 import FormInput from "@/components/FormInput";
 import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage } from "@/utils/errorHandler";
 import {
   resetPasswordSchema,
   type ResetPasswordFormData,
@@ -10,12 +11,12 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useColorScheme } from "nativewind";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import Toast from "react-native-toast-message";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 // Password requirement row
 function PasswordRequirement({
@@ -53,8 +54,7 @@ export default function ResetPassword() {
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
 
-  const { resetToken, identifier } = useLocalSearchParams<{
-    resetToken: string;
+  const { identifier } = useLocalSearchParams<{
     identifier: string;
   }>();
 
@@ -73,31 +73,34 @@ export default function ResetPassword() {
 
   const password = watch("password");
 
-  const passwordRequirements = [
-    { label: "At least 8 characters", met: password.length >= 8 },
-    { label: "Contains a number", met: /\d/.test(password) },
-    {
-      label: "Contains a special character",
-      met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-    },
-  ];
+  const passwordRequirements = useMemo(
+    () => [
+      { label: "At least 8 characters", met: password.length >= 8 },
+      { label: "Contains a number", met: /\d/.test(password) },
+      {
+        label: "Contains a special character",
+        met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+      },
+    ],
+    [password],
+  );
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     try {
       setError(null);
-      await resetPassword(resetToken, data.password);
-      Toast.show({ type: "success", text1: "Success", text2: "Your password has been reset successfully." });
-      router.replace("/(auth)/login");
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to reset password.";
-      setError(errorMessage);
+      await resetPassword(data.password);
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Your password has been reset successfully.",
+      });
+      router.replace("/(auth)");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to reset password."));
     }
   };
 
-  if (!resetToken || !identifier) {
+  if (!identifier) {
     return <Redirect href="/(auth)/forgotPassword" />;
   }
 

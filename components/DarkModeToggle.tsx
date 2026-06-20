@@ -1,14 +1,18 @@
+import { saveColorScheme } from "@/utils/storage";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
 import React from "react";
-import { Pressable } from "react-native";
+import { Appearance, Pressable, useColorScheme } from "react-native";
 
 export default function DarkModeToggle() {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const colorScheme = useColorScheme();
 
   return (
     <Pressable
-      onPress={toggleColorScheme}
+      onPress={() => {
+        const next = colorScheme === "dark" ? "light" : "dark";
+        Appearance.setColorScheme(next);
+        saveColorScheme(next);
+      }}
       className={`h-10 w-10 items-center justify-center rounded-full border active:opacity-70 ${
         colorScheme === "dark"
           ? "border-neutral-700 bg-neutral-800"

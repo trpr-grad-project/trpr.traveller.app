@@ -7,33 +7,34 @@ import React, {
   useState,
 } from "react";
 
-import { authService } from "@/services/auth";
 import {
-  setTokens,
-  clearTokens,
-  loadTokens,
-  getAccessToken,
-  setProfileSetupCompleted,
+  authService,
+  profileService,
+  setOnUnauthenticated,
+  setApiUserId,
+} from "@/services";
+import { LoginResponse, RegisterRequest, User } from "@/types";
+import {
+  clearProfileSetupCompleted,
   getProfileSetupCompleted,
   loadProfileSetupCompleted,
-  clearProfileSetupCompleted,
+  setProfileSetupCompleted,
+  clearUserId,
+  getUserId,
+  loadUserId,
+  setUserId,
 } from "@/utils/storage";
-import { User, RegisterData } from "@/types/auth";
-
-import { setOnUnauthenticated, setOnTokenRefresh } from "@/services/api";
+import { decodeToken } from "@/utils/jwt";
 
 // Types
 
 interface AuthContextType {
   login: (identifier: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<any>;
+  register: (data: RegisterRequest) => Promise<any>;
   otpVerify: (identifier: string, value: string) => Promise<void>;
-  forgotPassword: (identifier: string) => Promise<void>;
-  verifyResetOtp: (
-    identifier: string,
-    value: string,
-  ) => Promise<{ resetToken: string }>;
-  resetPassword: (resetToken: string, password: string) => Promise<void>;
+  verifyResetOtp: (identifier: string, value: string) => Promise<void>;
+  forgotPassword: (identifier: string) => Promise<string>;
+  resetPassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   completeProfileSetup: () => Promise<void>;
   session: string | null;
@@ -66,7 +67,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(null);
     setUser(null);
     setProfileSetupCompletedState(null);
-    await clearTokens();
+    setApiUserId(null);
+    await clearUserId();
     await clearProfileSetupCompleted();
   }, []);
 
@@ -75,12 +77,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const init = async () => {
       try {
         setIsLoading(true);
-        await loadTokens();
+        await loadUserId();
         await loadProfileSetupCompleted();
-        const token = getAccessToken();
+        const id = getUserId();
 
-        if (token) {
-          setSession(token);
+        if (id) {
+          setApiUserId(id);
+          setSession(id);
           setProfileSetupCompletedState(getProfileSetupCompleted());
         }
       } catch (e) {
@@ -97,65 +100,86 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setOnUnauthenticated(signOut);
   }, [signOut]);
 
-  useEffect(() => {
-    setOnTokenRefresh((token) => {
-      setSession(token);
-    });
-  }, [setSession]);
-
-  // Auth methods
-
-  const login = useCallback(async (identifier: string, password: string) => {
-    const data = await authService.login(identifier, password);
-
+  const establishSession = useCallback(async (data: LoginResponse) => {
     if (!data?.accessToken) {
       throw new Error("No access token received");
     }
 
-    await setTokens(data.accessToken, data.refreshToken);
-    setSession(data.accessToken);
+    const decoded = decodeToken(data.accessToken);
+    if (!decoded?.sub) {
+      throw new Error("Invalid token: missing sub");
+    }
 
     const setupCompleted = data.profileSetupCompleted ?? false;
-    await setProfileSetupCompleted(setupCompleted);
+
+    // Await all SecureStore operations first to prevent intermediate render ticks
+    await Promise.all([
+      setUserId(decoded.sub),
+      setProfileSetupCompleted(setupCompleted),
+    ]);
+
+    // Perform React state updates synchronously to ensure proper batching
+    setApiUserId(decoded.sub);
+    setUser({
+      id: decoded.sub,
+      email: decoded.identifier,
+      firstName: decoded.given_name,
+      lastName: decoded.family_name,
+    });
     setProfileSetupCompletedState(setupCompleted);
+    setSession(decoded.sub);
   }, []);
 
-  const register = useCallback(async (data: RegisterData) => {
+  // Auth methods
+
+  const login = useCallback(
+    async (identifier: string, password: string) => {
+      const data = await authService.login({ identifier, password });
+      await establishSession(data);
+    },
+    [establishSession],
+  );
+
+  const register = useCallback(async (data: RegisterRequest) => {
     return await authService.register(data);
   }, []);
 
-  const otpVerify = useCallback(async (identifier: string, value: string) => {
-    const data = await authService.verifyOtp(identifier, value);
-
-    if (!data?.accessToken) {
-      throw new Error("No token from OTP verification");
-    }
-
-    await setTokens(data.accessToken, data.refreshToken);
-    setSession(data.accessToken);
-
-    const setupCompleted = data.profileSetupCompleted ?? false;
-    await setProfileSetupCompleted(setupCompleted);
-    setProfileSetupCompletedState(setupCompleted);
-  }, []);
-
-  const forgotPassword = useCallback(async (identifier: string) => {
-    await authService.forgotPassword(identifier);
-  }, []);
+  const otpVerify = useCallback(
+    async (identifier: string, value: string) => {
+      const data = await authService.verifyOtp({ identifier, value });
+      await establishSession(data);
+    },
+    [establishSession],
+  );
 
   const verifyResetOtp = useCallback(
     async (identifier: string, value: string) => {
-      return await authService.verifyResetOtp(identifier, value);
+      const data = await authService.verifyOtp({ identifier, value });
+
+      if (!data?.accessToken) {
+        throw new Error("No token from OTP verification");
+      }
+
+      // Store userId for the upcoming resetPassword call, but do NOT set session.
+      const decoded = decodeToken(data.accessToken);
+      if (decoded?.sub) {
+        await setUserId(decoded.sub);
+        setApiUserId(decoded.sub);
+      }
     },
     [],
   );
 
-  const resetPassword = useCallback(
-    async (resetToken: string, password: string) => {
-      await authService.resetPassword(resetToken, password);
-    },
-    [],
-  );
+  const forgotPassword = useCallback(async (identifier: string) => {
+    const data = await authService.forgotPassword({ identifier });
+    return data?.otpId as string;
+  }, []);
+
+  const resetPassword = useCallback(async (password: string) => {
+    await profileService.resetPassword({ password });
+    setApiUserId(null);
+    await clearUserId();
+  }, []);
 
   const completeProfileSetup = useCallback(async () => {
     await setProfileSetupCompleted(true);
@@ -168,8 +192,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       login,
       register,
       otpVerify,
-      forgotPassword,
       verifyResetOtp,
+      forgotPassword,
       resetPassword,
       signOut,
       completeProfileSetup,
@@ -182,8 +206,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       login,
       register,
       otpVerify,
-      forgotPassword,
       verifyResetOtp,
+      forgotPassword,
       resetPassword,
       signOut,
       completeProfileSetup,

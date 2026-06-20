@@ -1,6 +1,5 @@
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
-  Animated,
   Dimensions,
   FlatList,
   Image,
@@ -15,7 +14,32 @@ import { router } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
-const SLIDES = [
+type Slide = { id: string; title: string; body: string; image: string };
+
+const SlideItem = React.memo(function SlideItem({ item }: { item: Slide }) {
+  return (
+    <View style={{ width }}>
+      <View className="overflow-hidden bg-white dark:bg-background-dark" style={{ aspectRatio: 4 / 3 }}>
+        <Image
+          source={{ uri: item.image }}
+          className="w-full h-full"
+          resizeMode="cover"
+        />
+        <View className="absolute inset-0 bg-gradient-to-t from-white dark:from-background-dark via-transparent opacity-40" />
+      </View>
+      <View className="px-8 pt-8 pb-4 items-center">
+        <Text className="text-[#101518] dark:text-white text-[32px] font-bold leading-tight text-center pb-4">
+          {item.title}
+        </Text>
+        <Text className="text-[#101518]/80 dark:text-gray-300 text-base leading-relaxed text-center px-2">
+          {item.body}
+        </Text>
+      </View>
+    </View>
+  );
+});
+
+const SLIDES: Slide[] = [
   {
     id: "1",
     title: "Discover the World, Your Way",
@@ -48,27 +72,37 @@ const SLIDES = [
   },
 ];
 
+const viewabilityConfig = { itemVisiblePercentThreshold: 50 };
+
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollX = useRef(new Animated.Value(0)).current;
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].index !== null) {
         setCurrentIndex(viewableItems[0].index);
       }
-    }
+    },
   ).current;
 
-  const goToNext = () => {
+  const goToNext = useCallback(() => {
     if (currentIndex < SLIDES.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
       router.push("/(onboarding)/languageSelection");
     }
-  };
+  }, [currentIndex]);
+
+  const goToLanguage = useCallback(() => {
+    router.push("/(onboarding)/languageSelection");
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Slide }) => <SlideItem item={item} />,
+    [],
+  );
 
   const isLast = currentIndex === SLIDES.length - 1;
 
@@ -79,7 +113,6 @@ export default function WelcomeScreen() {
     >
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      {/* Slides */}
       <FlatList
         ref={flatListRef}
         data={SLIDES}
@@ -87,36 +120,11 @@ export default function WelcomeScreen() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
+        renderItem={renderItem}
         onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-        renderItem={({ item }) => (
-          <View style={{ width }}>
-            {/* Hero image */}
-            <View className="overflow-hidden bg-white dark:bg-background-dark" style={{ aspectRatio: 4 / 3 }}>
-              <Image
-                source={{ uri: item.image }}
-                className="w-full h-full"
-                resizeMode="cover"
-              />
-              {/* Gradient overlay */}
-              <View className="absolute inset-0 bg-gradient-to-t from-white dark:from-background-dark via-transparent opacity-40" />
-            </View>
-
-            {/* Content */}
-            <View className="px-8 pt-8 pb-4 items-center">
-              <Text className="text-[#101518] dark:text-white text-[32px] font-bold leading-tight text-center pb-4">
-                {item.title}
-              </Text>
-              <Text className="text-[#101518]/80 dark:text-gray-300 text-base leading-relaxed text-center px-2">
-                {item.body}
-              </Text>
-            </View>
-          </View>
-        )}
+        viewabilityConfig={viewabilityConfig}
+        scrollEventThrottle={16}
+        removeClippedSubviews
       />
 
       {/* Bottom controls */}
@@ -126,11 +134,16 @@ export default function WelcomeScreen() {
       >
         {/* Dot indicators */}
         <View className="flex-row gap-2 mb-8 items-center">
-          <View className="h-2 w-6 rounded-full bg-primary" />
-          <View className="h-2 w-2 rounded-full bg-gray-200 dark:bg-gray-700" />
-          <View className="h-2 w-2 rounded-full bg-gray-200 dark:bg-gray-700" />
-          <View className="h-2 w-2 rounded-full bg-gray-200 dark:bg-gray-700" />
-          <View className="h-2 w-2 rounded-full bg-gray-200 dark:bg-gray-700" />
+          {SLIDES.map((_, i) => (
+            <View
+              key={i}
+              className={`h-2 rounded-full ${
+                i === currentIndex
+                  ? "w-6 bg-primary"
+                  : "w-2 bg-gray-200 dark:bg-gray-700"
+              }`}
+            />
+          ))}
         </View>
 
         {/* Get Started / Next button */}
@@ -146,7 +159,7 @@ export default function WelcomeScreen() {
 
           {!isLast && (
             <Pressable
-              onPress={() => router.push("/(onboarding)/languageSelection")}
+              onPress={goToLanguage}
               className="flex w-full h-12 items-center justify-center rounded-xl"
             >
               <Text className="text-[#828282] dark:text-gray-400 text-base font-semibold">

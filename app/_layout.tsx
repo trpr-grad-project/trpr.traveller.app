@@ -1,5 +1,6 @@
-import "@/global.css";
+import { toastConfig } from "@/config/toast.config";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import "@/global.css";
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -7,17 +8,17 @@ import {
   PlusJakartaSans_700Bold,
   useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
-import { Redirect, Stack, useSegments } from "expo-router";
+import { Stack, useSegments, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import Toast from "react-native-toast-message";
-import { toastConfig } from "@/config/toast.config";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
   const { session, isLoading, profileSetupCompleted } = useAuth();
   const segments = useSegments();
+  const router = useRouter();
 
   // Hide splash screen when fonts are loaded and authentication is complete
   useEffect(() => {
@@ -26,34 +27,46 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
     }
   }, [fontsLoaded, isLoading]);
 
+  // Handle routing redirects
+  useEffect(() => {
+    if (!fontsLoaded || isLoading) {
+      return;
+    }
+
+    const inAuthGroup = segments[0] === "(auth)";
+    const inOnboardingGroup = segments[0] === "(onboarding)";
+
+    // Not logged in -> redirect to login
+    if (!session && !inAuthGroup) {
+      router.replace("/(auth)");
+      return;
+    }
+
+    // Logged in but on an auth screen -> redirect away
+    if (session && inAuthGroup) {
+      if (profileSetupCompleted === false) {
+        router.replace("/(onboarding)/welcome");
+      } else {
+        router.replace("/(traveler)");
+      }
+      return;
+    }
+
+    // Logged in, profile incomplete -> keep inside onboarding
+    if (session && profileSetupCompleted === false && !inOnboardingGroup) {
+      router.replace("/(onboarding)/welcome");
+      return;
+    }
+
+    // Logged in, profile complete -> redirect to home
+    if (session && profileSetupCompleted === true && inOnboardingGroup) {
+      router.replace("/(traveler)");
+      return;
+    }
+  }, [session, isLoading, profileSetupCompleted, segments, fontsLoaded, router]);
+
   if (!fontsLoaded || isLoading) {
     return null;
-  }
-
-  const inAuthGroup = segments[0] === "(auth)";
-  const inOnboardingGroup = segments[0] === "(onboarding)";
-
-  // Not logged in → send to login
-  if (!session && !inAuthGroup) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  // Logged in but on an auth screen → redirect away
-  if (session && inAuthGroup) {
-    if (profileSetupCompleted === false) {
-      return <Redirect href="/(onboarding)/welcome" />;
-    }
-    return <Redirect href="/" />;
-  }
-
-  // Logged in, profile incomplete → keep inside onboarding
-  if (session && profileSetupCompleted === false && !inOnboardingGroup) {
-    return <Redirect href="/(onboarding)/welcome" />;
-  }
-
-  // Logged in, profile complete → don't let them linger in onboarding
-  if (session && profileSetupCompleted === true && inOnboardingGroup) {
-    return <Redirect href="/" />;
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;

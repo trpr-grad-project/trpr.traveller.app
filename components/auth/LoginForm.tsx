@@ -8,8 +8,9 @@ import { useCallback, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, Text, TextInput, View } from "react-native";
 import Toast from "react-native-toast-message";
+import { getErrorMessage } from "@/utils/errorHandler";
 
-export default function LogIn() {
+export default function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
 
@@ -28,16 +29,12 @@ export default function LogIn() {
     async (data: LoginFormData) => {
       try {
         await login(data.identifier, data.password);
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.code ||
-          error.message ||
-          "Something went wrong. Please try again.";
+      } catch (error) {
 
         Toast.show({
           type: "error",
           text1: "Sign In Failed",
-          text2: errorMessage,
+          text2: getErrorMessage(error, "Something went wrong"),
         });
       }
     },

@@ -3,7 +3,7 @@ import { AxiosError } from "axios";
 // Extracts a user-friendly error message from API errors.
 export function getErrorMessage(
   error: unknown,
-  fallback = "Something went wrong. Please try again."
+  fallback = "Something went wrong. Please try again.",
 ): string {
   if (error instanceof AxiosError) {
     return (

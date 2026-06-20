@@ -1,15 +1,19 @@
 import { Platform } from "react-native";
 
 // Platform-specific API URL
+const REMOTE_URL = process.env.EXPO_PUBLIC_API_URL_REMOTE;
+const LOCAL_URL =
+  process.env.EXPO_PUBLIC_API_URL_LOCAL || "http://localhost:5000/users/api/v1";
+
 export const API_URL = Platform.select({
-  android: "http://192.168.100.6:5001/api/v1",
-  ios: "http://localhost:5001/api/v1",
-  default: "http://localhost:5001/api/v1",
+  android: REMOTE_URL || "http://10.0.2.2:5000/users/api/v1",
+  ios: LOCAL_URL,
+  default: LOCAL_URL,
 });
 
 // Storage Keys
 export const STORAGE_KEYS = {
-  ACCESS_TOKEN: "access_token",
-  REFRESH_TOKEN: "refresh_token",
+  USER_ID: "user_id",
   PROFILE_SETUP_COMPLETED: "profile_setup_completed",
+  COLOR_SCHEME: "color_scheme",
 } as const;

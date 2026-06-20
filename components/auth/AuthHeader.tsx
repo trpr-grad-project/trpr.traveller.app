@@ -1,4 +1,4 @@
-import { ImageBackground, Text, View, type  NativeSyntheticEvent  } from "react-native";
+import { ImageBackground, Text, View, type NativeSyntheticEvent } from "react-native";
 import React, { useCallback } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -6,23 +6,23 @@ import DarkModeToggle from "../DarkModeToggle";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
-import { usePathname, useRouter } from "expo-router";
 
-export default function AuthHeader() {
+interface AuthHeaderProps {
+  activeTab: "login" | "register";
+  onTabChange: (tab: "login" | "register") => void;
+}
+
+export default function AuthHeader({ activeTab, onTabChange }: AuthHeaderProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
-  const pathname = usePathname();
-  const router = useRouter();
-  const selectedIndex = pathname.endsWith("/register") ? 1 : 0;
 
-  // Set selected index based on current route
   const handleSegmentChange = useCallback(
     (event: NativeSyntheticEvent<{ selectedSegmentIndex: number }>) => {
       const index = event.nativeEvent.selectedSegmentIndex;
-      router.replace(index === 0 ? "/(auth)/login" : "/(auth)/register");
+      onTabChange(index === 0 ? "login" : "register");
     },
-    [router],
+    [onTabChange],
   );
 
   return (
@@ -76,7 +76,7 @@ export default function AuthHeader() {
       <View className="mt-4 mb-3 w-full px-6">
         <SegmentedControl
           values={["Log In", "Sign Up"]}
-          selectedIndex={selectedIndex}
+          selectedIndex={activeTab === "register" ? 1 : 0}
           onChange={handleSegmentChange}
           style={{ height: 45 }}
           backgroundColor={isDark ? "#1E2D2D" : "#E5E7EB"}

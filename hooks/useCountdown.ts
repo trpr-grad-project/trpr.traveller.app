@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-/**
- * A reusable countdown timer hook.
- * Counts down from the given duration in seconds, provides formatted label,
- * and exposes a restart function.
- *
- * @param durationSeconds - Countdown duration in seconds (default 60)
- * @returns Object with secondsLeft, timerLabel, isExpired, and restart
- */
 export function useCountdown(durationSeconds = 60) {
   const [secondsLeft, setSecondsLeft] = useState(durationSeconds);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);

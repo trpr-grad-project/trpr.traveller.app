@@ -1,6 +1,7 @@
 import FormInput from "@/components/FormInput";
 import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage } from "@/utils/errorHandler";
 import { registerSchema, type RegisterFormData } from "@/utils/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
@@ -9,7 +10,7 @@ import { Controller, useForm } from "react-hook-form";
 import { TextInput, View } from "react-native";
 import Toast from "react-native-toast-message";
 
-export default function Register() {
+export default function RegisterForm() {
   const router = useRouter();
   const { register } = useAuth();
 
@@ -47,19 +48,18 @@ export default function Register() {
         if (response.otpId) {
           router.push({
             pathname: "/(auth)/otpVerification",
-            params: { action: "register", identifier: data.email, otpId: response.otpId },
+            params: {
+              action: "register",
+              identifier: data.email,
+              otpId: response.otpId,
+            },
           });
         }
-      } catch (error: any) {
-        const errorMessage =
-          error.response?.data?.message ||
-          error.message ||
-          "Something went wrong";
-
+      } catch (error) {
         Toast.show({
           type: "error",
           text1: "Sign Up Failed",
-          text2: errorMessage,
+          text2: getErrorMessage(error, "Something went wrong"),
         });
       }
     },

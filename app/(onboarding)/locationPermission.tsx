@@ -1,20 +1,24 @@
-import React from "react";
-import { Pressable, StatusBar, Text, View } from "react-native";
+import React, { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import * as Location from "expo-location";
 
 export default function LocationPermissionScreen() {
   const insets = useSafeAreaInsets();
+  const [requesting, setRequesting] = useState(false);
 
-  const handleAllow = () => {
-    // In production: request actual location permissions here
+  const handleAllow = useCallback(async () => {
+    if (requesting) return;
+    setRequesting(true);
+    await Location.requestForegroundPermissionsAsync();
     router.push("/(onboarding)/completion");
-  };
+  }, [requesting]);
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     router.push("/(onboarding)/completion");
-  };
+  }, []);
 
   return (
     <View
@@ -98,12 +102,17 @@ export default function LocationPermissionScreen() {
         <View className="w-full gap-4">
           <Pressable
             onPress={handleAllow}
-            className="w-full h-[58px] bg-primary items-center justify-center rounded-2xl shadow-lg active:opacity-90"
+            disabled={requesting}
+            className="w-full h-[58px] bg-primary items-center justify-center rounded-2xl shadow-lg active:opacity-90 disabled:opacity-70"
             style={{ shadowColor: "#359EFF", shadowOpacity: 0.25 }}
           >
-            <Text className="text-white text-[17px] font-semibold">
-              Allow Location Access
-            </Text>
+            {requesting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-[17px] font-semibold">
+                Allow Location Access
+              </Text>
+            )}
           </Pressable>
 
           <Pressable onPress={handleSkip} className="items-center justify-center h-12 active:opacity-60">
