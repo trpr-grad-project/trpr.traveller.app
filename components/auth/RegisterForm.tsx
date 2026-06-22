@@ -2,6 +2,7 @@ import FormInput from "@/components/FormInput";
 import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/errorHandler";
+import { setPendingRegistration } from "@/utils/pendingRegistration";
 import { registerSchema, type RegisterFormData } from "@/utils/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
@@ -46,6 +47,13 @@ export default function RegisterForm() {
         });
 
         if (response.otpId) {
+          setPendingRegistration({
+            identifier: data.email,
+            firstName,
+            lastName,
+            password: data.password,
+            otpId: response.otpId,
+          });
           router.push({
             pathname: "/(auth)/otpVerification",
             params: {

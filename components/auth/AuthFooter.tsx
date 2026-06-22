@@ -1,10 +1,12 @@
 import { View, Text, Pressable } from "react-native";
 import React from "react";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import SocialButton from "../SocialButton";
 import { useColorScheme } from "nativewind";
 
 export default function AuthFooter() {
+  const router = useRouter();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   return (
@@ -53,8 +55,20 @@ export default function AuthFooter() {
       {/* Terms and Conditions */}
       <Text className="mt-8 text-center text-xs leading-relaxed text-gray-custom">
         By logging in, you agree to our{" "}
-        <Text className="text-gray-custom underline">Terms of Service</Text> and{" "}
-        <Text className="text-gray-custom underline">Privacy Policy</Text>.
+        <Text
+          className="text-gray-custom underline"
+          onPress={() => router.push("/legal/terms-and-conditions")}
+        >
+          Terms of Service
+        </Text>{" "}
+        and{" "}
+        <Text
+          className="text-gray-custom underline"
+          onPress={() => router.push("/legal/privacy-policy")}
+        >
+          Privacy Policy
+        </Text>
+        .
       </Text>
     </>
   );

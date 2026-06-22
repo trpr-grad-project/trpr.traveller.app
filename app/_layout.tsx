@@ -35,9 +35,10 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
 
     const inAuthGroup = segments[0] === "(auth)";
     const inOnboardingGroup = segments[0] === "(onboarding)";
+    const inLegalGroup = segments[0] === "legal";
 
     // Not logged in -> redirect to login
-    if (!session && !inAuthGroup) {
+    if (!session && !inAuthGroup && !inLegalGroup) {
       router.replace("/(auth)");
       return;
     }

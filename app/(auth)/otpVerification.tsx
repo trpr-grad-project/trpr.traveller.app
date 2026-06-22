@@ -4,6 +4,10 @@ import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
 import { useOtpInput } from "@/hooks/useOtpInput";
 import { getErrorMessage } from "@/utils/errorHandler";
+import {
+  clearPendingRegistration,
+  getPendingRegistration,
+} from "@/utils/pendingRegistration";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import React, {
   useCallback,
@@ -30,7 +34,7 @@ export default function OtpVerification() {
     otpId?: string;
   }>();
 
-  const { forgotPassword, otpVerify, verifyResetOtp } = useAuth();
+  const { forgotPassword, otpVerify, register, verifyResetOtp } = useAuth();
 
   const {
     otp,
@@ -82,11 +86,30 @@ export default function OtpVerification() {
     if (secondsLeft > 0) return;
     try {
       if (action === "register") {
-        Toast.show({
-          type: "info",
-          text1: "Info",
-          text2: "Resend not yet implemented.",
+        const pending = getPendingRegistration();
+        if (!pending) {
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: "Registration data not found. Please sign up again.",
+          });
+          return;
+        }
+        const response = await register({
+          identifier: pending.identifier,
+          firstName: pending.firstName,
+          lastName: pending.lastName,
+          password: pending.password,
         });
+        if (response?.otpId) {
+          router.setParams({ otpId: response.otpId });
+          startTimer();
+          Toast.show({
+            type: "success",
+            text1: "Success",
+            text2: "A new code has been sent.",
+          });
+        }
       } else {
         await forgotPassword(identifier);
         startTimer();
@@ -103,7 +126,7 @@ export default function OtpVerification() {
         text2: getErrorMessage(err),
       });
     }
-  }, [secondsLeft, action, forgotPassword, identifier, startTimer]);
+  }, [secondsLeft, action, forgotPassword, identifier, register, startTimer, router]);
 
   const handleVerify = async () => {
     if (!isComplete) {
@@ -121,6 +144,7 @@ export default function OtpVerification() {
           return;
         }
         await otpVerify(otpId, otpValue);
+        clearPendingRegistration();
         router.replace("/(onboarding)/welcome");
       } else {
         if (!otpId) {
