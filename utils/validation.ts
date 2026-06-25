@@ -26,11 +26,6 @@ export const passwordSchema = z
   .min(1, "Password is required")
   .min(8, "Min 8 characters");
 
-export const fullNameSchema = z
-  .string()
-  .min(1, "Full name is required")
-  .min(3, "Min 3 characters");
-
 // Form Schemas
 
 export const loginSchema = z.object({
@@ -40,7 +35,8 @@ export const loginSchema = z.object({
 
 export const registerSchema = z
   .object({
-    username: fullNameSchema,
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: passwordSchema,

@@ -1,10 +1,8 @@
 import type { RegisterRequest } from "@/types";
 
-let pendingData: (RegisterRequest & { otpId: string }) | null = null;
+let pendingData: RegisterRequest | null = null;
 
-export const setPendingRegistration = (
-  data: RegisterRequest & { otpId: string },
-) => {
+export const setPendingRegistration = (data: RegisterRequest) => {
   pendingData = data;
 };
 

@@ -51,7 +51,7 @@ export default function DirectMessageScreen() {
               Noura Mohamed
             </Text>
           </View>
-          <Pressable className="p-2 rounded-full">
+          <Pressable onPress={() => router.push(`/chat/${id}/settings`)} className="p-2 rounded-full">
             <MaterialIcons name="more-vert" size={24} color="#64748b" />
           </Pressable>
         </View>

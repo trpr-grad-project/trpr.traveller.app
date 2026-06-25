@@ -43,7 +43,7 @@ export default function AIChatScreen() {
             </View>
           </View>
         </View>
-        <Pressable className="w-10 h-10 rounded-full items-center justify-center">
+        <Pressable onPress={() => router.push("/chat/ai/history")} className="w-10 h-10 rounded-full items-center justify-center">
           <MaterialIcons name="history" size={22} color="#64748b" />
         </Pressable>
       </View>

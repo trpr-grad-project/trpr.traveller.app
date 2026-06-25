@@ -1,13 +1,5 @@
 import React, { useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StatusBar,
-  Text,
-  TextInput,
-  View,
-  Image,
-} from "react-native";
+import { Pressable, ScrollView, StatusBar, Text, TextInput, View, Image } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -17,43 +9,69 @@ const FILTERS = ["All", "Groups", "Unread"];
 const CONVERSATIONS = [
   {
     id: "1",
-    name: "Ahmed Ali",
-    preview: "See you at the museum!",
-    time: "2m ago",
+    name: "Ahmed Ali (Local Guide)",
+    preview: "About tomorrow's plan...",
+    time: "2h ago",
     unread: 2,
     online: true,
     isGroup: false,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDYcj8ixgYCVK3soWwJ8b53C23S1yKG3746k-7DVcGwdOvg2MfwLa6cgRGbegCCphcvhsBisK3c1KsLEqO4xn0S4mKzZJMoQaDkPatX0vnfcLZ1LIfoVz2iFJa9hkRLic-YVeO_cPr3oTgCnBAgKyqkR7CvLw5eG6E2jcbe1w0PWUYDEhkqY1k9FNtA6xwoC0UnNgaBcoUqGSN62-Dn_0AYTJ3cMYnWmDT4jy3vURoxk8VGw0s6qe27t5HoGzA2MQ7OjoEMj3Pqe5f8",
+    avatar:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuA5EUfORJBarq6w7AgAq5aAs6a4mngxdV2on09juyzwM1VbQpWx0PBLKPuzxRWa2mYjbt55Re7rA54IGN-5omeojQKXkrPueUBF3_ZgnKBAwb14R_wbUUeFXxdMiCv67xIcWR_K4nHjakXAJXObta4O5vTG7tPCAn19nqLKHq4dIu9YDMH90ygA7x6uwKIX2-4bWmeosuWGxfBUD5TsCxSfL-tqhoKJWm5p2u78DbgvL2LK_0RnB2n7ANUbzf0FCAwnttTr1yxPZ_py",
   },
   {
     id: "2",
-    name: "Giza Expedition 2024",
-    preview: "Sara: Welcome to Giza!",
-    time: "15m ago",
+    name: "Mohamed Reda (Alexandria Guide)",
+    preview: "The seafood restaurant is booked for tonight.",
+    time: "4h ago",
     unread: 0,
     online: false,
-    isGroup: true,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuANbCgpwPicHIrfgc1gnuiIe-brA8duxxjEhDP5A7Cb9okvMi0QcuQRAUjd76HgZz6oaeBpcYG1NU9fG1Ozr_hDNytoaTIri7lLbihEtOqQeUXpQuldGxN13CuTivNHHUkkyi1XFdjMREW5dZWdPeTdGV0gxsoqI0Gcptotw8vhPm1Ti99Oqwgl-UWfaK4snVilQG19fTL7tRFKH9TDaajaNHkVoABHfA_WJp9tbp1q503u5a_o0KaMvYcQ_m0jdy_mUnYOVSPXYdVA",
+    isGroup: false,
+    avatar:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuCFWEEU9JNjHdHLtog34El-wIUeWLI42WbIZLeWa_RNspa6M6q1DVVY8rkTpQN3b4Rl03aZ5inWCjMOh1M1cwWCpfeQYBwuqKtQCTsLaKYKGmfoUb0rDz60xuOSdDRJqqujdD_zRviI_qpYWpuikncqPHljEKv7OAdqVAuYEK3yRMGr-02fQV_4N81ZUILKMlTYtVTqiGDD1uSHH4hV0bouub6TTi5ofVIipAJcUqP3jSsGJucUpwbG-Te_dj-WIyW25HpyfFtFf6OU",
   },
   {
     id: "3",
-    name: "Noura Mohamed",
-    preview: "Check out these plans.",
-    time: "1h ago",
-    unread: 0,
+    name: "Aswan Nile Cruise Group",
+    preview: "Departure time changed to 5 PM",
+    time: "5h ago",
+    unread: 1,
     online: false,
-    isGroup: false,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDduPDd7LsaTqIf6BIrgZCx-1QxV7IMPZCPBXVMswBz0UwyrzNISKhVvhGjcVd7ITdf2hBy2HScR0-DB6eNfaUysc0Zg5igpNwK7-C46fCEl3CHUJM3vAbpUV2IxbU6CgH4mqmTVAOu1MQ8FHq0SYEDxgjGCHZRikQ9Byg5r24mF6SxBMBhioX7JCuHTVxlfE5XGJ1T7o6ef-3wW7tIfmqOn8o6k7A4-BaCxPEWnXKzYD5MWzQ1EdnXD9uV9mixbqj_HIGFf3Ocj",
+    isGroup: true,
+    avatar:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBwfC5bmA6uzIISOzGmQMFGu38RCMsRRxQJU5O64FcKoSEt6c1TezKoKfReDoiv0RWZSaX7sOQCdSzSXxEXEMv35WcoJVu0ouqEumH-at91JVOkWWLZNAyB8eF3gRtpoC1Gv3SXIRDq_8PsG2vI1_7QnSwb8R02BCYxgqXaXzYN8dowhmLOfle2oQJbX09RlWSmp4GD3aY9QE5dt_7kVwdBGuYME_mGif5DzrLkwK6yyYvf9-zi66DiGVpXmslqthX3ktGkTuHTfm0P",
   },
   {
     id: "4",
-    name: "Marco Polo (Guide)",
-    preview: "Your itinerary is ready for review.",
-    time: "3h ago",
+    name: "Cairo Foodies",
+    preview: "Don't miss the koshary spot!",
+    time: "6h ago",
+    unread: 0,
+    online: false,
+    isGroup: true,
+    avatar:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDjCIcusmT7lN633C0a8KwmXdq660v4lA-nEy2dJtm00kdto7YxVEP53OMsnEJjxse9rNKo-KJsTKsssUlTdJbSUdgJmu1v2INtPLaRUoWToz8PXRPrjgYKNGfuRFGmtGWvzZ1grr8d58omeyACSCwgGt3NYH8dT_ZVa0zqkw-kjUy_36_D5KnIdvWXM-J3Z1h7uS7QrxK4VfWEkR1Sx-MytYEYRaE7ZtY4xaKsC2a7uTNmnol56oh6Fypfc0qWWXCOAgI6G0yL9I74",
+  },
+  {
+    id: "5",
+    name: "Giza Expedition 2024",
+    preview: "Meeting point confirmed",
+    time: "Yesterday",
+    unread: 0,
+    online: false,
+    isGroup: true,
+    avatar:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBRrXE--YB_mmudPLrM_t4jzT02PWTfh9Ztqs8LRcqtODG6vCGkpSbONPzZb2He6QkbXqYojzzfX0qEhz0rqp23zP9ge0yoStSW0jvBYsvYPs9-IYWzAKKcyn_dQm49mRlu-tsWKgaoPYgKuNyTg7dHr7oUxt_sDMkmgmVdqtGYoMMmWKXCH_-DgyvDSakTjzcIn6zKfSH9dKrASVvXiJ8d7YL2e7UKJC3JIzuEmyHGiQsIbP0dciJA9qT-y0xMWSioXmnjdLAKxkQk",
+  },
+  {
+    id: "6",
+    name: "Luxor Temple Tour",
+    preview: "See you all at 9 AM!",
+    time: "2d ago",
     unread: 0,
     online: false,
     isGroup: false,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAd5f6mgHmh0Xl93isx8yEQrwQxjyrqm0DYHzHa8-qy7q4SxBXqCTu_LkjRQNF7COL0R8axokaPo6LImSqtYLpSjjJrD5ZkYjOa8LP4t-owJKxSTVhM_n8IC7tjj_9_ZA1z8TAyWo4QGrHSHfnUIxJk5hye2PYIxgDFtYulAhD7jkqgc94VfXWykZ1jjhJcgHaugSk1Z37MiuXSc9tJk_w6IRmUz87Xb6ME9-nhCWROe8jRfa0Bq4uKMuFl99g7TIO6N536tLhlWSs9",
+    avatar:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuDkdoBcnN9vkR14fwD8m8laeZgZLzSqmC4RaAz2gXdyfVcVpXlO7hZrZYfUruhDJSMJ8mKaBndf5SbASQHnln6HU5CeaE4VdkP1o70DV8-pHz__ERPtJ7mM6Ih5mcVxln3aFcCF9Waru86-ewOpNsoQXMEdhdK6y3Vjqlm6XtUYwNKfH5MT1j1Tucs2vFlxX6AfV6AWW7y9MUa7Ns7WJXDoW0rOm36wAAi9e9j3F6eTAI0CxLAaJPKGAomdIlHO_WJif-uubmVr-sOK",
   },
 ];
 
@@ -63,49 +81,36 @@ export default function MessagesScreen() {
   const [search, setSearch] = useState("");
 
   return (
-    <View className="flex-1 bg-white dark:bg-[#1a242d]" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-white dark:bg-[#0f1923]" style={{ paddingTop: insets.top }}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      {/* Header */}
-      <View className="border-b border-[#f0f2f5] dark:border-gray-800 pt-4">
-        <View className="flex-row items-center px-4 pb-2 justify-between">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-start justify-center">
-            <MaterialIcons name="arrow-back-ios" size={24} color="#4F4F4F" />
-          </Pressable>
-          <Text className="text-[#111518] dark:text-white text-xl font-bold flex-1 text-center">Messages</Text>
-          <Pressable className="w-10 h-10 rounded-full items-center justify-center">
-            <MaterialIcons name="edit-note" size={24} color="#359EFF" />
-          </Pressable>
+      <View className="border-b border-slate-100 dark:border-slate-800 pt-4">
+        <View className="items-center px-4 pb-2">
+          <Text className="text-[#0c141d] dark:text-white text-lg font-bold">Messages</Text>
         </View>
 
-        {/* Search */}
-        <View className="mx-4 mb-2 flex-row items-center bg-[#f0f2f5] dark:bg-[#2a353f] rounded-xl px-4 h-10 gap-2">
-          <MaterialIcons name="search" size={20} color="#5f768c" />
+        <View className="mx-4 mb-2 flex-row items-center bg-slate-100 dark:bg-slate-800 rounded-xl px-4 h-10 gap-2">
+          <MaterialIcons name="search" size={20} color="#94a3b8" />
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search chats"
-            placeholderTextColor="#5f768c"
-            className="flex-1 text-sm text-[#111518] dark:text-white"
+            placeholder="Search chats or guides"
+            placeholderTextColor="#94a3b8"
+            className="flex-1 text-sm text-[#0c141d] dark:text-white"
           />
         </View>
 
-        {/* Filter tabs */}
-        <View className="px-4 py-3">
-          <View className="flex-row bg-[#f0f2f5] dark:bg-[#2a353f] rounded-xl p-1 h-9">
+        <View className="px-4 pb-4">
+          <View className="flex-row bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
             {FILTERS.map((f) => (
               <Pressable
                 key={f}
                 onPress={() => setFilter(f)}
-                className={`flex-1 items-center justify-center rounded-lg ${
-                  filter === f ? "bg-white dark:bg-[#38434e] shadow-sm" : ""
-                }`}
+                className={`flex-1 py-1.5 rounded-lg ${filter === f ? "bg-white dark:bg-slate-700 shadow-sm" : ""}`}
               >
                 <Text
-                  className={`text-xs font-semibold ${
-                    filter === f
-                      ? "text-[#111518] dark:text-white"
-                      : "text-[#5f768c] dark:text-gray-400"
+                  className={`text-xs font-semibold text-center ${
+                    filter === f ? "text-primary" : "text-slate-500 dark:text-slate-400"
                   }`}
                 >
                   {f}
@@ -116,59 +121,58 @@ export default function MessagesScreen() {
         </View>
       </View>
 
-      {/* Conversation list */}
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {CONVERSATIONS.map((conv) => (
-          <Pressable
-            key={conv.id}
-            onPress={() => router.push(conv.isGroup ? `/chat/group/${conv.id}` : `/chat/${conv.id}`)}
-            className="flex-row items-center px-4 min-h-[80px] py-3 justify-between border-b border-gray-50 dark:border-gray-800"
-          >
-            <View className="flex-row items-center gap-4">
+      <ScrollView showsVerticalScrollIndicator={false} className="flex-1 mb-24">
+        <View className="divide-y divide-slate-50 dark:divide-slate-800">
+          {CONVERSATIONS.map((conv) => (
+            <Pressable
+              key={conv.id}
+              onPress={() => router.push(conv.isGroup ? `/chat/group/${conv.id}` : `/chat/${conv.id}`)}
+              className="flex-row items-center px-6 py-4 border-b border-slate-50 dark:border-slate-800"
+            >
               <View className="relative">
-                <View
-                  className={`h-14 w-14 overflow-hidden bg-slate-200 ${
-                    conv.isGroup ? "rounded-xl" : "rounded-full"
-                  }`}
-                >
+                <View className={`w-14 h-14 ${conv.isGroup ? "rounded-xl" : "rounded-full"} overflow-hidden bg-slate-200`}>
                   <Image source={{ uri: conv.avatar }} className="w-full h-full" resizeMode="cover" />
                 </View>
                 {conv.online && (
-                  <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-[#1a242d]" />
+                  <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-[#0f1923]" />
                 )}
               </View>
-              <View>
-                <Text className="text-[#111518] dark:text-white text-base font-bold leading-tight">
-                  {conv.name}
-                </Text>
-                <Text
-                  className={`text-sm leading-normal mt-0.5 ${
-                    conv.unread > 0
-                      ? "text-primary font-semibold"
-                      : "text-[#5f768c] dark:text-gray-400"
-                  }`}
-                >
-                  {conv.preview}
-                </Text>
-              </View>
-            </View>
-            <View className="items-end gap-1.5">
-              <Text
-                className={`text-xs font-bold ${
-                  conv.unread > 0 ? "text-primary" : "text-[#5f768c] dark:text-gray-500"
-                }`}
-              >
-                {conv.time}
-              </Text>
-              {conv.unread > 0 && (
-                <View className="w-5 h-5 rounded-full bg-primary items-center justify-center">
-                  <Text className="text-white text-[10px] font-bold">{conv.unread}</Text>
+              <View className="flex-1 ml-4">
+                <View className="flex-row justify-between items-baseline mb-0.5">
+                  <Text className="font-bold text-[#0c141d] dark:text-white truncate flex-1 mr-2">{conv.name}</Text>
+                  <Text className={`text-xs font-semibold ${conv.unread > 0 ? "text-primary" : "text-slate-400"}`}>
+                    {conv.time}
+                  </Text>
                 </View>
-              )}
-            </View>
-          </Pressable>
-        ))}
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-sm text-slate-500 dark:text-slate-400 truncate flex-1 mr-2">{conv.preview}</Text>
+                  {conv.unread > 0 && (
+                    <View className="w-2.5 h-2.5 bg-primary rounded-full flex-shrink-0" />
+                  )}
+                </View>
+              </View>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
+
+      <Pressable
+        onPress={() => router.push("/chat/ai")}
+        className="fixed bottom-[119px] right-6 z-[60] flex-row items-center gap-2 bg-[#359EFF] px-5 py-3.5 rounded-t-[28px] rounded-bl-[28px] rounded-br-none shadow-lg"
+        style={{
+          position: "absolute",
+          bottom: insets.bottom + 90,
+          right: 24,
+          shadowColor: "#359EFF",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 12,
+          elevation: 8,
+        }}
+      >
+        <MaterialIcons name="auto-awesome" size={20} color="white" />
+        <Text className="text-white text-sm font-semibold">Trip Assistant</Text>
+      </Pressable>
     </View>
   );
 }

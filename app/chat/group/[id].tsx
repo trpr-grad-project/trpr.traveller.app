@@ -54,7 +54,7 @@ export default function GroupChatScreen() {
           <Text className="text-[#0d1b1b] dark:text-white text-lg font-bold flex-1 text-center">
             Giza Expedition 2024
           </Text>
-          <Pressable className="w-10 h-10 items-end justify-center">
+          <Pressable onPress={() => router.push(`/chat/group/${id}/settings`)} className="w-10 h-10 items-end justify-center">
             <MaterialIcons name="more-vert" size={22} color="#4F4F4F" />
           </Pressable>
         </View>

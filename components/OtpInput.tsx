@@ -1,43 +1,69 @@
 import React from "react";
-import { TextInput, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import {
+  CodeField,
+  Cursor,
+  useBlurOnFulfill,
+  useClearByFocusCell,
+} from "react-native-confirmation-code-field";
+
+const CELL_COUNT = 6;
 
 type OtpInputProps = {
-  otp: string[];
-  inputRefs: React.MutableRefObject<(TextInput | null)[]>;
-  onChange: (value: string, index: number) => void;
-  onKeyPress: (e: { nativeEvent: { key: string } }, index: number) => void;
+  value: string;
+  onChangeText: (value: string) => void;
   error?: boolean;
   editable?: boolean;
 };
 
 export default function OtpInput({
-  otp,
-  inputRefs,
-  onChange,
-  onKeyPress,
+  value,
+  onChangeText,
   error = false,
   editable = true,
 }: OtpInputProps) {
+  const ref = useBlurOnFulfill({ value, cellCount: CELL_COUNT });
+  const [codeFieldProps, getCellOnLayoutHandler] = useClearByFocusCell({
+    value,
+    setValue: onChangeText,
+  });
+
   return (
-    <View className="flex-row justify-between gap-2">
-      {otp.map((digit, index) => (
-        <TextInput
+    <CodeField
+      ref={ref}
+      {...codeFieldProps}
+      value={value}
+      onChangeText={onChangeText}
+      cellCount={CELL_COUNT}
+      keyboardType="number-pad"
+      textContentType="oneTimeCode"
+      autoComplete="sms-otp"
+      rootStyle={styles.root}
+      editable={editable}
+      renderCell={({ index, symbol, isFocused }) => (
+        <View
           key={index}
-          ref={(ref) => {
-            inputRefs.current[index] = ref;
-          }}
-          className={`h-14 flex-1 rounded-xl border-2 bg-white text-center text-2xl font-semibold text-text-main-light shadow-sm dark:bg-neutral-dark dark:text-text-main-dark ${
-            error ? "border-red-500" : "border-primary"
+          onLayout={getCellOnLayoutHandler(index)}
+          className={`h-14 flex-1 items-center justify-center rounded-xl border-2 bg-white dark:bg-neutral-dark ${
+            error
+              ? "border-red-500"
+              : isFocused
+                ? "border-primary"
+                : "border-neutral-light dark:border-neutral-dark"
           }`}
-          maxLength={1}
-          keyboardType="number-pad"
-          value={digit}
-          onChangeText={(value) => onChange(value, index)}
-          onKeyPress={(e) => onKeyPress(e, index)}
-          editable={editable}
-          accessibilityLabel={`OTP digit ${index + 1}`}
-        />
-      ))}
-    </View>
+        >
+          <Text className="text-2xl font-semibold text-text-main-light dark:text-text-main-dark">
+            {symbol || (isFocused && <Cursor />)}
+          </Text>
+        </View>
+      )}
+    />
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flexDirection: "row",
+    gap: 8,
+  },
+});

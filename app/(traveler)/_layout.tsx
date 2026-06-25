@@ -33,9 +33,9 @@ export default function TravelerLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Plans",
+          title: "Home",
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="dashboard" size={24} color={color} />
+            <MaterialIcons name="home" size={24} color={color} />
           ),
         }}
       />
@@ -53,7 +53,7 @@ export default function TravelerLayout() {
         options={{
           title: "Messages",
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="chat-bubble-outline" size={24} color={color} />
+            <MaterialIcons name="chat-bubble" size={24} color={color} />
           ),
         }}
       />

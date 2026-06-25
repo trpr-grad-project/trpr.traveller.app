@@ -15,6 +15,7 @@ export default function RegisterForm() {
   const router = useRouter();
   const { register } = useAuth();
 
+  const lastNameRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
@@ -26,7 +27,8 @@ export default function RegisterForm() {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -36,21 +38,18 @@ export default function RegisterForm() {
   const onSubmit = useCallback(
     async (data: RegisterFormData) => {
       try {
-        const [firstName, ...rest] = data.username.trim().split(/\s+/);
-        const lastName = rest.join(" ") || "";
-
         const response = await register({
           identifier: data.email,
-          firstName,
-          lastName,
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
           password: data.password,
         });
 
         if (response.otpId) {
           setPendingRegistration({
             identifier: data.email,
-            firstName,
-            lastName,
+            firstName: data.firstName.trim(),
+            lastName: data.lastName.trim(),
             password: data.password,
             otpId: response.otpId,
           });
@@ -76,24 +75,47 @@ export default function RegisterForm() {
 
   return (
     <View className="flex flex-col gap-5">
-      <Controller
-        control={control}
-        name="username"
-        render={({ field: { onChange, value } }) => (
-          <FormInput
-            label="Username"
-            icon="person-outline"
-            value={value}
-            onChangeText={onChange}
-            error={errors.username?.message}
-            placeholder="Choose a username"
-            editable={!isSubmitting}
-            returnKeyType="next"
-            submitBehavior="submit"
-            onSubmitEditing={() => emailRef.current?.focus()}
+      <View className="flex flex-row gap-3">
+        <View className="flex-1">
+          <Controller
+            control={control}
+            name="firstName"
+            render={({ field: { onChange, value } }) => (
+              <FormInput
+                label="First Name"
+                value={value}
+                onChangeText={onChange}
+                error={errors.firstName?.message}
+                placeholder="John"
+                editable={!isSubmitting}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => lastNameRef.current?.focus()}
+              />
+            )}
           />
-        )}
-      />
+        </View>
+        <View className="flex-1">
+          <Controller
+            control={control}
+            name="lastName"
+            render={({ field: { onChange, value } }) => (
+              <FormInput
+                ref={lastNameRef}
+                label="Last Name"
+                value={value}
+                onChangeText={onChange}
+                error={errors.lastName?.message}
+                placeholder="Doe"
+                editable={!isSubmitting}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => emailRef.current?.focus()}
+              />
+            )}
+          />
+        </View>
+      </View>
 
       <Controller
         control={control}

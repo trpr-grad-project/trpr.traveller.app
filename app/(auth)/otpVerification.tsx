@@ -2,20 +2,14 @@ import BackButton from "@/components/BackButton";
 import OtpInput from "@/components/OtpInput";
 import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
-import { useOtpInput } from "@/hooks/useOtpInput";
+import { useCountdown } from "@/hooks/useCountdown";
 import { getErrorMessage } from "@/utils/errorHandler";
 import {
   clearPendingRegistration,
   getPendingRegistration,
 } from "@/utils/pendingRegistration";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Toast from "react-native-toast-message";
@@ -36,51 +30,19 @@ export default function OtpVerification() {
 
   const { forgotPassword, otpVerify, register, verifyResetOtp } = useAuth();
 
-  const {
-    otp,
-    otpValue,
-    isComplete,
-    inputRefs,
-    handleOtpChange,
-    handleKeyPress,
-  } = useOtpInput();
-
-  const [secondsLeft, setSecondsLeft] = useState(RESEND_TIMEOUT_SECONDS);
+  const [code, setCode] = useState("");
+  const isComplete = code.length === 6;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startTimer = useCallback(() => {
-    setSecondsLeft(RESEND_TIMEOUT_SECONDS);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(timerRef.current!);
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    startTimer();
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [startTimer]);
+  const { secondsLeft, timerLabel, restart } = useCountdown(
+    RESEND_TIMEOUT_SECONDS,
+  );
 
   // Clear error as soon as the user starts retyping
   useEffect(() => {
     if (error) setError(null);
-  }, [otpValue]);
-
-  const timerLabel = useMemo(
-    () =>
-      `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`,
-    [secondsLeft],
-  );
+  }, [code]);
 
   const handleResend = useCallback(async () => {
     if (secondsLeft > 0) return;
@@ -103,7 +65,7 @@ export default function OtpVerification() {
         });
         if (response?.otpId) {
           router.setParams({ otpId: response.otpId });
-          startTimer();
+          restart();
           Toast.show({
             type: "success",
             text1: "Success",
@@ -112,7 +74,7 @@ export default function OtpVerification() {
         }
       } else {
         await forgotPassword(identifier);
-        startTimer();
+        restart();
         Toast.show({
           type: "success",
           text1: "Success",
@@ -126,9 +88,17 @@ export default function OtpVerification() {
         text2: getErrorMessage(err),
       });
     }
-  }, [secondsLeft, action, forgotPassword, identifier, register, startTimer, router]);
+  }, [
+    secondsLeft,
+    action,
+    forgotPassword,
+    identifier,
+    register,
+    restart,
+    router,
+  ]);
 
-  const handleVerify = async () => {
+  const handleVerify = useCallback(async () => {
     if (!isComplete) {
       setError("Please enter the 6-digit code");
       return;
@@ -143,7 +113,7 @@ export default function OtpVerification() {
           setError("OTP ID is missing. Please sign up again.");
           return;
         }
-        await otpVerify(otpId, otpValue);
+        await otpVerify(otpId, code);
         clearPendingRegistration();
         router.replace("/(onboarding)/welcome");
       } else {
@@ -151,7 +121,7 @@ export default function OtpVerification() {
           setError("OTP ID is missing. Please try again.");
           return;
         }
-        await verifyResetOtp(otpId, otpValue);
+        await verifyResetOtp(otpId, code);
         router.push({
           pathname: "/(auth)/resetPassword",
           params: { identifier },
@@ -162,7 +132,16 @@ export default function OtpVerification() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    isComplete,
+    action,
+    otpId,
+    code,
+    otpVerify,
+    router,
+    verifyResetOtp,
+    identifier,
+  ]);
 
   if (!identifier) {
     return (
@@ -221,10 +200,8 @@ export default function OtpVerification() {
           {/* OTP */}
           <View className="w-full gap-5">
             <OtpInput
-              otp={otp}
-              inputRefs={inputRefs}
-              onChange={handleOtpChange}
-              onKeyPress={handleKeyPress}
+              value={code}
+              onChangeText={setCode}
               error={Boolean(error)}
               editable={!isLoading}
             />

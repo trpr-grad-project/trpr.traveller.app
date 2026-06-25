@@ -75,9 +75,9 @@ export default function PlanSuccessScreen() {
         <Text className="text-slate-600 dark:text-slate-400 text-base leading-relaxed max-w-sm text-center mb-8">
           Your trip{" "}
           <Text className="font-semibold text-primary">
-            "{tripName ?? "Luxor Ancient Wonders"}"
+            {"\u201C"}{tripName ?? "Luxor Ancient Wonders"}{"\u201D"}
           </Text>{" "}
-          is now live. We've automatically created a group chat for you and your future participants.
+          is now live. We&apos;ve automatically created a group chat for you and your future participants.
         </Text>
 
         {/* Status card */}
