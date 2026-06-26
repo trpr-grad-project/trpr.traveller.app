@@ -10,6 +10,9 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useColorScheme } from "nativewind";
 
 const SUCCESS_ANIM_VALUE = new Animated.Value(0);
 
@@ -17,6 +20,8 @@ export default function PlanSuccessScreen() {
   const insets = useSafeAreaInsets();
   const { tripName } = useLocalSearchParams<{ tripName?: string }>();
   const [scale] = React.useState(new Animated.Value(0));
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   React.useEffect(() => {
     Animated.spring(scale, {
@@ -32,13 +37,11 @@ export default function PlanSuccessScreen() {
       className="flex-1 bg-white dark:bg-background-dark flex-col"
       style={{ paddingTop: insets.top }}
     >
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Close button */}
       <View className="flex-row justify-end p-4 pt-6">
-        <Pressable onPress={() => router.dismissAll()} className="p-2 rounded-full">
-          <MaterialIcons name="close" size={24} color="#94a3b8" />
-        </Pressable>
+        <BackButton iconName="close" onPress={() => router.dismissAll()} />
       </View>
 
       {/* Main illustration + content */}
@@ -100,14 +103,7 @@ export default function PlanSuccessScreen() {
 
       {/* Footer actions */}
       <View className="p-6 gap-3" style={{ paddingBottom: insets.bottom + 16 }}>
-        <Pressable
-          onPress={() => router.replace("/(traveler)")}
-          className="w-full h-14 bg-primary rounded-xl items-center justify-center shadow-lg flex-row gap-2"
-          style={{ shadowColor: "#359EFF", shadowOpacity: 0.2 }}
-        >
-          <Text className="text-white font-bold text-base">View Plan Details</Text>
-          <MaterialIcons name="arrow-forward" size={20} color="white" />
-        </Pressable>
+        <PrimaryButton title="View Plan Details" onPress={() => router.replace("/(traveler)")} />
         <Pressable className="w-full h-14 bg-white dark:bg-transparent border-2 border-primary/20 dark:border-primary/40 rounded-xl items-center justify-center flex-row gap-2">
           <MaterialIcons name="share" size={20} color="#359EFF" />
           <Text className="text-primary font-bold text-base">Share with Friends</Text>

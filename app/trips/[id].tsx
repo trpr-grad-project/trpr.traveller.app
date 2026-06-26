@@ -10,6 +10,8 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import BackButton from "@/components/BackButton";
+import { useColorScheme } from "nativewind";
 
 const ACTION_BUTTONS = [
   { icon: "auto-awesome" as const, label: "AI Chat", primary: true },
@@ -35,10 +37,12 @@ export default function TripDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("Overview");
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingBottom: insets.bottom }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
         {/* Hero image */}
@@ -56,9 +60,7 @@ export default function TripDetailsScreen() {
             className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4 pt-4"
             style={{ paddingTop: insets.top + 16 }}
           >
-            <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
-              <MaterialIcons name="arrow-back" size={24} color="white" />
-            </Pressable>
+            <BackButton iconSize={18} iconName="arrow-back-ios-new" className="w-10 h-10 bg-white/20" />
             <View className="flex-row gap-3">
               <Pressable className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
                 <MaterialIcons name="share" size={22} color="white" />

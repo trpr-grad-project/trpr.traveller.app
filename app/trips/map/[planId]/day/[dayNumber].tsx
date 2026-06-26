@@ -1,8 +1,11 @@
 import React from "react";
 import { Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 
 const ITINERARY = [
   { stop: 1, title: "Karnak Temple", time: "09:00", duration: "3h", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDGxYJqtmpl3VOiV7lH0QE5KD4mh8HTmMLkahkhYLZ6Of1qQ1hxahPjUKcLJCjTXhLJWMybJYe3Ogq4Za0QcrBztbPiUsDnD0ul2MVY-XLtLnb5uGMblpVwBvrXH5qGMXJaPPO3o4QEIWIEK0NxFuO0bVWv69zkLzkphFFSsxI67kQ4lQd1jdRt6HJLYLcqZiEKv9L3WMzG2dXsOFdwnAJ7-1WAjw-rjWM9C6dDcXQAJtssjtdMG1sPo4UPEEMMoyVhGmGdB9_B-nXm" },
@@ -13,17 +16,17 @@ const ITINERARY = [
 export default function MapViewScreen() {
   const insets = useSafeAreaInsets();
   const { planId, dayNumber } = useLocalSearchParams<{ planId: string; dayNumber: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark">
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="flex-1 bg-slate-200 dark:bg-slate-900 relative">
         <View className="absolute top-0 left-0 right-0 z-10 px-4" style={{ paddingTop: insets.top + 16 }}>
           <View className="flex-row items-center justify-between">
-            <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full bg-white/90 items-center justify-center shadow-sm">
-              <MaterialIcons name="arrow-back" size={22} color="#0c141d" />
-            </Pressable>
+            <BackButton iconSize={18} iconName="arrow-back-ios-new" />
             <Text className="text-base font-bold text-white bg-black/40 px-4 py-1.5 rounded-full">Day {dayNumber ?? 1}</Text>
             <View className="w-10" />
           </View>
@@ -105,14 +108,7 @@ export default function MapViewScreen() {
             </View>
           ))}
 
-          <Pressable className="w-full h-14 bg-primary rounded-xl items-center justify-center shadow-lg mt-2"
-            style={{ shadowColor: "#359EFF", shadowOpacity: 0.2 }}
-          >
-            <View className="flex-row items-center gap-2">
-              <MaterialIcons name="navigation" size={20} color="white" />
-              <Text className="text-white font-bold text-base">Start Navigation</Text>
-            </View>
-          </Pressable>
+          <PrimaryButton title="Start Navigation" onPress={() => {}} />
         </ScrollView>
       </View>
     </View>

@@ -1,21 +1,24 @@
 import React from "react";
 import { Image, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 
 export default function PaymentScreen() {
   const insets = useSafeAreaInsets();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-white dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="flex-row items-center bg-white/80 dark:bg-background-dark/80 border-b border-slate-100 dark:border-slate-800 px-4 pt-4 pb-4">
-        <Pressable onPress={() => router.back()} className="p-2 -ml-2 rounded-full">
-          <MaterialIcons name="chevron-left" size={28} color="#0c141d" />
-        </Pressable>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
         <Text className="flex-1 text-center mr-8 text-lg font-bold text-[#0c141d] dark:text-white">Payment</Text>
       </View>
 
@@ -103,12 +106,7 @@ export default function PaymentScreen() {
         className="absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 border-t border-slate-100 dark:border-slate-800 px-6 py-4"
         style={{ paddingBottom: insets.bottom + 16 }}
       >
-        <Pressable className="w-full h-14 bg-primary rounded-xl items-center justify-center shadow-lg flex-row gap-2"
-          style={{ shadowColor: "#359EFF", shadowOpacity: 0.2 }}
-        >
-          <Text className="text-white font-bold text-base">Pay Now</Text>
-          <Text className="text-white font-bold text-base">$320</Text>
-        </Pressable>
+        <PrimaryButton title="Pay Now $320" onPress={() => {}} />
       </View>
     </View>
   );

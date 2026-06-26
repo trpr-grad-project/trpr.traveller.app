@@ -10,7 +10,10 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+
 import { useAuth } from "@/context/AuthContext";
+import BackButton from "@/components/BackButton";
 
 const SECTIONS = [
   {
@@ -69,6 +72,8 @@ const SECTIONS = [
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const { signOut } = useAuth();
   const [toggles, setToggles] = useState({ tripUpdates: true, messages: true, promotions: false });
 
@@ -78,20 +83,17 @@ export default function SettingsScreen() {
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0d1b1b" />
-        </Pressable>
-        <Text className="flex-1 text-lg font-bold text-[#0d1b1b] dark:text-white text-center mr-10">Settings</Text>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+        <Text className="flex-1 text-lg font-bold text-main-light dark:text-white text-center mr-10">Settings</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {SECTIONS.map((section) => (
           <View key={section.title} className="px-4 mb-6">
-            <Text className="text-xs font-semibold text-[#4c9a9a] uppercase tracking-widest mb-3 ml-1">
+            <Text className="px-2 text-xs font-bold text-sub-light uppercase tracking-widest mb-3">
               {section.title}
             </Text>
             <View className="bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark overflow-hidden shadow-sm">
@@ -120,13 +122,13 @@ export default function SettingsScreen() {
                       className={`flex-1 text-sm font-semibold ${
                         "destructive" in item && item.destructive
                           ? "text-red-500"
-                          : "text-[#0d1b1b] dark:text-white"
+                          : "text-main-light dark:text-white"
                       }`}
                     >
                       {item.label}
                     </Text>
                     {"value" in item && item.value && (
-                      <Text className="text-xs font-medium text-[#4c9a9a] mr-1">{item.value}</Text>
+                      <Text className="text-xs font-medium text-sub-dark mr-1">{item.value}</Text>
                     )}
                     {section.toggle && "key" in item ? (
                       <Switch
@@ -136,7 +138,7 @@ export default function SettingsScreen() {
                         thumbColor={toggles[item.key as keyof typeof toggles] ? "#359EFF" : "#f4f3f4"}
                       />
                     ) : (
-                      <MaterialIcons name="chevron-right" size={20} color="#4c9a9a" />
+                      <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
                     )}
                   </Pressable>
                 );
@@ -145,10 +147,9 @@ export default function SettingsScreen() {
           </View>
         ))}
 
-        {/* Log Out */}
         <Pressable
           onPress={signOut}
-          className="mx-4 flex-row items-center justify-center gap-2 py-4 rounded-xl border border-red-200 dark:border-red-900"
+          className="mx-4 flex-row items-center justify-center gap-2 py-4 rounded-xl border border-red-200 dark:border-red-900 active:bg-red-50 dark:active:bg-red-900/20"
         >
           <MaterialIcons name="logout" size={20} color="#ef4444" />
           <Text className="text-red-500 font-bold">Log Out</Text>

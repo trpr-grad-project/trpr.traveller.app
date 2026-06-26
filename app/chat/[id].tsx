@@ -9,6 +9,8 @@ import {
   View,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -21,21 +23,18 @@ const SUGGESTIONS = [
 export default function DirectMessageScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [message, setMessage] = useState("");
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Nav */}
       <View className="bg-white/80 dark:bg-background-dark/80 border-b border-slate-200 dark:border-slate-800">
         <View className="flex-row items-center px-4 py-3 gap-3">
-          <Pressable
-            onPress={() => router.back()}
-            className="-ml-2 p-2 rounded-full"
-          >
-            <MaterialIcons name="chevron-left" size={28} color="#4F4F4F" />
-          </Pressable>
+          <BackButton iconSize={18} iconName="arrow-back-ios-new" />
 
           {/* Avatar */}
           <View className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">

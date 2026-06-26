@@ -1,9 +1,10 @@
 import React from "react";
-import { Pressable, ScrollView, StatusBar, Text, View } from "react-native";
+import { ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { router } from "expo-router";
+
+import BackButton from "@/components/BackButton";
 
 const REVIEWS = [
   {
@@ -61,9 +62,7 @@ export default function ReviewsScreen() {
 
       <View className="bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-4">
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center -ml-2">
-            <MaterialIcons name="arrow-back-ios-new" size={20} color={isDark ? "#ffffff" : "#0c141d"} />
-          </Pressable>
+          <BackButton iconSize={20} />
           <Text className="flex-1 text-center text-lg font-bold text-[#0c141d] dark:text-white mr-8">Reviews About Me</Text>
         </View>
       </View>

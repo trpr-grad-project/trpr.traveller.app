@@ -3,14 +3,19 @@ import { Image, Pressable, ScrollView, StatusBar, Text, View } from "react-nativ
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useColorScheme } from "nativewind";
 
 export default function PlanCreatedScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="relative h-[40vh]">
@@ -21,12 +26,7 @@ export default function PlanCreatedScreen() {
           />
           <View className="absolute inset-0 bg-black/40" />
           <View className="absolute top-0 left-0 right-0 px-4" style={{ paddingTop: insets.top + 16 }}>
-            <Pressable
-              onPress={() => router.dismissAll()}
-              className="w-10 h-10 rounded-full bg-white/20 items-center justify-center"
-            >
-              <MaterialIcons name="arrow-back" size={24} color="white" />
-            </Pressable>
+            <BackButton iconSize={18} iconName="close" className="w-10 h-10 bg-white/20" onPress={() => router.dismissAll()} />
           </View>
           <View className="absolute bottom-6 left-4 px-3 py-1.5 rounded-full bg-primary/90 backdrop-blur">
             <Text className="text-[10px] font-bold text-white tracking-wider uppercase">Just Created</Text>
@@ -55,12 +55,7 @@ export default function PlanCreatedScreen() {
             ))}
           </View>
 
-          <Pressable className="w-full h-14 bg-primary rounded-xl items-center justify-center shadow-lg flex-row gap-2 mb-8"
-            style={{ shadowColor: "#359EFF", shadowOpacity: 0.2 }}
-          >
-            <MaterialIcons name="chat" size={20} color="white" />
-            <Text className="text-white font-bold text-base">Open Group Chat</Text>
-          </Pressable>
+          <PrimaryButton title="Open Group Chat" onPress={() => {}} className="mb-8" />
 
           <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-50 dark:border-slate-700 mb-6">
             <View className="flex-row flex-wrap gap-4">

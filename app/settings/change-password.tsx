@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -9,7 +11,16 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import {
+  changePasswordSchema,
+  type ChangePasswordFormData,
+} from "@/utils/validation";
 
 const getStrengthLevel = (pw: string) => {
   let score = 0;
@@ -19,144 +30,178 @@ const getStrengthLevel = (pw: string) => {
   return score;
 };
 
-const STRENGTH_LABELS = ["Weak", "Fair", "Good", "Strong"];
 const STRENGTH_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e"];
 
 export default function ChangePasswordScreen() {
   const insets = useSafeAreaInsets();
-  const [currentPw, setCurrentPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: { currentPassword: "", newPassword: "", confirmNewPassword: "" },
+  });
+
+  const newPassword = useWatch({ control, name: "newPassword" });
+  const strength = getStrengthLevel(newPassword || "");
+
+  const meetsLength = (newPassword?.length ?? 0) >= 8;
+  const meetsNumber = /[0-9]/.test(newPassword || "");
+  const meetsSpecial = /[^a-zA-Z0-9]/.test(newPassword || "");
+
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const strength = getStrengthLevel(newPw);
-
-  const meetsLength = newPw.length >= 8;
-  const meetsNumber = /[0-9]/.test(newPw);
-  const meetsSpecial = /[^a-zA-Z0-9]/.test(newPw);
+  const onSubmit = async (_data: ChangePasswordFormData) => {};
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0d1b1b" />
-        </Pressable>
-        <Text className="text-lg font-bold text-[#0d1b1b] dark:text-white ml-2">Change Password</Text>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+        <Text className="text-lg font-bold text-main-light dark:text-white ml-2">Change Password</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-        {/* Current Password */}
-        <View className="bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark shadow-sm mb-4">
-          <View className="flex-row items-center px-4 py-4 gap-3">
-            <View className="w-9 h-9 rounded-full bg-background-light dark:bg-background-dark items-center justify-center">
-              <MaterialIcons name="lock-outline" size={18} color="#4c9a9a" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-[10px] font-semibold text-[#4c9a9a] uppercase tracking-wider mb-0.5">Current Password</Text>
-              <TextInput
-                value={currentPw}
-                onChangeText={setCurrentPw}
-                secureTextEntry={!showCurrent}
-                placeholder="Enter current password"
-                placeholderTextColor="#9ca3af"
-                className="text-sm font-medium text-[#0d1b1b] dark:text-white p-0"
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+          <View className="bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark shadow-sm mb-4">
+            <View className="px-4 py-4">
+              <Text className="text-[10px] font-bold text-sub-light uppercase tracking-wider mb-1">Current Password</Text>
+              <Controller
+                control={control}
+                name="currentPassword"
+                render={({ field: { onChange, value } }) => (
+                  <View className="flex-row items-center gap-2">
+                    <View className="w-9 h-9 rounded-full bg-background-light dark:bg-background-dark items-center justify-center">
+                      <MaterialIcons name="lock-outline" size={18} color="#64748b" />
+                    </View>
+                    <TextInput
+                      value={value}
+                      onChangeText={onChange}
+                      secureTextEntry={!showCurrent}
+                      placeholder="Enter current password"
+                      placeholderTextColor="#9ca3af"
+                      className="flex-1 text-sm font-medium text-main-light dark:text-white p-0"
+                    />
+                    <Pressable onPress={() => setShowCurrent(!showCurrent)}>
+                      <MaterialIcons name={showCurrent ? "visibility-off" : "visibility"} size={20} color="#64748b" />
+                    </Pressable>
+                  </View>
+                )}
               />
+              {errors.currentPassword && (
+                <Text className="text-xs text-red-500 mt-1">{errors.currentPassword.message}</Text>
+              )}
             </View>
-            <Pressable onPress={() => setShowCurrent(!showCurrent)}>
-              <MaterialIcons name={showCurrent ? "visibility-off" : "visibility"} size={20} color="#4c9a9a" />
-            </Pressable>
           </View>
-        </View>
 
-        {/* New Password */}
-        <View className="bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark shadow-sm mb-3">
-          <View className="flex-row items-center px-4 py-4 gap-3">
-            <View className="w-9 h-9 rounded-full bg-background-light dark:bg-background-dark items-center justify-center">
-              <MaterialIcons name="lock" size={18} color="#4c9a9a" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-[10px] font-semibold text-[#4c9a9a] uppercase tracking-wider mb-0.5">New Password</Text>
-              <TextInput
-                value={newPw}
-                onChangeText={setNewPw}
-                secureTextEntry={!showNew}
-                placeholder="Enter new password"
-                placeholderTextColor="#9ca3af"
-                className="text-sm font-medium text-[#0d1b1b] dark:text-white p-0"
+          <View className="bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark shadow-sm mb-3">
+            <View className="px-4 py-4">
+              <Text className="text-[10px] font-bold text-sub-light uppercase tracking-wider mb-1">New Password</Text>
+              <Controller
+                control={control}
+                name="newPassword"
+                render={({ field: { onChange, value } }) => (
+                  <View className="flex-row items-center gap-2">
+                    <View className="w-9 h-9 rounded-full bg-background-light dark:bg-background-dark items-center justify-center">
+                      <MaterialIcons name="lock" size={18} color="#64748b" />
+                    </View>
+                    <TextInput
+                      value={value}
+                      onChangeText={onChange}
+                      secureTextEntry={!showNew}
+                      placeholder="Enter new password"
+                      placeholderTextColor="#9ca3af"
+                      className="flex-1 text-sm font-medium text-main-light dark:text-white p-0"
+                    />
+                    <Pressable onPress={() => setShowNew(!showNew)}>
+                      <MaterialIcons name={showNew ? "visibility-off" : "visibility"} size={20} color="#64748b" />
+                    </Pressable>
+                  </View>
+                )}
               />
+              {errors.newPassword && (
+                <Text className="text-xs text-red-500 mt-1">{errors.newPassword.message}</Text>
+              )}
             </View>
-            <Pressable onPress={() => setShowNew(!showNew)}>
-              <MaterialIcons name={showNew ? "visibility-off" : "visibility"} size={20} color="#4c9a9a" />
-            </Pressable>
           </View>
-        </View>
 
-        {/* Strength Bar */}
-        <View className="flex-row gap-1 mb-4 px-1">
-          {[0, 1, 2, 3].map((i) => (
-            <View
-              key={i}
-              className="flex-1 h-1.5 rounded-full"
-              style={{ backgroundColor: i < strength ? STRENGTH_COLORS[strength] : "#e5e7eb" }}
-            />
-          ))}
-        </View>
-
-        {/* Validation rules */}
-        <View className="space-y-2 mb-4 px-1">
-          <View className="flex-row items-center gap-2">
-            <View className={`w-4 h-4 rounded-full border ${meetsLength ? "bg-green-500 border-green-500" : "border-[#4c9a9a]"}`}>
-              {meetsLength && <MaterialIcons name="check" size={12} color="white" style={{ margin: 1 }} />}
-            </View>
-            <Text className="text-xs text-[#4c9a9a]">At least 8 characters</Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <View className={`w-4 h-4 rounded-full border ${meetsNumber ? "bg-green-500 border-green-500" : "border-[#4c9a9a]"}`}>
-              {meetsNumber && <MaterialIcons name="check" size={12} color="white" style={{ margin: 1 }} />}
-            </View>
-            <Text className="text-xs text-[#4c9a9a]">Contains a number</Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <View className={`w-4 h-4 rounded-full border ${meetsSpecial ? "bg-green-500 border-green-500" : "border-[#4c9a9a]"}`}>
-              {meetsSpecial && <MaterialIcons name="check" size={12} color="white" style={{ margin: 1 }} />}
-            </View>
-            <Text className="text-xs text-[#4c9a9a]">Contains a special character</Text>
-          </View>
-        </View>
-
-        {/* Confirm Password */}
-        <View className="bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark shadow-sm mb-6">
-          <View className="flex-row items-center px-4 py-4 gap-3">
-            <View className="w-9 h-9 rounded-full bg-background-light dark:bg-background-dark items-center justify-center">
-              <MaterialIcons name="lock" size={18} color="#4c9a9a" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-[10px] font-semibold text-[#4c9a9a] uppercase tracking-wider mb-0.5">Confirm Password</Text>
-              <TextInput
-                value={confirmPw}
-                onChangeText={setConfirmPw}
-                secureTextEntry={!showConfirm}
-                placeholder="Re-enter new password"
-                placeholderTextColor="#9ca3af"
-                className="text-sm font-medium text-[#0d1b1b] dark:text-white p-0"
+          <View className="flex-row gap-1 mb-4 px-1">
+            {[0, 1, 2, 3].map((i) => (
+              <View
+                key={i}
+                className="flex-1 h-1.5 rounded-full"
+                style={{ backgroundColor: i < strength ? STRENGTH_COLORS[strength] : "#e5e7eb" }}
               />
-            </View>
-            <Pressable onPress={() => setShowConfirm(!showConfirm)}>
-              <MaterialIcons name={showConfirm ? "visibility-off" : "visibility"} size={20} color="#4c9a9a" />
-            </Pressable>
+            ))}
           </View>
-        </View>
 
-        {/* Submit */}
-        <Pressable className="w-full h-14 bg-primary rounded-xl items-center justify-center">
-          <Text className="text-white font-bold text-base">Update Password</Text>
-        </Pressable>
-      </ScrollView>
+          <View className="gap-2 mb-4 px-1">
+            {[
+              { label: "At least 8 characters", met: meetsLength },
+              { label: "Contains a number", met: meetsNumber },
+              { label: "Contains a special character", met: meetsSpecial },
+            ].map((req) => (
+              <View key={req.label} className="flex-row items-center gap-2">
+                <MaterialIcons
+                  name={req.met ? "check-circle" : "circle"}
+                  size={16}
+                  color={req.met ? "#22c55e" : "#cbd5e1"}
+                />
+                <Text className={`text-xs ${req.met ? "font-medium text-green-600 dark:text-green-400" : "text-sub-light"}`}>
+                  {req.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View className="bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark shadow-sm mb-6">
+            <View className="px-4 py-4">
+              <Text className="text-[10px] font-bold text-sub-light uppercase tracking-wider mb-1">Confirm New Password</Text>
+              <Controller
+                control={control}
+                name="confirmNewPassword"
+                render={({ field: { onChange, value } }) => (
+                  <View className="flex-row items-center gap-2">
+                    <View className="w-9 h-9 rounded-full bg-background-light dark:bg-background-dark items-center justify-center">
+                      <MaterialIcons name="lock" size={18} color="#64748b" />
+                    </View>
+                    <TextInput
+                      value={value}
+                      onChangeText={onChange}
+                      secureTextEntry={!showConfirm}
+                      placeholder="Re-enter new password"
+                      placeholderTextColor="#9ca3af"
+                      className="flex-1 text-sm font-medium text-main-light dark:text-white p-0"
+                    />
+                    <Pressable onPress={() => setShowConfirm(!showConfirm)}>
+                      <MaterialIcons name={showConfirm ? "visibility-off" : "visibility"} size={20} color="#64748b" />
+                    </Pressable>
+                  </View>
+                )}
+              />
+              {errors.confirmNewPassword && (
+                <Text className="text-xs text-red-500 mt-1">{errors.confirmNewPassword.message}</Text>
+              )}
+            </View>
+          </View>
+
+          <PrimaryButton
+            title="Update Password"
+            onPress={handleSubmit(onSubmit)}
+            isLoading={isSubmitting}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

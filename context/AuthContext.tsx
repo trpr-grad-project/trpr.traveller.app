@@ -13,6 +13,7 @@ import {
   setOnUnauthenticated,
   setApiUserId,
 } from "@/services";
+import { setChatUserId } from "@/store/chatStore";
 import { LoginResponse, RegisterRequest, User } from "@/types";
 import {
   clearProfileSetupCompleted,
@@ -68,6 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setProfileSetupCompletedState(null);
     setApiUserId(null);
+    await setChatUserId(null);
     await clearUserId();
     await clearProfileSetupCompleted();
   }, []);
@@ -83,6 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (id) {
           setApiUserId(id);
+          await setChatUserId(id);
           setSession(id);
           setProfileSetupCompletedState(getProfileSetupCompleted());
         }
@@ -120,6 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Perform React state updates synchronously to ensure proper batching
     setApiUserId(decoded.sub);
+    await setChatUserId(decoded.sub);
     setUser({
       id: decoded.sub,
       email: decoded.identifier,

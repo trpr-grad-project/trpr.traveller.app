@@ -3,21 +3,24 @@ import { Image, Pressable, ScrollView, StatusBar, Text, View } from "react-nativ
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import { useColorScheme } from "nativewind";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
 
 export default function ConfirmBookingScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const [travelers, setTravelers] = useState(2);
   const pricePerPerson = 150;
 
   return (
     <View className="flex-1 bg-white dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="flex-row items-center bg-white/80 dark:bg-background-dark/80 border-b border-slate-100 dark:border-slate-800 px-4 pt-4 pb-4">
-        <Pressable onPress={() => router.back()} className="p-2 -ml-2 rounded-full">
-          <MaterialIcons name="chevron-left" size={28} color="#0c141d" />
-        </Pressable>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" className="-ml-2" />
         <Text className="flex-1 text-center mr-8 text-lg font-bold text-[#0c141d] dark:text-white">Confirm Booking</Text>
       </View>
 
@@ -74,13 +77,10 @@ export default function ConfirmBookingScreen() {
         className="absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 border-t border-slate-100 dark:border-slate-800 px-6 py-4"
         style={{ paddingBottom: insets.bottom + 16 }}
       >
-        <Pressable
+        <PrimaryButton
+          title="Confirm & Pay"
           onPress={() => router.push(`/trips/payment/${planId}`)}
-          className="w-full h-14 bg-primary rounded-2xl items-center justify-center shadow-lg"
-          style={{ shadowColor: "#359EFF", shadowOpacity: 0.2 }}
-        >
-          <Text className="text-white font-bold text-base">Confirm & Pay</Text>
-        </Pressable>
+        />
       </View>
     </View>
   );

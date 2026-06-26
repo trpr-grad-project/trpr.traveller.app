@@ -9,7 +9,9 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+
+import BackButton from "@/components/BackButton";
 
 const TOPICS = [
   {
@@ -36,31 +38,28 @@ const TOPICS = [
 
 export default function HelpCenterScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0d1b1b" />
-        </Pressable>
-        <Text className="text-lg font-bold text-[#0d1b1b] dark:text-white ml-2">Help Center</Text>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+        <Text className="text-lg font-bold text-main-light dark:text-white ml-2">Help Center</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {/* Search */}
         <View className="flex-row items-center bg-white dark:bg-neutral-dark rounded-xl border border-neutral-light dark:border-neutral-dark px-4 h-12 mb-6 gap-2">
-          <MaterialIcons name="search" size={20} color="#4c9a9a" />
+          <MaterialIcons name="search" size={20} color="#64748b" />
           <TextInput
             placeholder="Search help articles..."
             placeholderTextColor="#9ca3af"
-            className="flex-1 text-sm font-medium text-[#0d1b1b] dark:text-white p-0"
+            className="flex-1 text-sm font-medium text-main-light dark:text-white p-0"
           />
         </View>
 
-        {/* Topic Cards */}
         <View className="gap-3 mb-8">
           {TOPICS.map((topic) => (
             <Pressable
@@ -72,8 +71,8 @@ export default function HelpCenterScreen() {
                   <MaterialIcons name={topic.icon} size={22} color="#359EFF" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-bold text-[#0d1b1b] dark:text-white">{topic.title}</Text>
-                  <Text className="text-xs font-medium text-[#4c9a9a] mt-0.5">{topic.subtitle}</Text>
+                  <Text className="text-sm font-bold text-main-light dark:text-white">{topic.title}</Text>
+                  <Text className="text-xs font-medium text-sub-light mt-0.5">{topic.subtitle}</Text>
                 </View>
                 <Text className="text-xs font-bold text-primary">View all</Text>
               </View>
@@ -81,22 +80,21 @@ export default function HelpCenterScreen() {
           ))}
         </View>
 
-        {/* Contact Us */}
-        <Text className="text-xs font-semibold text-[#4c9a9a] uppercase tracking-widest mb-3 ml-1">Contact Us</Text>
+        <Text className="text-xs font-bold text-sub-light uppercase tracking-widest mb-3 ml-1">Contact Us</Text>
         <View className="flex-row gap-3">
           <Pressable className="flex-1 bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark p-5 items-center shadow-sm">
             <View className="w-12 h-12 rounded-full bg-primary/10 items-center justify-center mb-2">
               <MaterialIcons name="chat" size={24} color="#359EFF" />
             </View>
-            <Text className="text-sm font-bold text-[#0d1b1b] dark:text-white">Live Chat</Text>
-            <Text className="text-[10px] font-medium text-[#4c9a9a] mt-1">Instant reply</Text>
+            <Text className="text-sm font-bold text-main-light dark:text-white">Live Chat</Text>
+            <Text className="text-[10px] font-medium text-sub-light mt-1">Instant reply</Text>
           </Pressable>
           <Pressable className="flex-1 bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark p-5 items-center shadow-sm">
             <View className="w-12 h-12 rounded-full bg-primary/10 items-center justify-center mb-2">
               <MaterialIcons name="email" size={24} color="#359EFF" />
             </View>
-            <Text className="text-sm font-bold text-[#0d1b1b] dark:text-white">Email Support</Text>
-            <Text className="text-[10px] font-medium text-[#4c9a9a] mt-1">24h response</Text>
+            <Text className="text-sm font-bold text-main-light dark:text-white">Email Support</Text>
+            <Text className="text-[10px] font-medium text-sub-light mt-1">24h response</Text>
           </Pressable>
         </View>
       </ScrollView>

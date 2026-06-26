@@ -3,23 +3,25 @@ import { Pressable, ScrollView, StatusBar, Text, TextInput, View } from "react-n
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+import BackButton from "@/components/BackButton";
 
 const POPULAR = ["Luxor Temple", "Valley of the Kings", "Karnak", "Giza Plateau", "Aswan", "Hurghada"];
 
 export default function LocationSelectScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [search, setSearch] = useState("");
   const [recentSearches] = useState(["Luxor Temple", "Valley of the Kings", "Karnak"]);
 
   return (
     <View className="flex-1 bg-white dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="px-4 pt-4 pb-2 border-b border-slate-100 dark:border-slate-800">
         <View className="flex-row items-center gap-3 mb-4">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center -ml-2">
-            <MaterialIcons name="arrow-back-ios-new" size={20} color="#0c141d" />
-          </Pressable>
+          <BackButton iconSize={20} iconName="arrow-back-ios-new" className="-ml-2" />
           <Text className="text-xl font-bold text-[#0c141d] dark:text-white">Search Destination</Text>
         </View>
 

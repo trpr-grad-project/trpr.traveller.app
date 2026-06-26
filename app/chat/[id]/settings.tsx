@@ -1,24 +1,26 @@
 import React, { useState } from "react";
 import { Image, Pressable, ScrollView, StatusBar, Switch, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
 export default function GuideChatSettingsScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [muteNotifs, setMuteNotifs] = useState(false);
   const [pinChat, setPinChat] = useState(false);
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="bg-background-light/90 dark:bg-background-dark/90 px-4 py-4 border-b border-slate-100 dark:border-slate-800">
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center -ml-2">
-            <MaterialIcons name="chevron-left" size={28} color="#0c141d" />
-          </Pressable>
+          <BackButton iconSize={18} iconName="arrow-back-ios-new" />
         </View>
       </View>
 

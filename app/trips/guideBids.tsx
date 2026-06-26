@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Image,
-  Pressable,
   ScrollView,
   StatusBar,
   Text,
@@ -10,6 +9,9 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useColorScheme } from "nativewind";
 
 const BIDS = [
   {
@@ -55,15 +57,15 @@ const BIDS = [
 
 export default function GuideBidsScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0f172a" />
-        </Pressable>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
         <View className="flex-1 ml-2">
           <Text className="text-lg font-bold text-slate-900 dark:text-white">Guide Bids</Text>
           <Text className="text-xs text-slate-500 dark:text-slate-400">Kyoto, Japan • {BIDS.length} bids received</Text>
@@ -130,15 +132,7 @@ export default function GuideBidsScreen() {
                 <MaterialIcons name="schedule" size={14} color="#94a3b8" />
                 <Text className="text-xs text-slate-500 dark:text-gray-400">{bid.turnaround}</Text>
               </View>
-              <Pressable
-                onPress={() => router.push("/trips/confirmGuide")}
-                className={`flex-row items-center gap-1 px-4 py-2 rounded-lg ${
-                  bid.topPick ? "bg-primary" : "bg-slate-900 dark:bg-white"
-                }`}
-              >
-                <Text className={`text-sm font-bold ${bid.topPick ? "text-white" : "text-white dark:text-slate-900"}`}>Select</Text>
-                <MaterialIcons name="arrow-forward" size={16} color={bid.topPick ? "white" : "white"} />
-              </Pressable>
+              <PrimaryButton title="Select" onPress={() => router.push("/trips/confirmGuide")} className="px-4 py-2 h-auto min-h-0 rounded-lg" />
             </View>
           </View>
         ))}

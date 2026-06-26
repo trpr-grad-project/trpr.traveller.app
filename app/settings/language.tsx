@@ -7,7 +7,10 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
 
 const LANGUAGES = [
   { flag: "🇺🇸", name: "English (US)", id: "en" },
@@ -19,21 +22,19 @@ const LANGUAGES = [
 
 export default function LanguageScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [selected, setSelected] = useState("en");
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0d1b1b" />
-        </Pressable>
-        <Text className="text-lg font-bold text-[#0d1b1b] dark:text-white ml-2">Language</Text>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+        <Text className="text-lg font-bold text-main-light dark:text-white ml-2">Language</Text>
       </View>
 
-      {/* List */}
       <View className="mx-4 mt-2 bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark overflow-hidden shadow-sm">
         {LANGUAGES.map((lang, i) => {
           const isSelected = selected === lang.id;
@@ -46,7 +47,7 @@ export default function LanguageScreen() {
               }`}
             >
               <Text className="text-2xl">{lang.flag}</Text>
-              <Text className="flex-1 text-sm font-semibold text-[#0d1b1b] dark:text-white">{lang.name}</Text>
+              <Text className="flex-1 text-sm font-semibold text-main-light dark:text-white">{lang.name}</Text>
               <View
                 className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
                   isSelected ? "border-primary" : "border-gray-300 dark:border-gray-600"
@@ -59,11 +60,8 @@ export default function LanguageScreen() {
         })}
       </View>
 
-      {/* Apply Button */}
       <View className="flex-1 justify-end px-4" style={{ paddingBottom: insets.bottom + 16 }}>
-        <Pressable className="w-full h-14 bg-primary rounded-xl items-center justify-center">
-          <Text className="text-white font-bold text-base">Apply Changes</Text>
-        </Pressable>
+        <PrimaryButton title="Apply Changes" onPress={() => {}} />
       </View>
     </View>
   );

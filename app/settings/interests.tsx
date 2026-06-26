@@ -8,7 +8,10 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
 
 const ALL_TAGS = [
   { emoji: "🏰", label: "History Buff" },
@@ -30,6 +33,8 @@ const ALL_TAGS = [
 
 export default function InterestsScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [selected, setSelected] = useState(["History Buff", "Foodie", "Photography", "Wellness"]);
 
   const toggle = (label: string) => {
@@ -40,17 +45,15 @@ export default function InterestsScreen() {
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0d1b1b" />
-        </Pressable>
-        <Text className="text-lg font-bold text-[#0d1b1b] dark:text-white ml-2">Interests & Tags</Text>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+        <Text className="text-lg font-bold text-main-light dark:text-white ml-2">Interests & Tags</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
-        <Text className="text-sm text-[#4c9a9a] mb-6">
+        <Text className="text-sm text-sub-light mb-6 leading-relaxed">
           Pick the tags that describe your travel personality. These help us match you with the right guides and trips.
         </Text>
 
@@ -68,7 +71,7 @@ export default function InterestsScreen() {
                 }`}
               >
                 <Text className="text-base">{tag.emoji}</Text>
-                <Text className={`text-sm font-semibold ${active ? "text-white" : "text-[#0d1b1b] dark:text-white"}`}>
+                <Text className={`text-sm font-semibold ${active ? "text-white" : "text-main-light dark:text-white"}`}>
                   {tag.label}
                 </Text>
                 {active && <MaterialIcons name="check" size={16} color="white" />}
@@ -79,12 +82,7 @@ export default function InterestsScreen() {
       </ScrollView>
 
       <View className="p-4" style={{ paddingBottom: insets.bottom + 16 }}>
-        <Pressable
-          onPress={() => router.back()}
-          className="w-full h-14 bg-primary rounded-xl items-center justify-center"
-        >
-          <Text className="text-white font-bold text-base">Save Interests ({selected.length} selected)</Text>
-        </Pressable>
+        <PrimaryButton title={`Save Interests (${selected.length} selected)`} onPress={() => {}} />
       </View>
     </View>
   );

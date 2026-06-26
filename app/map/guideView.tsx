@@ -8,6 +8,8 @@ import {
   View,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
@@ -18,10 +20,12 @@ const PARTICIPANTS = [
 
 export default function LiveTripMapGuideView() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-slate-200" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Map background */}
       <View className="absolute inset-0 bg-slate-100">
@@ -69,9 +73,7 @@ export default function LiveTripMapGuideView() {
         className="absolute left-4 right-4 flex-row items-center justify-between"
         style={{ top: insets.top + 16 }}
       >
-        <Pressable onPress={() => router.back()} className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-lg">
-          <MaterialIcons name="arrow-back-ios" size={18} color="#0f172a" />
-        </Pressable>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
         <View className="flex-row items-center gap-2 bg-primary px-4 py-2 rounded-full shadow-lg">
           <View className="w-2 h-2 rounded-full bg-white" />
           <Text className="text-white text-sm font-bold">Guide Active</Text>

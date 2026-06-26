@@ -11,4 +11,8 @@ export const ENDPOINTS = {
     formData: "/Profile/form-data",
     resetPassword: "/Profile/me/password-reset",
   },
+
+  conversation: {
+    ai: "/conversation/ai",
+  },
 } as const;

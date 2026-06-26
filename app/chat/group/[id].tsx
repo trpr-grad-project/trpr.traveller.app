@@ -9,6 +9,8 @@ import {
   View,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -39,19 +41,19 @@ const AVATARS = [
 export default function GroupChatScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [message, setMessage] = useState("");
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
       <View className="bg-white/80 dark:bg-background-dark/80 border-b border-gray-100 dark:border-gray-800">
         <View className="flex-row items-center p-4 pb-2 justify-between">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-start justify-center">
-            <MaterialIcons name="arrow-back-ios" size={18} color="#4F4F4F" />
-          </Pressable>
-          <Text className="text-[#0d1b1b] dark:text-white text-lg font-bold flex-1 text-center">
+          <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+          <Text className="text-main-light dark:text-white text-lg font-bold flex-1 text-center">
             Giza Expedition 2024
           </Text>
           <Pressable onPress={() => router.push(`/chat/group/${id}/settings`)} className="w-10 h-10 items-end justify-center">
@@ -100,7 +102,7 @@ export default function GroupChatScreen() {
               <View className="flex-1 flex-col gap-1 items-start">
                 <Text className="text-primary text-[12px] font-bold">{msg.sender}</Text>
                 <View className="max-w-[85%] px-4 py-3 bg-white dark:bg-gray-800 rounded-xl rounded-bl-none shadow-sm">
-                  <Text className="text-[#0d1b1b] dark:text-white text-[15px] font-normal leading-relaxed">{msg.text}</Text>
+                  <Text className="text-main-light dark:text-white text-[15px] font-normal leading-relaxed">{msg.text}</Text>
                 </View>
               </View>
             </View>
@@ -115,7 +117,7 @@ export default function GroupChatScreen() {
       >
         <View className="flex-row items-center gap-3">
           <Pressable className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center">
-            <MaterialIcons name="add" size={22} color="#0d1b1b" />
+            <MaterialIcons name="add" size={22} color={isDark ? "#E2E8F0" : "#0F172A"} />
           </Pressable>
           <View className="flex-1 relative flex-row items-center">
             <TextInput
@@ -123,7 +125,7 @@ export default function GroupChatScreen() {
               onChangeText={setMessage}
               placeholder="Type a message..."
               placeholderTextColor="#9ca3af"
-              className="flex-1 h-11 bg-gray-100 dark:bg-gray-800 rounded-full px-5 text-[15px] text-[#0d1b1b] dark:text-white"
+              className="flex-1 h-11 bg-gray-100 dark:bg-gray-800 rounded-full px-5 text-[15px] text-main-light dark:text-white"
             />
             <Pressable className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 items-center justify-center">
               <MaterialIcons name="mood" size={22} color="#359EFF" />

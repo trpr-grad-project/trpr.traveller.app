@@ -7,7 +7,9 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+
+import BackButton from "@/components/BackButton";
 
 const THEMES = [
   { id: "system", label: "System Default", icon: "phone-android" as const, desc: "Follow your device theme" },
@@ -17,21 +19,21 @@ const THEMES = [
 
 export default function ThemeScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [selected, setSelected] = useState("system");
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0d1b1b" />
-        </Pressable>
-        <Text className="text-lg font-bold text-[#0d1b1b] dark:text-white ml-2">Appearance</Text>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+        <Text className="text-lg font-bold text-main-light dark:text-white ml-2">Appearance</Text>
       </View>
 
       <View className="p-4">
-        <Text className="text-xs font-semibold text-[#4c9a9a] uppercase tracking-widest mb-4 ml-1">
+        <Text className="text-xs font-bold text-sub-light uppercase tracking-widest mb-4 ml-1">
           Color Theme
         </Text>
         <View className="bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark overflow-hidden shadow-sm">
@@ -46,11 +48,11 @@ export default function ThemeScreen() {
               <View className={`w-10 h-10 rounded-full items-center justify-center ${
                 selected === theme.id ? "bg-primary" : "bg-background-light dark:bg-background-dark"
               }`}>
-                <MaterialIcons name={theme.icon} size={20} color={selected === theme.id ? "white" : "#4c9a9a"} />
+                <MaterialIcons name={theme.icon} size={20} color={selected === theme.id ? "white" : "#64748b"} />
               </View>
               <View className="flex-1">
-                <Text className="font-semibold text-[#0d1b1b] dark:text-white">{theme.label}</Text>
-                <Text className="text-xs text-[#4c9a9a] mt-0.5">{theme.desc}</Text>
+                <Text className="font-semibold text-main-light dark:text-white">{theme.label}</Text>
+                <Text className="text-xs text-sub-light mt-0.5">{theme.desc}</Text>
               </View>
               <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
                 selected === theme.id ? "border-primary" : "border-gray-300 dark:border-gray-600"

@@ -11,6 +11,9 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
 
 const GUIDES = [
   { id: "1", name: "Elena Rossi", specialty: "Art History Expert", rating: 4.9, reviews: 120, trips: 85, specialty2: "Food Tours & Hidden Gems", verified: true, topPick: false, avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuACb46Av0L2s-4J3GGZ5eTEyTzsvF6ARkpcnfaVXFgOrSHRAvzS1NQrjZncBxV3YfcqqCv2c1whBd7PNhfRDCjFNVEzc3Bdu0OrHrfJvA8hGUohleTU4aLvI0zXLRe8IzLSvsoep_HiQCZX_dY_D7zzgXrQV1GJpLj19hL_zuTkphdyR43nLtKD5ftQGBk5SKvvVtgXhMVss-JDV5jkP0jS-fXXk89059MjiurS9Zknjs7FjAP8aFu6ihEiRbpVtvRLnghr4hpKpA0L" },
@@ -21,18 +24,18 @@ const GUIDES = [
 
 export default function GuidesScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [search, setSearch] = useState("");
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
       <View className="bg-background-light/95 dark:bg-background-dark/95 px-4 pt-6 pb-2 border-b border-gray-200/50 dark:border-gray-800/50">
         <View className="flex-row items-center justify-between mb-4">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center -ml-2">
-            <MaterialIcons name="arrow-back-ios-new" size={20} color="#0f172a" />
-          </Pressable>
+          <BackButton iconSize={20} iconName="arrow-back-ios-new" className="-ml-2" />
           <Text className="text-xl font-bold flex-1 text-center pr-8 text-slate-900 dark:text-white">Guides in Kyoto</Text>
           <Pressable className="w-10 h-10 rounded-full items-center justify-center">
             <MaterialIcons name="more-horiz" size={24} color="#0f172a" />
@@ -119,17 +122,11 @@ export default function GuidesScreen() {
               <Text className="text-sm font-medium text-slate-600 dark:text-gray-300 flex-1" numberOfLines={1}>
                 {guide.specialty2}
               </Text>
-              <Pressable
+              <PrimaryButton
+                title={guide.verified ? "Request" : "View"}
                 onPress={() => router.push("/trips/confirmGuide")}
-                className={`flex-row items-center gap-1 px-4 py-2 rounded-lg ${
-                  guide.verified ? "bg-primary shadow-sm" : "bg-gray-100 dark:bg-slate-700"
-                }`}
-              >
-                <Text className={`text-sm font-bold ${guide.verified ? "text-white" : "text-slate-900 dark:text-white"}`}>
-                  {guide.verified ? "Request" : "View"}
-                </Text>
-                {guide.verified && <MaterialIcons name="arrow-forward" size={18} color="white" />}
-              </Pressable>
+                className={`h-9 w-auto px-4 rounded-lg ${guide.verified ? "" : "bg-gray-100 dark:bg-slate-700"}`}
+              />
             </View>
           </View>
         ))}

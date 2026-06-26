@@ -3,7 +3,8 @@ import { Image, Pressable, ScrollView, StatusBar, Text, View } from "react-nativ
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { router } from "expo-router";
+
+import BackButton from "@/components/BackButton";
 
 const PLANS = [
   {
@@ -43,9 +44,7 @@ export default function CreatedPlansScreen() {
 
       <View className="bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-4">
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center -ml-2">
-            <MaterialIcons name="arrow-back-ios-new" size={20} color={isDark ? "#ffffff" : "#0c141d"} />
-          </Pressable>
+          <BackButton iconSize={20} />
           <Text className="flex-1 text-center text-lg font-bold text-[#0c141d] dark:text-white mr-8">Created Plans</Text>
         </View>
       </View>
@@ -67,7 +66,7 @@ export default function CreatedPlansScreen() {
                   <MaterialIcons
                     name={plan.isPublic ? "public" : "lock"}
                     size={14}
-                    color={plan.isPublic ? "#359EFF" : "#4c9a9a"}
+                    color={plan.isPublic ? "#359EFF" : "#64748b"}
                   />
                   <Text className={`text-xs font-semibold ${plan.isPublic ? "text-primary" : "text-slate-500 dark:text-slate-400"}`}>
                     {plan.isPublic ? "Public" : "Private"}
@@ -75,7 +74,7 @@ export default function CreatedPlansScreen() {
                 </View>
               </View>
               <View className="items-center justify-center pr-4">
-                <MaterialIcons name="chevron-right" size={20} color="#4c9a9a" />
+                <MaterialIcons name="chevron-right" size={20} color="#64748b" />
               </View>
             </View>
           </Pressable>

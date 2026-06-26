@@ -1,17 +1,22 @@
 import React, { useState } from "react";
 import { Image, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
 export default function PlanByCompanyScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingBottom: insets.bottom }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View className="relative" style={{ aspectRatio: 4 / 3 }}>
@@ -22,9 +27,7 @@ export default function PlanByCompanyScreen() {
           />
           <View className="absolute inset-0 bg-black/30" />
           <View className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4" style={{ paddingTop: insets.top + 16 }}>
-            <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
-              <MaterialIcons name="arrow-back" size={24} color="white" />
-            </Pressable>
+            <BackButton iconSize={18} iconName="arrow-back-ios-new" />
           </View>
           <View className="absolute bottom-4 left-4 px-3 py-1.5 rounded-full bg-primary/90 backdrop-blur">
             <View className="flex-row items-center gap-1">
@@ -166,13 +169,7 @@ export default function PlanByCompanyScreen() {
         className="absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 border-t border-slate-100 dark:border-slate-800 px-6 py-4"
         style={{ paddingBottom: insets.bottom + 16 }}
       >
-        <Pressable
-          onPress={() => router.push(`/trips/booking/${id}`)}
-          className="w-full h-14 bg-primary rounded-xl items-center justify-center shadow-lg"
-          style={{ shadowColor: "#359EFF", shadowOpacity: 0.2 }}
-        >
-          <Text className="text-white font-bold text-base">Book Trip</Text>
-        </Pressable>
+        <PrimaryButton title="Book Trip" onPress={() => router.push(`/trips/booking/${id}`)} />
       </View>
     </View>
   );

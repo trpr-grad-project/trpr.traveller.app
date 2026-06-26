@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Image, Pressable, ScrollView, StatusBar, Text, TextInput, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
@@ -96,6 +97,8 @@ const TYPE_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [selectedCat, setSelectedCat] = useState("All");
   const [search, setSearch] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
@@ -122,7 +125,7 @@ export default function ExploreScreen() {
 
   return (
     <View className="flex-1 bg-white dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="bg-white/90 dark:bg-background-dark/90 px-4">
         <View className="py-5 text-center">

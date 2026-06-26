@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, ScrollView, StatusBar, Text, TextInput, View, Image } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
@@ -77,12 +78,14 @@ const CONVERSATIONS = [
 
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
 
   return (
     <View className="flex-1 bg-white dark:bg-[#0f1923]" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="border-b border-slate-100 dark:border-slate-800 pt-4">
         <View className="items-center px-4 pb-2">

@@ -3,7 +3,8 @@ import { Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { router } from "expo-router";
+
+import BackButton from "@/components/BackButton";
 
 const TRANSACTIONS = [
   { id: "1", title: "Nile Sunset Felucca Tour", date: "Jun 15, 2026", amount: "$129.00", status: "completed" as const },
@@ -26,10 +27,8 @@ export default function BillingHistoryScreen() {
 
       <View className="bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-4">
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center -ml-2">
-            <MaterialIcons name="arrow-back-ios-new" size={20} color={isDark ? "#ffffff" : "#0c141d"} />
-          </Pressable>
-          <Text className="flex-1 text-center text-lg font-bold text-[#0c141d] dark:text-white mr-8">Billing History</Text>
+          <BackButton iconSize={20} iconName="arrow-back-ios-new" />
+          <Text className="flex-1 text-center text-lg font-bold text-main-light dark:text-white mr-8">Billing History</Text>
         </View>
       </View>
 
@@ -43,11 +42,11 @@ export default function BillingHistoryScreen() {
               <MaterialIcons name="receipt-long" size={24} color="#359EFF" />
             </View>
             <View className="flex-1 ml-4">
-              <Text className="text-sm font-bold text-[#0c141d] dark:text-white">{tx.title}</Text>
-              <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{tx.date}</Text>
+              <Text className="text-sm font-bold text-main-light dark:text-white">{tx.title}</Text>
+              <Text className="text-xs text-sub-light mt-0.5">{tx.date}</Text>
             </View>
             <View className="items-end">
-              <Text className="text-sm font-bold text-[#0c141d] dark:text-white">{tx.amount}</Text>
+              <Text className="text-sm font-bold text-main-light dark:text-white">{tx.amount}</Text>
               <Text className={`text-[11px] font-semibold mt-0.5 ${tx.status === "refunded" ? "text-red-500" : "text-green-500"}`}>
                 {tx.status === "refunded" ? "Refunded" : "Paid"}
               </Text>

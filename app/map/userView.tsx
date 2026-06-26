@@ -6,15 +6,18 @@ import {
   View,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 
 export default function LiveTripMapUserView() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-slate-200" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Mock map background */}
       <View className="absolute inset-0 bg-slate-100">
@@ -71,12 +74,7 @@ export default function LiveTripMapUserView() {
 
       {/* Floating top controls */}
       <View className="absolute top-4 left-4 right-4 flex-row items-center justify-between" style={{ top: insets.top + 16 }}>
-        <Pressable
-          onPress={() => router.back()}
-          className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-lg"
-        >
-          <MaterialIcons name="arrow-back-ios" size={18} color="#0f172a" />
-        </Pressable>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
         <View className="flex-row items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg">
           <View className="w-2 h-2 rounded-full bg-green-500" />
           <Text className="text-sm font-bold text-slate-900">Live Trip</Text>
@@ -111,7 +109,7 @@ export default function LiveTripMapUserView() {
           </View>
           <View className="flex-1">
             <Text className="font-semibold text-slate-900 text-sm">Your guide Hiroshi</Text>
-            <Text className="text-[#4c9a9a] text-xs">~5 min walk from your location</Text>
+            <Text className="text-sub-light dark:text-white text-xs">~5 min walk from your location</Text>
           </View>
           <Pressable>
             <MaterialIcons name="phone" size={22} color="#359EFF" />

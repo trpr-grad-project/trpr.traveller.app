@@ -10,19 +10,22 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useColorScheme } from "nativewind";
 
 export default function ConfirmGuideScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0f172a" />
-        </Pressable>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
         <Text className="text-lg font-bold text-slate-900 dark:text-white ml-2">Confirm Guide Request</Text>
       </View>
 
@@ -105,12 +108,7 @@ export default function ConfirmGuideScreen() {
         className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 gap-3"
         style={{ paddingBottom: insets.bottom + 16 }}
       >
-        <Pressable
-          onPress={() => router.push("/trips/planSuccess")}
-          className="w-full h-14 bg-primary rounded-xl items-center justify-center"
-        >
-          <Text className="text-white font-bold text-base">Confirm & Send Request</Text>
-        </Pressable>
+        <PrimaryButton title="Confirm & Send Request" onPress={() => router.push("/trips/planSuccess")} />
         <Pressable
           onPress={() => router.push("/chat/1")}
           className="w-full h-11 items-center justify-center flex-row gap-2"

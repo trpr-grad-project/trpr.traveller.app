@@ -7,7 +7,9 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
+
+import BackButton from "@/components/BackButton";
 
 const ACCOUNTS = [
   { name: "Google", icon: "Google", connected: true },
@@ -17,17 +19,16 @@ const ACCOUNTS = [
 
 export default function LinkedAccountsScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full items-center justify-center">
-          <MaterialIcons name="arrow-back-ios-new" size={18} color="#0d1b1b" />
-        </Pressable>
-        <Text className="text-lg font-bold text-[#0d1b1b] dark:text-white ml-2">Linked Accounts</Text>
+        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+        <Text className="text-lg font-bold text-main-light dark:text-white ml-2">Linked Accounts</Text>
       </View>
 
       <View className="px-4 mt-2 gap-3">
@@ -44,7 +45,7 @@ export default function LinkedAccountsScreen() {
                   color="#0d1b1b"
                 />
               </View>
-              <Text className="flex-1 text-sm font-bold text-[#0d1b1b] dark:text-white">{acct.name}</Text>
+              <Text className="flex-1 text-sm font-bold text-main-light dark:text-white">{acct.name}</Text>
               {acct.connected ? (
                 <View className="flex-row items-center gap-3">
                   <View className="flex-row items-center gap-1">
@@ -65,11 +66,10 @@ export default function LinkedAccountsScreen() {
         ))}
       </View>
 
-      {/* Footer info */}
       <View className="px-4 mt-6">
         <View className="flex-row items-start gap-2 opacity-60">
-          <MaterialIcons name="info-outline" size={16} color="#4c9a9a" style={{ marginTop: 1 }} />
-          <Text className="text-xs text-[#4c9a9a] leading-relaxed flex-1">
+          <MaterialIcons name="info-outline" size={16} color="#64748b" style={{ marginTop: 1 }} />
+          <Text className="text-xs text-sub-light leading-relaxed flex-1">
             Linking your accounts makes sign-in faster and helps us personalize your experience. We never post without your permission.
           </Text>
         </View>

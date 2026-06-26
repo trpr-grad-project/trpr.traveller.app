@@ -6,9 +6,16 @@ import { Pressable } from "react-native";
 type BackButtonProps = {
   onPress?: () => void;
   className?: string;
+  iconSize?: number;
+  iconName?: keyof typeof MaterialIcons.glyphMap;
 };
 
-export default function BackButton({ onPress, className }: BackButtonProps) {
+export default function BackButton({
+  onPress,
+  className,
+  iconSize = 24,
+  iconName = "arrow-back-ios",
+}: BackButtonProps) {
   const { colorScheme } = useColorScheme();
   const router = useRouter();
   const isDark = colorScheme === "dark";
@@ -24,13 +31,13 @@ export default function BackButton({ onPress, className }: BackButtonProps) {
   return (
     <Pressable
       onPress={handlePress}
-      className={`flex size-12 shrink-0 items-center justify-center rounded-full active:opacity-60 ${className ?? ""}`}
+      className={`shrink-0 items-center justify-center rounded-full active:opacity-60 ${className ?? ""}`}
       accessibilityRole="button"
       accessibilityLabel="Go back"
     >
       <MaterialIcons
-        name="arrow-back-ios"
-        size={24}
+        name={iconName}
+        size={iconSize}
         color={isDark ? "#E2E8F0" : "#0F172A"}
       />
     </Pressable>

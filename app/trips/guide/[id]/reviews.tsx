@@ -1,8 +1,10 @@
 import React from "react";
 import { Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 
 const REVIEWS = [
   { id: "1", name: "Alex Thompson", rating: 5, text: "Amazing guide! Noura made our felucca trip unforgettable with her deep knowledge of Nubian history and culture. She took us to the best photo spots and even arranged a traditional tea ceremony on the riverbank. Highly recommend for anyone visiting Aswan!", date: "2 weeks ago" },
@@ -14,17 +16,17 @@ const REVIEWS = [
 export default function GuideReviewsScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [expanded, setExpanded] = React.useState<string | null>(null);
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <View className="bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-4">
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center -ml-2">
-            <MaterialIcons name="chevron-left" size={28} color="#0c141d" />
-          </Pressable>
+          <BackButton iconSize={18} iconName="arrow-back-ios-new" />
           <Text className="flex-1 text-center text-lg font-bold text-[#0c141d] dark:text-white mr-8">Reviews</Text>
         </View>
       </View>

@@ -4,7 +4,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { router } from "expo-router";
+
+import BackButton from "@/components/BackButton";
 
 const SEGMENTS = ["Current", "Upcoming", "Past"];
 
@@ -112,9 +113,7 @@ export default function TripsScreen() {
 
       <View className="bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 pt-4 pb-0">
         <View className="flex-row items-center mb-4">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center -ml-2">
-            <MaterialIcons name="arrow-back-ios-new" size={20} color={isDark ? "#ffffff" : "#0c141d"} />
-          </Pressable>
+          <BackButton iconSize={20} />
           <Text className="flex-1 text-center text-lg font-bold text-[#0c141d] dark:text-white mr-8">My Trips</Text>
         </View>
         <SegmentedControl
@@ -142,7 +141,7 @@ export default function TripsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         {trips.length === 0 ? (
           <View className="items-center py-20">
-            <MaterialIcons name="flight-takeoff" size={48} color="#4c9a9a" />
+            <MaterialIcons name="flight-takeoff" size={48} color="#64748b" />
             <Text className="text-base font-semibold text-slate-500 dark:text-slate-400 mt-4">No {activeSegment.toLowerCase()} trips</Text>
           </View>
         ) : (
@@ -162,11 +161,11 @@ export default function TripsScreen() {
               <View className="p-4">
                 <Text className="text-base font-bold text-[#0c141d] dark:text-white mb-1">{trip.title}</Text>
                 <View className="flex-row items-center gap-1 mb-1">
-                  <MaterialIcons name="location-on" size={14} color="#4c9a9a" />
+                  <MaterialIcons name="location-on" size={14} color="#64748b" />
                   <Text className="text-xs text-slate-500 dark:text-slate-400 font-medium">{trip.location}</Text>
                 </View>
                 <View className="flex-row items-center gap-1 mb-4">
-                  <MaterialIcons name="calendar-today" size={14} color="#4c9a9a" />
+                  <MaterialIcons name="calendar-today" size={14} color="#64748b" />
                   <Text className="text-xs text-slate-500 dark:text-slate-400 font-medium">{trip.dates}</Text>
                 </View>
                 <Pressable className="bg-primary rounded-xl py-3 items-center justify-center active:opacity-80">

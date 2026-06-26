@@ -3,6 +3,8 @@ import { Image, Pressable, ScrollView, StatusBar, Text, View } from "react-nativ
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import { useColorScheme } from "nativewind";
+import BackButton from "@/components/BackButton";
 
 const GUIDE_TRIPS = [
   { id: "1", title: "Nile Sunset Felucca", price: "$45", duration: "3hrs", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuANeO4WOrOcetZrYjzvqwfqCPkuEe_tG8D5wpwVgmKQn-3dZvZCTR2fSPc8yLEdaFGeALkWMyviuF4j5q2lNMndo-0bz0kO8fQ0JPOS82rUK-_e9i-yUu0p1MYjz68owfQkGDj8_H-f9EemeDh9kVLR87Dqb02blChGbAnGXJjeEjt50Gf4iA-fOLOcIf_vz4kKIF7iMbkCQ3mT211hn0MTwC6WZbXE75gHptCaq3zlbzFP6OAdJRc1gILY9en-99phSaLUl1Ex64n4" },
@@ -11,18 +13,18 @@ const GUIDE_TRIPS = [
 
 export default function GuideProfileScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const { id } = useLocalSearchParams<{ id: string }>();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="flex-row items-center justify-between px-4 py-3">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 items-center justify-center">
-            <MaterialIcons name="arrow-back-ios-new" size={20} color="#0c141d" />
-          </Pressable>
+          <BackButton iconSize={20} iconName="arrow-back-ios-new" />
           <Text className="text-lg font-bold text-[#0c141d] dark:text-white flex-1 text-center" />
           <View className="relative">
             <Pressable

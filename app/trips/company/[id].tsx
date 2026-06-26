@@ -1,6 +1,8 @@
 import React from "react";
 import { Image, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import BackButton from "@/components/BackButton";
+import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -14,10 +16,12 @@ const COMPANY_TRIPS = [
 export default function CompanyProfileScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="relative" style={{ aspectRatio: 16 / 9 }}>
@@ -28,9 +32,7 @@ export default function CompanyProfileScreen() {
           />
           <View className="absolute inset-0 bg-black/40" />
           <View className="absolute top-0 left-0 right-0 px-4" style={{ paddingTop: insets.top + 16 }}>
-            <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
-              <MaterialIcons name="arrow-back" size={24} color="white" />
-            </Pressable>
+            <BackButton iconSize={18} iconName="arrow-back-ios-new" />
           </View>
         </View>
 
