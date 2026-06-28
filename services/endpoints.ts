@@ -15,4 +15,15 @@ export const ENDPOINTS = {
   conversation: {
     ai: "/conversation/ai",
   },
+
+  trip: {
+    formData: "/trip/form-data",
+    create: "/trip",
+    uploadImages: "/trip/images/upload-images",
+  },
+
+  place: {
+    formData: "/places/form-data",
+    search: "/places",
+  },
 } as const;

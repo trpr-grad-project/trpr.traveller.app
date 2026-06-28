@@ -127,7 +127,7 @@ export default function TravelerHome() {
 
           <View className="gap-2">
             <Pressable
-              onPress={() => router.push("/trips/createPlan")}
+              onPress={() => router.push("/trips/create-trip")}
               className="w-full h-14 rounded-xl"
               style={
                 isDark
@@ -148,12 +148,12 @@ export default function TravelerHome() {
                 className="w-full h-full rounded-xl overflow-hidden flex-row items-center justify-center gap-2"
               >
                 <MaterialIcons name="add" size={22} color="white" />
-                <Text className="text-white text-base font-semibold">Create Your Plan</Text>
+                <Text className="text-white text-base font-semibold">Create Your Trip</Text>
                 <View className="absolute top-0 left-0 right-0 h-[1px] bg-white/25" pointerEvents="none" />
               </LinearGradient>
             </Pressable>
             <Text className="text-[11px] text-slate-400 dark:text-slate-500 text-center font-medium">
-              Create your own trip and share it with others.
+              Plan a multi-day trip with places, photos, and more.
             </Text>
           </View>
         </View>

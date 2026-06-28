@@ -1,3 +1,4 @@
+import QueryProvider from "@/app/query-provider";
 import { toastConfig } from "@/config/toast.config";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import "@/global.css";
@@ -11,6 +12,7 @@ import {
 import { Stack, useSegments, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 
 SplashScreen.preventAutoHideAsync();
@@ -82,11 +84,13 @@ export default function RootLayoutNav() {
   });
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <RootLayoutContent fontsLoaded={fontsLoaded} />
+        <QueryProvider>
+          <RootLayoutContent fontsLoaded={fontsLoaded} />
+        </QueryProvider>
       </AuthProvider>
       <Toast config={toastConfig} />
-    </>
+    </GestureHandlerRootView>
   );
 }
