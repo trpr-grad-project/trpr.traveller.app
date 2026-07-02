@@ -123,7 +123,7 @@ export default function LanguageSelectionScreen() {
       />
 
       {/* Header */}
-      <View style={{ paddingTop: insets.top + 8 }} className="px-2 pb-4">
+      <View style={{ paddingTop: insets.top + 8 }} className="px-2 pb-4 items-start">
         <BackButton />
         <Text className="text-[#1A1A1A] dark:text-white text-2xl font-bold tracking-tight text-center px-4 pt-2">
           Select Your Language

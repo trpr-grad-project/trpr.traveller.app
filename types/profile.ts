@@ -25,6 +25,12 @@ export interface ProfileSetupDataResponse {
   vibes: ProfileVibe[];
 }
 
+export interface NotificationSettings {
+  tripUpdates: boolean;
+  messages: boolean;
+  promotions: boolean;
+}
+
 export interface ResetPasswordRequest {
   password: string;
 }
@@ -36,11 +42,23 @@ export interface ProfileSetupRequest {
   vibeIds: string[];
 }
 
+export interface ProfileUpdateRequest {
+  bio: string | null;
+  languageIds: string[];
+  interestIds: string[];
+  vibeIds: string[];
+  notificationSettings: {
+    tripUpdates: boolean | null;
+    messages: boolean | null;
+    promotions: boolean | null;
+  };
+}
+
 export interface ProfileSetupResponse {
   id: string;
   bio: string;
   languages: ProfileLanguage[];
   interests: ProfileInterest[];
   vibes: ProfileVibe[];
-  notificationSettings: null | unknown;
+  notificationSettings: NotificationSettings;
 }

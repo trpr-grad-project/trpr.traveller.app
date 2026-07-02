@@ -30,6 +30,7 @@ export interface TripDraftState {
   governorateId: number | null;
   mapLocation: MapLocation | null;
   days: DayDraft[];
+  placeNames: Record<number, string>;
 
   setTheme: (id: number) => void;
   setTitle: (title: string) => void;
@@ -46,6 +47,9 @@ export interface TripDraftState {
   addImage: (localUri: string) => void;
   setImageUploaded: (localUri: string, filename: string) => void;
   removeImage: (localUri: string) => void;
+  removeDay: (dayIndex: number) => void;
+  reorderDayPlace: (dayIndex: number, fromIndex: number, toIndex: number) => void;
+  setPlaceName: (id: number, name: string) => void;
   reset: () => void;
 }
 
@@ -60,6 +64,7 @@ const initialState = {
   governorateId: null as number | null,
   mapLocation: null as MapLocation | null,
   days: [{ duration: 12, placeIds: [] as number[] }],
+  placeNames: {} as Record<number, string>,
 };
 
 export const useTripDraftStore = create<TripDraftState>()((set, get) => ({
@@ -132,6 +137,7 @@ export const useTripDraftStore = create<TripDraftState>()((set, get) => ({
 
   addImage: (localUri) => {
     const { images } = get();
+    if (images.some((img) => img.localUri === localUri)) return;
     set({ images: [...images, { localUri, uploading: true }] });
   },
 
@@ -146,6 +152,30 @@ export const useTripDraftStore = create<TripDraftState>()((set, get) => ({
   removeImage: (localUri) => {
     const { images } = get();
     set({ images: images.filter((img) => img.localUri !== localUri) });
+  },
+
+  removeDay: (dayIndex) => {
+    const { days } = get();
+    if (dayIndex < 0 || dayIndex >= days.length) return;
+    set({ days: days.filter((_, i) => i !== dayIndex) });
+  },
+
+  reorderDayPlace: (dayIndex, fromIndex, toIndex) => {
+    const { days } = get();
+    if (dayIndex < 0 || dayIndex >= days.length) return;
+    const day = days[dayIndex];
+    if (fromIndex < 0 || fromIndex >= day.placeIds.length) return;
+    if (toIndex < 0 || toIndex >= day.placeIds.length) return;
+    const placeIds = [...day.placeIds];
+    const [moved] = placeIds.splice(fromIndex, 1);
+    placeIds.splice(toIndex, 0, moved);
+    const updated = days.map((d, i) => (i !== dayIndex ? d : { ...d, placeIds }));
+    set({ days: updated });
+  },
+
+  setPlaceName: (id, name) => {
+    const { placeNames } = get();
+    set({ placeNames: { ...placeNames, [id]: name } });
   },
 
   reset: () => set({ ...initialState }),

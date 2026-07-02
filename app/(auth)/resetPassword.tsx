@@ -119,7 +119,7 @@ export default function ResetPassword() {
     >
       <View className="flex-1 px-6">
         {/* Header */}
-        <View className="pt-6 pb-2">
+        <View className="pt-6 pb-2 items-start">
           <BackButton />
         </View>
 

@@ -1,141 +1,244 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Image,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
-  ScrollView,
+  RefreshControl,
   StatusBar,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { clsx } from "clsx";
+import Toast from "react-native-toast-message";
 import BackButton from "@/components/BackButton";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
+import { queryClient } from "@/app/query-provider";
+import { createConversationRepository } from "@/database/repositories/conversationRepositoryImpl";
+import { createMessageRepository } from "@/database/repositories/messageRepositoryImpl";
+import { useMessages } from "@/hooks/useMessages";
+import { chatSync } from "@/services/chat/chatSync";
+import { getUserId } from "@/utils/storage";
+import { userCache } from "@/utils/userCache";
 
-const MESSAGES = [
-  {
-    id: "1",
-    sender: "Sara (Local Guide)",
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuD08lVoan8JB_tWKncwWGbr5BwasPlqL-zEmYJxYLHHdvtNWv2IHqa40dZj4E0X9TPaKTjGhLD_3QKz_EdYkZ8D7C1dbjKAsa77fNynWQ-0OoFL4Btki3iQlR03JUZxwE0BmtCj7i24qAA1NjmxENSrH3uuTaLJ58pErS-0HTCMC4w5rrb7fZerWyRXHr6lwsw1aqsq2t94QHfTt8ds2KINiMOjkIoOOZpe5HvaA6qhhOGp6RF42rRY1fKcQ45JSjRGHpo0Xa9xIy1U",
-    text: "Welcome to Giza! I've pinned our meeting point for tomorrow morning near the Great Pyramid entrance.",
-    isMe: false,
-    time: "9:03 AM",
-  },
-  {
-    id: "2",
-    sender: "me",
-    text: "That looks incredible! Can't wait to see it in person. Are we meeting at 9 AM?",
-    isMe: true,
-    time: "9:05 AM",
-  },
-];
+function formatRelativeTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const now = Date.now();
+  const date = new Date(iso);
+  const diffMs = now - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
 
-const AVATARS = [
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuD08lVoan8JB_tWKncwWGbr5BwasPlqL-zEmYJxYLHHdvtNWv2IHqa40dZj4E0X9TPaKTjGhLD_3QKz_EdYkZ8D7C1dbjKAsa77fNynWQ-0OoFL4Btki3iQlR03JUZxwE0BmtCj7i24qAA1NjmxENSrH3uuTaLJ58pErS-0HTCMC4w5rrb7fZerWyRXHr6lwsw1aqsq2t94QHfTt8ds2KINiMOjkIoOOZpe5HvaA6qhhOGp6RF42rRY1fKcQ45JSjRGHpo0Xa9xIy1U",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAkJocAf20HCjuiZSuz3f9J1r3rwv8iiKU-WKHORJw2Tpv4a3JUe6itXQWkvhoGDrZhYFD4oBcVlyNc6S5HM2iKZyX-msatDSUPre3Oy26PBPfbc73JFNZDiv18Js9nPuCAJ6qYEC9TRHco5ZBwV9bwxEFbGoo6gNfEhSwI581987RKAJ-RnFNOZY-rfngcbAOUU4Evt6zpEHo4bxwDNgcDgblRQRlLQ1WIXH_8rp2k1beEGqqVvDhtHvzbwZTjRB4-p6skTqLGK87K",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDTX2f0IZjJA-U3ZzZxAxpXGKSD6Rdxq77Gxc34alwdOlCZAoZkqGjkJpxWP_N72-CHtTUlfdGaAs761kYea17js5oTmEP1W6rOWXxVvmM9W60AQOgyiwXHz712z4m8L7t-zJPbZzzshT4cOf7j0Jbi4CpzJFcFgXif12U2w-vOGd4RWk4Uw08Yqjg--BYnOgsjQ41khH94whferq1ujRENqeiavEQnlU-Vi1FhZOBLzqXx2xvVvuPqL1RzoUkGmQKx6ZEv3R7BgZ2D",
-];
+const AVATAR_COLORS = ["#359EFF", "#FF6B6B", "#4CAF50", "#FF9800", "#9C27B0", "#00BCD4", "#F44336", "#3F51B5"];
+
+function avatarColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 export default function GroupChatScreen() {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, title } = useLocalSearchParams<{ id: string; title?: string }>();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [message, setMessage] = useState("");
+  const [input, setInput] = useState("");
+  const flatListRef = useRef<FlatList>(null);
+
+  const currentUserId = getUserId();
+  const { messages, isLoading, isLoadingOlder, isRefreshing, refresh, loadOlder, hasMore } = useMessages(id);
+
+  // Mark conversation as read when messages are loaded
+  useEffect(() => {
+    if (!id || messages.length === 0) return;
+    const msgRepo = createMessageRepository();
+    const convRepo = createConversationRepository();
+    msgRepo.getHighestSequence(id).then((seq) => {
+      if (seq) {
+        convRepo.updateLastReadSequence(id, seq);
+        convRepo.updateUnreadCount(id, "0");
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      }
+    }).catch(console.error);
+  }, [id, messages.length]);
+
+  const handleSend = useCallback(() => {
+    const trimmed = input.trim();
+    if (!trimmed || !id) return;
+    const text = trimmed;
+    setInput("");
+    chatSync.sendMessage(id, text).catch(() => {
+      setInput(text);
+      Toast.show({
+        type: "error",
+        text1: "Failed to send",
+        text2: "Please try again",
+      });
+    });
+  }, [input, id]);
+
+  const handleEndReached = useCallback(() => {
+    if (hasMore && !isLoadingOlder) loadOlder().catch(console.error);
+  }, [hasMore, isLoadingOlder, loadOlder]);
+
+  const renderMessage = ({ item: msg }: { item: (typeof messages)[number] }) => {
+    const senderId = msg.senderUserId ?? "unknown";
+    const isMe = senderId === currentUserId;
+    const isPending = "isPending" in msg && msg.isPending === true;
+    const displayName = isMe
+      ? "You"
+      : userCache.getDisplayName(senderId) ?? `User #${senderId.slice(-4)}`;
+
+    if (isMe) {
+      return (
+        <View
+          key={msg.id}
+          className={clsx(
+            "flex-row items-end justify-end gap-3 mb-4",
+            isPending && "opacity-60",
+          )}
+        >
+          <View className="max-w-[85%] flex-col items-end gap-1">
+            <View className="px-4 py-3 bg-primary rounded-xl rounded-br-none shadow-sm">
+              <Text className="text-white text-[15px] font-normal leading-relaxed">{msg.content}</Text>
+            </View>
+            <Text className="text-[11px] text-gray-400 font-medium">
+              {isPending ? "Sending..." : formatRelativeTime(msg.sentAtUtc)}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View key={msg.id} className="flex-row items-end gap-3 mb-4">
+        <View
+          className="w-9 h-9 rounded-full items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: avatarColor(senderId) }}
+        >
+          <Text className="text-white text-xs font-bold">{displayName.charAt(0).toUpperCase()}</Text>
+        </View>
+        <View className="flex-1 flex-col gap-1 items-start">
+          <Text className="text-primary text-[12px] font-bold">{displayName}</Text>
+          <View className="max-w-[85%] px-4 py-3 bg-white dark:bg-gray-800 rounded-xl rounded-bl-none shadow-sm">
+            <Text className="text-main-light dark:text-white text-[15px] font-normal leading-relaxed">{msg.content}</Text>
+          </View>
+          <Text className="text-[11px] text-gray-400 font-medium">{formatRelativeTime(msg.sentAtUtc)}</Text>
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
+    <KeyboardAvoidingView
+      className="flex-1 bg-background-light dark:bg-background-dark"
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top : 0}
+    >
       <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
-      <View className="bg-white/80 dark:bg-background-dark/80 border-b border-gray-100 dark:border-gray-800">
-        <View className="flex-row items-center p-4 pb-2 justify-between">
-          <BackButton iconSize={18} iconName="arrow-back-ios-new" />
-          <Text className="text-main-light dark:text-white text-lg font-bold flex-1 text-center">
-            Giza Expedition 2024
-          </Text>
-          <Pressable onPress={() => router.push(`/chat/group/${id}/settings`)} className="w-10 h-10 items-end justify-center">
-            <MaterialIcons name="more-vert" size={22} color="#4F4F4F" />
-          </Pressable>
-        </View>
-
-        {/* Member avatars */}
-        <View className="flex-row justify-center pb-3 px-4 gap-2">
-          <View className="flex-row" style={{ gap: -12 }}>
-            {AVATARS.map((uri, i) => (
-              <View key={i} className="w-7 h-7 rounded-full overflow-hidden border-2 border-white dark:border-background-dark">
-                <Image source={{ uri }} className="w-full h-full" resizeMode="cover" />
-              </View>
-            ))}
-            <View className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 border-2 border-white dark:border-background-dark items-center justify-center">
-              <Text className="text-[10px] font-bold text-gray-500">+2</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Messages */}
-      <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
-        {/* Date stamp */}
-        <View className="flex-row justify-center my-4">
-          <View className="bg-gray-100 dark:bg-gray-800 px-4 py-1 rounded-full">
-            <Text className="text-gray-custom text-[11px] font-semibold uppercase tracking-wide">Today</Text>
+      <View className="flex-1" style={{ paddingTop: insets.top }}>
+        {/* Header */}
+        <View className="bg-white/80 dark:bg-background-dark/80 border-b border-gray-100 dark:border-gray-800">
+          <View className="flex-row items-center p-4 pb-2 justify-between">
+            <BackButton iconSize={18} iconName="arrow-back-ios-new" />
+            <Text className="text-main-light dark:text-white text-lg font-bold flex-1 text-center">
+              {title ?? "Group Chat"}
+            </Text>
+            <View className="w-10 h-10" />
           </View>
         </View>
 
-        {MESSAGES.map((msg) =>
-          msg.isMe ? (
-            <View key={msg.id} className="flex-row items-end justify-end gap-3 mb-4">
-              <View className="max-w-[85%] flex-col items-end gap-1">
-                <View className="px-4 py-3 bg-primary rounded-xl rounded-br-none shadow-sm">
-                  <Text className="text-white text-[15px] font-normal leading-relaxed">{msg.text}</Text>
+        {/* Messages or loading */}
+        {isLoading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color="#359EFF" />
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            inverted
+            contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.3}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#359EFF" />
+            }
+            ListFooterComponent={
+              isLoadingOlder ? (
+                <View className="py-4 items-center">
+                  <ActivityIndicator size="small" color="#359EFF" />
                 </View>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View className="flex-1 items-center justify-center py-20 px-6">
+                <MaterialIcons name="chat-bubble-outline" size={64} color="#94a3b8" />
+                <Text className="text-lg font-semibold text-slate-500 dark:text-slate-400 mt-4 text-center">
+                  No messages yet
+                </Text>
+                <Text className="text-sm text-slate-400 dark:text-slate-500 mt-1 text-center">
+                  Start the conversation
+                </Text>
               </View>
-            </View>
-          ) : (
-            <View key={msg.id} className="flex-row items-end gap-3 mb-4">
-              <View className="w-9 h-9 rounded-full overflow-hidden border-2 border-primary flex-shrink-0">
-                <Image source={{ uri: msg.avatar }} className="w-full h-full" resizeMode="cover" />
-              </View>
-              <View className="flex-1 flex-col gap-1 items-start">
-                <Text className="text-primary text-[12px] font-bold">{msg.sender}</Text>
-                <View className="max-w-[85%] px-4 py-3 bg-white dark:bg-gray-800 rounded-xl rounded-bl-none shadow-sm">
-                  <Text className="text-main-light dark:text-white text-[15px] font-normal leading-relaxed">{msg.text}</Text>
-                </View>
-              </View>
-            </View>
-          )
+            }
+          />
         )}
-      </ScrollView>
 
-      {/* Input */}
-      <View
-        className="p-4 bg-white dark:bg-background-dark border-t border-gray-100 dark:border-gray-800"
-        style={{ paddingBottom: insets.bottom + 16 }}
-      >
-        <View className="flex-row items-center gap-3">
-          <Pressable className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center">
-            <MaterialIcons name="add" size={22} color={isDark ? "#E2E8F0" : "#0F172A"} />
-          </Pressable>
-          <View className="flex-1 relative flex-row items-center">
-            <TextInput
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Type a message..."
-              placeholderTextColor="#9ca3af"
-              className="flex-1 h-11 bg-gray-100 dark:bg-gray-800 rounded-full px-5 text-[15px] text-main-light dark:text-white"
-            />
-            <Pressable className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 items-center justify-center">
-              <MaterialIcons name="mood" size={22} color="#359EFF" />
+        {/* Input */}
+        <View
+          className="p-4 bg-white dark:bg-background-dark border-t border-gray-100 dark:border-gray-800"
+          style={{ paddingBottom: insets.bottom + 16 }}
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center">
+              <MaterialIcons name="add" size={22} color={isDark ? "#E2E8F0" : "#0F172A"} />
+            </View>
+            <View className="flex-1 relative flex-row items-center">
+              <TextInput
+                value={input}
+                onChangeText={setInput}
+                placeholder="Type a message..."
+                placeholderTextColor="#9ca3af"
+                className="flex-1 h-11 bg-gray-100 dark:bg-gray-800 rounded-full px-5 text-[15px] text-main-light dark:text-white"
+              />
+              <View className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 items-center justify-center">
+                <MaterialIcons name="mood" size={22} color="#359EFF" />
+              </View>
+            </View>
+            <Pressable
+              onPress={handleSend}
+              disabled={!input.trim() || !id}
+              className={clsx(
+                "w-11 h-11 rounded-full items-center justify-center shadow-lg",
+                input.trim() ? "bg-primary" : "bg-gray-300 dark:bg-gray-600",
+              )}
+            >
+              <MaterialIcons name="send" size={20} color="white" />
             </Pressable>
           </View>
-          <Pressable className="w-11 h-11 rounded-full bg-primary items-center justify-center shadow-lg">
-            <MaterialIcons name="send" size={20} color="white" />
-          </Pressable>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

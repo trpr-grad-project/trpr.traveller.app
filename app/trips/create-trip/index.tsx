@@ -61,6 +61,7 @@ export default function CreateTripStep1() {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [datePickerDate, setDatePickerDate] = useState(new Date());
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     control,
@@ -95,6 +96,9 @@ export default function CreateTripStep1() {
 
   const onNext = useCallback(
     (fieldData: FieldData) => {
+      if (isSubmitting) return;
+      setIsSubmitting(true);
+
       draft.setTitle(fieldData.title);
       draft.setDescription(fieldData.description);
 
@@ -104,6 +108,7 @@ export default function CreateTripStep1() {
           text1: "Missing field",
           text2: "Please select a theme",
         });
+        setIsSubmitting(false);
         return;
       }
       if (!draft.startDate) {
@@ -112,6 +117,7 @@ export default function CreateTripStep1() {
           text1: "Missing field",
           text2: "Please select a start date",
         });
+        setIsSubmitting(false);
         return;
       }
       if (draft.images.length === 0) {
@@ -120,23 +126,14 @@ export default function CreateTripStep1() {
           text1: "Missing field",
           text2: "Please add at least one photo",
         });
-        return;
-      }
-      const allUploaded = draft.images.every(
-        (i) => !i.uploading && i.filename,
-      );
-      if (!allUploaded) {
-        Toast.show({
-          type: "error",
-          text1: "Still uploading",
-          text2: "Please wait for all images to finish uploading",
-        });
+        setIsSubmitting(false);
         return;
       }
 
       router.push("/trips/create-trip/location");
+      setIsSubmitting(false);
     },
-    [draft],
+    [draft, isSubmitting],
   );
 
   return (

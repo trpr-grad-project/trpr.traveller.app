@@ -1,8 +1,9 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   KeyboardAvoidingView,
+  LayoutAnimation,
   Platform,
   Pressable,
   ScrollView,
@@ -28,23 +29,17 @@ export default function CreateTripStep3() {
 
   const draft = useTripDraftStore();
   const createTripMutation = useCreateTrip();
+  const [expandedIndex, setExpandedIndex] = useState(0);
+
+  const toggleDay = useCallback((idx: number) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedIndex((prev) => (prev === idx ? -1 : idx));
+  }, []);
 
   const handleDayCountChange = useCallback(
     (delta: number) => {
       const next = draft.days.length + delta;
       if (next < 1) return;
-      if (delta < 0 && next < draft.days.length) {
-        const removing = draft.days.slice(next);
-        const hasPlaces = removing.some((d) => d.placeIds.length > 0);
-        if (hasPlaces) {
-          Toast.show({
-            type: "error",
-            text1: "Remove days?",
-            text2: "Some days have places assigned. Reset them first.",
-          });
-          return;
-        }
-      }
       draft.setDayCount(next);
     },
     [draft],
@@ -78,13 +73,24 @@ export default function CreateTripStep3() {
       }
     }
 
+    const allUploaded = draft.images.every(
+      (i) => !i.uploading && i.filename,
+    );
+    if (!allUploaded) {
+      Toast.show({
+        type: "error",
+        text1: "Still uploading",
+        text2: "Please wait for all images to finish uploading",
+      });
+      return;
+    }
+
     const payload: CreateTripPayload = {
       themeId: String(draft.themeId!),
       title: draft.title,
       description: draft.description,
-      price: 0,
+      price: "0",
       startDate: draft.startDate!,
-      endDate: draft.startDate!,
       images: draft.images.map((i) => i.filename!),
       autoApprove: true,
       tripVisibility: draft.visibility,
@@ -97,8 +103,6 @@ export default function CreateTripStep3() {
       guideId: null,
     };
 
-    console.log("POST /trip payload:", JSON.stringify(payload, null, 2));
-
     createTripMutation.mutate(payload, {
       onSuccess: (data) => {
         Toast.show({
@@ -106,13 +110,11 @@ export default function CreateTripStep3() {
           text1: "Trip Created!",
           text2: "Your trip has been published",
         });
-        console.log("POST /trip response keys:", Object.keys(data));
         const tripId =
           data?.id ??
           data?.tripId ??
           data?.data?.id ??
           (data as any)?.createdTrip?.id;
-        console.log("POST /trip success response:", JSON.stringify(data));
         if (tripId) {
           router.replace(`/trips/planCreated/${tripId}`);
         } else {
@@ -122,7 +124,6 @@ export default function CreateTripStep3() {
       onError: (err: any) => {
         const status = err?.response?.status ?? "";
         const data = err?.response?.data;
-        console.log("POST /trip error", status, JSON.stringify(data, null, 2));
         const detail =
           data?.message ?? data?.title ?? data?.detail ?? JSON.stringify(data);
         Toast.show({
@@ -187,13 +188,16 @@ export default function CreateTripStep3() {
             <DayAccordion
               dayCount={draft.days.length}
               days={draft.days}
+              placeNames={draft.placeNames}
               onDurationChange={draft.setDayDuration}
               onRemovePlace={draft.removePlaceFromDay}
+              onReorderPlace={draft.reorderDayPlace}
               onAddPlace={(dayIndex) =>
-                router.push(
-                  `/trips/create-trip/day/${dayIndex}/add-place`,
-                )
+                router.push(`/trips/create-trip/day/${dayIndex}/add-place`)
               }
+              onRemoveDay={draft.removeDay}
+              expandedIndex={expandedIndex}
+              onToggle={toggleDay}
             />
           </View>
         </ScrollView>

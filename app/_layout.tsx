@@ -1,6 +1,9 @@
 import QueryProvider from "@/app/query-provider";
 import { toastConfig } from "@/config/toast.config";
+import Toast from "react-native-toast-message";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import ChatLifecycleManager from "@/components/ChatLifecycleManager";
+import OfflineQueueProcessor from "@/components/OfflineQueueProcessor";
 import "@/global.css";
 import {
   PlusJakartaSans_400Regular,
@@ -9,11 +12,11 @@ import {
   PlusJakartaSans_700Bold,
   useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
+import { ProfileProvider } from "@/context/ProfileContext";
 import { Stack, useSegments, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Toast from "react-native-toast-message";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -72,7 +75,13 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
     return null;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <>
+      <OfflineQueueProcessor />
+      <ChatLifecycleManager />
+      <Stack screenOptions={{ headerShown: false }} />
+    </>
+  );
 }
 
 export default function RootLayoutNav() {
@@ -87,7 +96,9 @@ export default function RootLayoutNav() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
         <QueryProvider>
-          <RootLayoutContent fontsLoaded={fontsLoaded} />
+          <ProfileProvider>
+            <RootLayoutContent fontsLoaded={fontsLoaded} />
+          </ProfileProvider>
         </QueryProvider>
       </AuthProvider>
       <Toast config={toastConfig} />

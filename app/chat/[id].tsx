@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Image,
   Pressable,
   ScrollView,
   StatusBar,
@@ -22,10 +21,23 @@ const SUGGESTIONS = [
 
 export default function DirectMessageScreen() {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, name: rawName, email: rawEmail } = useLocalSearchParams<{
+    id: string;
+    name?: string;
+    email?: string;
+  }>();
+  const name = rawName ? decodeURIComponent(rawName) : "Noura Mohamed";
+  const email = rawEmail ? decodeURIComponent(rawEmail) : "";
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const [message, setMessage] = useState("");
+
+  const initials = name
+    .split(" ")
+    .map((n) => n.charAt(0))
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
@@ -37,17 +49,13 @@ export default function DirectMessageScreen() {
           <BackButton iconSize={18} iconName="arrow-back-ios-new" />
 
           {/* Avatar */}
-          <View className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-            <Image
-              source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAhkisrNEdyhVj2oR7ZYJq4Wc_DexO7JnLOpYhtOouoYp1_gj2ZC81yk2X5Mr6mjXfs9pMHbo0idefssrBFX-dYjOl5ZRsb3dJrxpnP1qMcep2d7s63nTD1E9Jvy1HLtOoYS8Vut8w_cvCkDR4u5d01R01BqtqwddKeg1SlSSoKvtpzul-vXfZq1CCb0UWw0DnMvsI8VkNNd_4RX8m0Mz42p6vyqbJ08jXdedmmXao0oVwe8qDDtEIaXQV8AoUpwvgCVpowC7DAedgB" }}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
+          <View className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 border border-slate-200 dark:border-slate-700 items-center justify-center">
+            <Text className="text-sm font-bold text-primary">{initials}</Text>
           </View>
 
           <View className="flex-1 min-w-0">
             <Text className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
-              Noura Mohamed
+              {name}
             </Text>
           </View>
           <Pressable onPress={() => router.push(`/chat/${id}/settings`)} className="p-2 rounded-full">
@@ -60,15 +68,11 @@ export default function DirectMessageScreen() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Profile intro */}
         <View className="px-6 mb-8 mt-auto pt-16 items-center">
-          <View className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-800 mb-4 shadow-xl overflow-hidden">
-            <Image
-              source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAhkisrNEdyhVj2oR7ZYJq4Wc_DexO7JnLOpYhtOouoYp1_gj2ZC81yk2X5Mr6mjXfs9pMHbo0idefssrBFX-dYjOl5ZRsb3dJrxpnP1qMcep2d7s63nTD1E9Jvy1HLtOoYS8Vut8w_cvCkDR4u5d01R01BqtqwddKeg1SlSSoKvtpzul-vXfZq1CCb0UWw0DnMvsI8VkNNd_4RX8m0Mz42p6vyqbJ08jXdedmmXao0oVwe8qDDtEIaXQV8AoUpwvgCVpowC7DAedgB" }}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
+          <View className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-800 mb-4 shadow-xl overflow-hidden bg-primary/10 items-center justify-center">
+            <Text className="text-3xl font-bold text-primary">{initials}</Text>
           </View>
-          <Text className="text-xl font-bold text-slate-900 dark:text-white">Noura Mohamed</Text>
-          <Text className="text-sm text-slate-500 dark:text-slate-400 mb-6">Local Guide</Text>
+          <Text className="text-xl font-bold text-slate-900 dark:text-white">{name}</Text>
+          {email ? <Text className="text-sm text-slate-500 dark:text-slate-400 mb-6">{email}</Text> : null}
           <Pressable className="px-6 py-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white/50 dark:bg-slate-800/50">
             <Text className="text-sm font-semibold text-primary">View Profile</Text>
           </Pressable>
@@ -101,7 +105,7 @@ export default function DirectMessageScreen() {
             <TextInput
               value={message}
               onChangeText={setMessage}
-              placeholder="Message Noura..."
+              placeholder={`Message ${name.split(" ")[0]}...`}
               placeholderTextColor="#94a3b8"
               className="flex-1 py-2.5 text-[15px] text-slate-900 dark:text-slate-100"
             />

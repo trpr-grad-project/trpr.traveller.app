@@ -14,18 +14,24 @@ import {
   setApiUserId,
 } from "@/services";
 import { setChatUserId } from "@/store/chatStore";
+import { initializeChat, disconnectChat } from "@/services/chat/initializeChat";
 import { LoginResponse, RegisterRequest, User } from "@/types";
 import {
   clearProfileSetupCompleted,
+  clearUserData,
   getProfileSetupCompleted,
+  getUserData,
   loadProfileSetupCompleted,
+  loadUserData,
   setProfileSetupCompleted,
+  setUserData,
   clearUserId,
   getUserId,
   loadUserId,
   setUserId,
 } from "@/utils/storage";
 import { decodeToken } from "@/utils/jwt";
+import { userCache } from "@/utils/userCache";
 
 // Types
 
@@ -65,6 +71,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   >(null);
 
   const signOut = useCallback(async () => {
+    await disconnectChat();
     setSession(null);
     setUser(null);
     setProfileSetupCompletedState(null);
@@ -72,6 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await setChatUserId(null);
     await clearUserId();
     await clearProfileSetupCompleted();
+    await clearUserData();
   }, []);
 
   // Init session and load profile flag
@@ -81,13 +89,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoading(true);
         await loadUserId();
         await loadProfileSetupCompleted();
+        await loadUserData();
         const id = getUserId();
 
         if (id) {
           setApiUserId(id);
           await setChatUserId(id);
+          const stored = getUserData();
+          if (stored.firstName) {
+            const userData = {
+              id,
+              email: stored.email,
+              firstName: stored.firstName,
+              lastName: stored.lastName,
+            };
+            setUser(userData);
+            userCache.set(userData.id, userData.firstName, userData.lastName);
+          }
           setSession(id);
           setProfileSetupCompletedState(getProfileSetupCompleted());
+
+          await initializeChat().catch(console.error);
         }
       } catch (e) {
         console.error("Failed to load session", e);
@@ -121,17 +143,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setProfileSetupCompleted(setupCompleted),
     ]);
 
+    // Persist user data for restoration after app refresh
+    await setUserData({
+      firstName: decoded.given_name,
+      lastName: decoded.family_name,
+      email: decoded.identifier,
+    });
+
     // Perform React state updates synchronously to ensure proper batching
     setApiUserId(decoded.sub);
     await setChatUserId(decoded.sub);
-    setUser({
+    const userData = {
       id: decoded.sub,
       email: decoded.identifier,
       firstName: decoded.given_name,
       lastName: decoded.family_name,
-    });
+    };
+    setUser(userData);
+    userCache.set(userData.id, userData.firstName, userData.lastName);
     setProfileSetupCompletedState(setupCompleted);
     setSession(decoded.sub);
+
+    await initializeChat().catch(console.error);
   }, []);
 
   // Auth methods

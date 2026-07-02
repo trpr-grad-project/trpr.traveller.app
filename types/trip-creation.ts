@@ -2,9 +2,8 @@ export interface CreateTripPayload {
   themeId: string;
   title: string;
   description: string;
-  price: number;
+  price: string;
   startDate: string;
-  endDate: string;
   images: string[];
   autoApprove: boolean;
   tripVisibility: "Public" | "Private";

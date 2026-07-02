@@ -2,6 +2,7 @@ import {
   ProfileSetupDataResponse,
   ProfileSetupRequest,
   ProfileSetupResponse,
+  ProfileUpdateRequest,
   ResetPasswordRequest,
 } from "@/types";
 import api from "./api";
@@ -17,6 +18,18 @@ export const profileService = {
     data: ProfileSetupRequest,
   ): Promise<ProfileSetupResponse> => {
     const response = await api.post(ENDPOINTS.profile.main, data);
+    return response.data;
+  },
+
+  getProfile: async (): Promise<ProfileSetupResponse> => {
+    const response = await api.get(ENDPOINTS.profile.main);
+    return response.data;
+  },
+
+  updateProfile: async (
+    data: ProfileUpdateRequest,
+  ): Promise<ProfileSetupResponse> => {
+    const response = await api.put(ENDPOINTS.profile.main, data);
     return response.data;
   },
 

@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 import { router } from "expo-router";
 
+import { useAuth } from "@/context/AuthContext";
+
 const CREATED_PLANS = [
   { id: "1", title: "Luxor Ancient Wonders", tag: "Historical", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCuvSvG6yW3GPtGrB5y0OG69QGWi70n2y_eTIJ8NRAQSF0_UA6iauWcG9biqzIOLJNmd2qH0e_RUGxt9a2zIhykR8tJhetFP7vfefnwvfy6kSC2gXR8EEfTAidldgoY2aQABAg9HJh8ahSGjS0OL1rGQ_5H-vXb2W7C7ttTh1UzeBdFQIFo4LRgTEkEG7h9ELM-HEi6UX9ND0vWz2joEKaGyxkgGDgGv5C8E3yINsLQc_w5TPWfvEdUBGgz7g_-YEySUXJXX8R81be5", members: "1/5", isPublic: true },
   { id: "2", title: "Cairo Night Markets", tag: "Culture", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDDhMcBHM7uZqiaN9CTWAIeg69VIoZC5se9-ebAw9ms2pOoIPMcnqY8Loun7PhuNIEfDk4kJsQN7D988C8RlFFBrS9ws0GdhSIWE5CoYLcIwfoCE8HBMAxPPz_FhViIKBCEI6l7564jH7pJqFZU_xseH9JCXua6YeUM57yBUP_Hpzp0x-oL2sTrgmbwX0ZfaKuoQMQIIwfpgNjCeH2V45nNdSraFXYrPSE36Opxs3FpJPMrdWxdP6joKcHUtSPzVBvFdkiaJUqP44de", members: "Private", isPublic: false },
@@ -20,6 +22,11 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuth();
+
+  const firstName = user?.firstName ?? "";
+  const lastName = user?.lastName ?? "";
+  const initial = firstName.charAt(0).toUpperCase();
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
@@ -36,20 +43,16 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          <View className="flex-col items-center">
+          <View className="w-full flex-col items-center">
             <View className="relative mb-4">
-              <View className="w-24 h-24 rounded-full bg-orange-200 border-4 border-white dark:border-neutral-dark overflow-hidden shadow-md">
-                <Image
-                  source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuDW1Ny8NfxYlL2K2CAa03QmHEEhygawzlgk7zIY9l3hPUOYdk48MDEjEC4F3cT6xP9z_SwqoscM9EMw-QuvceAiSJ4UQZhf0XrzZMYG6QPZu8S0wiUosX9XOSKXmKv6VQPTkaopqyz-GGGi26uS6DjMK1Tz03RJwwMsyn51jsSBWaNg3SBel8agXN9jh4O1iy0RfJNeR2TiiD5dbZ6xBTkqUu28DcRZ-TbWsRZ7RLAK9fcPCjAkRUTeuVjTZc130tXWb7cuEnrfEFHK" }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
+              <View className="w-24 h-24 rounded-full bg-primary items-center justify-center border-4 border-white dark:border-neutral-dark shadow-md">
+                <Text className="text-white text-4xl font-bold">{initial}</Text>
               </View>
               <Pressable className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary border-2 border-white items-center justify-center shadow-sm">
                 <MaterialIcons name="photo-camera" size={14} color="white" />
               </Pressable>
             </View>
-            <Text className="text-2xl font-bold text-[#0c141d] dark:text-white">John Doe</Text>
+            <Text className="text-2xl font-bold font-jakarta-bold text-[#0c141d] dark:text-white w-full text-center" numberOfLines={1}>{`${firstName} ${lastName}`.trim() || "Traveler"}</Text>
             <View className="flex-row items-center gap-1 mt-1">
               <MaterialIcons name="star" size={16} color="#eab308" />
               <Text className="text-sm font-bold text-slate-700 dark:text-slate-200">4.9</Text>

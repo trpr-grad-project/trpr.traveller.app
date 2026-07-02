@@ -59,3 +59,46 @@ export const saveColorScheme = async (scheme: "light" | "dark") => {
   colorScheme = scheme;
   await SecureStore.setItemAsync(STORAGE_KEYS.COLOR_SCHEME, scheme);
 };
+
+// User data storage (name, email persisted for display after refresh)
+let userFirstName: string | null = null;
+let userLastName: string | null = null;
+let userEmail: string | null = null;
+
+export const loadUserData = async () => {
+  userFirstName = await SecureStore.getItemAsync(STORAGE_KEYS.USER_FIRST_NAME);
+  userLastName = await SecureStore.getItemAsync(STORAGE_KEYS.USER_LAST_NAME);
+  userEmail = await SecureStore.getItemAsync(STORAGE_KEYS.USER_EMAIL);
+};
+
+export const getUserData = () => ({
+  firstName: userFirstName ?? "",
+  lastName: userLastName ?? "",
+  email: userEmail ?? "",
+});
+
+export const setUserData = async (data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+}) => {
+  userFirstName = data.firstName;
+  userLastName = data.lastName;
+  userEmail = data.email;
+  await Promise.all([
+    SecureStore.setItemAsync(STORAGE_KEYS.USER_FIRST_NAME, data.firstName),
+    SecureStore.setItemAsync(STORAGE_KEYS.USER_LAST_NAME, data.lastName),
+    SecureStore.setItemAsync(STORAGE_KEYS.USER_EMAIL, data.email),
+  ]);
+};
+
+export const clearUserData = async () => {
+  userFirstName = null;
+  userLastName = null;
+  userEmail = null;
+  await Promise.all([
+    SecureStore.deleteItemAsync(STORAGE_KEYS.USER_FIRST_NAME),
+    SecureStore.deleteItemAsync(STORAGE_KEYS.USER_LAST_NAME),
+    SecureStore.deleteItemAsync(STORAGE_KEYS.USER_EMAIL),
+  ]);
+};

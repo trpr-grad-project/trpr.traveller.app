@@ -288,3 +288,35 @@ export const useChatStore = create<ChatState & ChatActions>()(
 useChatStore.subscribe((state) => {
   schedulePersist(state);
 });
+
+// ─── P2P Chat UI State ─────────────────────────────────────────
+
+export interface P2pChatState {
+  activeConversationId: string | null;
+  connectionState: "disconnected" | "connecting" | "connected" | "reconnecting";
+  isConnecting: boolean;
+}
+
+export interface P2pChatActions {
+  setActiveConversation: (id: string | null) => void;
+  setConnectionState: (state: P2pChatState["connectionState"]) => void;
+  setIsConnecting: (isConnecting: boolean) => void;
+  reset: () => void;
+}
+
+const initialP2pState: P2pChatState = {
+  activeConversationId: null,
+  connectionState: "disconnected",
+  isConnecting: false,
+};
+
+export const useP2pChatStore = create<P2pChatState & P2pChatActions>()(
+  (set) => ({
+    ...initialP2pState,
+
+    setActiveConversation: (id) => set({ activeConversationId: id }),
+    setConnectionState: (connectionState) => set({ connectionState }),
+    setIsConnecting: (isConnecting) => set({ isConnecting }),
+    reset: () => set({ ...initialP2pState }),
+  }),
+);

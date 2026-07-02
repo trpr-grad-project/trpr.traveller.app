@@ -31,9 +31,10 @@ export default function BackButton({
   return (
     <Pressable
       onPress={handlePress}
-      className={`shrink-0 items-center justify-center rounded-full active:opacity-60 ${className ?? ""}`}
+      className={`shrink-0 items-center justify-center rounded-full active:opacity-60 min-w-[44px] min-h-[44px] ${className ?? ""}`}
       accessibilityRole="button"
       accessibilityLabel="Go back"
+      android_ripple={{ color: "rgba(0,0,0,0.1)", borderless: true }}
     >
       <MaterialIcons
         name={iconName}

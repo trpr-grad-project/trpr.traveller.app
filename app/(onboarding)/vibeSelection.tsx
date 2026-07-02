@@ -190,7 +190,7 @@ export default function VibeSelectionScreen() {
       />
 
       {/* Header */}
-      <View style={{ paddingTop: insets.top + 8 }} className="px-2 pb-4">
+      <View style={{ paddingTop: insets.top + 8 }} className="px-2 pb-4 items-start">
         <BackButton />
         <View className="px-4 pt-2">
           <Text className="text-[#1A1A1A] dark:text-white text-2xl font-bold tracking-tight mb-2">

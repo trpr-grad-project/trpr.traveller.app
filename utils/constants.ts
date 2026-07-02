@@ -16,4 +16,7 @@ export const STORAGE_KEYS = {
   USER_ID: "user_id",
   PROFILE_SETUP_COMPLETED: "profile_setup_completed",
   COLOR_SCHEME: "color_scheme",
+  USER_FIRST_NAME: "user_first_name",
+  USER_LAST_NAME: "user_last_name",
+  USER_EMAIL: "user_email",
 } as const;

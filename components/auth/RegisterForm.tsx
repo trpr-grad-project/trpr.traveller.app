@@ -51,7 +51,6 @@ export default function RegisterForm() {
             firstName: data.firstName.trim(),
             lastName: data.lastName.trim(),
             password: data.password,
-            otpId: response.otpId,
           });
           router.push({
             pathname: "/(auth)/otpVerification",

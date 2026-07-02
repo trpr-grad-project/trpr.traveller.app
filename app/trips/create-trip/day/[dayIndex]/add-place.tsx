@@ -31,6 +31,7 @@ export default function AddPlaceScreen() {
 
   const draftDays = useTripDraftStore((s) => s.days);
   const addPlacesToDay = useTripDraftStore((s) => s.addPlacesToDay);
+  const setPlaceName = useTripDraftStore((s) => s.setPlaceName);
   const governorateId = useTripDraftStore((s) => s.governorateId);
   const mapLocation = useTripDraftStore((s) => s.mapLocation);
 
@@ -58,6 +59,12 @@ export default function AddPlaceScreen() {
     () => data?.pages.flatMap((p: any) => p.items ?? []) ?? [],
     [data],
   );
+
+  useEffect(() => {
+    for (const p of allPlaces) {
+      if (p.id && p.title) setPlaceName(p.id, p.title);
+    }
+  }, [allPlaces, setPlaceName]);
 
   const existingPlaceIds = useMemo(() => {
     if (idx >= 0 && idx < draftDays.length) {

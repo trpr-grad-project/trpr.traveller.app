@@ -16,6 +16,10 @@ export const ENDPOINTS = {
     ai: "/conversation/ai",
   },
 
+  conversations: {
+    base: "/conversations",
+  },
+
   trip: {
     formData: "/trip/form-data",
     create: "/trip",
@@ -25,5 +29,9 @@ export const ENDPOINTS = {
   place: {
     formData: "/places/form-data",
     search: "/places",
+  },
+
+  users: {
+    all: "/users",
   },
 } as const;

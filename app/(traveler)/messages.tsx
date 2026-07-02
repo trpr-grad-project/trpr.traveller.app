@@ -1,80 +1,45 @@
-import React, { useState } from "react";
-import { Pressable, ScrollView, StatusBar, Text, TextInput, View, Image } from "react-native";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StatusBar, Text, TextInput, View, Image } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useConversations } from "@/hooks/useConversations";
 
 const FILTERS = ["All", "Groups", "Unread"];
 
-const CONVERSATIONS = [
-  {
-    id: "1",
-    name: "Ahmed Ali (Local Guide)",
-    preview: "About tomorrow's plan...",
-    time: "2h ago",
-    unread: 2,
-    online: true,
-    isGroup: false,
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuA5EUfORJBarq6w7AgAq5aAs6a4mngxdV2on09juyzwM1VbQpWx0PBLKPuzxRWa2mYjbt55Re7rA54IGN-5omeojQKXkrPueUBF3_ZgnKBAwb14R_wbUUeFXxdMiCv67xIcWR_K4nHjakXAJXObta4O5vTG7tPCAn19nqLKHq4dIu9YDMH90ygA7x6uwKIX2-4bWmeosuWGxfBUD5TsCxSfL-tqhoKJWm5p2u78DbgvL2LK_0RnB2n7ANUbzf0FCAwnttTr1yxPZ_py",
-  },
-  {
-    id: "2",
-    name: "Mohamed Reda (Alexandria Guide)",
-    preview: "The seafood restaurant is booked for tonight.",
-    time: "4h ago",
-    unread: 0,
-    online: false,
-    isGroup: false,
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCFWEEU9JNjHdHLtog34El-wIUeWLI42WbIZLeWa_RNspa6M6q1DVVY8rkTpQN3b4Rl03aZ5inWCjMOh1M1cwWCpfeQYBwuqKtQCTsLaKYKGmfoUb0rDz60xuOSdDRJqqujdD_zRviI_qpYWpuikncqPHljEKv7OAdqVAuYEK3yRMGr-02fQV_4N81ZUILKMlTYtVTqiGDD1uSHH4hV0bouub6TTi5ofVIipAJcUqP3jSsGJucUpwbG-Te_dj-WIyW25HpyfFtFf6OU",
-  },
-  {
-    id: "3",
-    name: "Aswan Nile Cruise Group",
-    preview: "Departure time changed to 5 PM",
-    time: "5h ago",
-    unread: 1,
-    online: false,
-    isGroup: true,
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBwfC5bmA6uzIISOzGmQMFGu38RCMsRRxQJU5O64FcKoSEt6c1TezKoKfReDoiv0RWZSaX7sOQCdSzSXxEXEMv35WcoJVu0ouqEumH-at91JVOkWWLZNAyB8eF3gRtpoC1Gv3SXIRDq_8PsG2vI1_7QnSwb8R02BCYxgqXaXzYN8dowhmLOfle2oQJbX09RlWSmp4GD3aY9QE5dt_7kVwdBGuYME_mGif5DzrLkwK6yyYvf9-zi66DiGVpXmslqthX3ktGkTuHTfm0P",
-  },
-  {
-    id: "4",
-    name: "Cairo Foodies",
-    preview: "Don't miss the koshary spot!",
-    time: "6h ago",
-    unread: 0,
-    online: false,
-    isGroup: true,
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDjCIcusmT7lN633C0a8KwmXdq660v4lA-nEy2dJtm00kdto7YxVEP53OMsnEJjxse9rNKo-KJsTKsssUlTdJbSUdgJmu1v2INtPLaRUoWToz8PXRPrjgYKNGfuRFGmtGWvzZ1grr8d58omeyACSCwgGt3NYH8dT_ZVa0zqkw-kjUy_36_D5KnIdvWXM-J3Z1h7uS7QrxK4VfWEkR1Sx-MytYEYRaE7ZtY4xaKsC2a7uTNmnol56oh6Fypfc0qWWXCOAgI6G0yL9I74",
-  },
-  {
-    id: "5",
-    name: "Giza Expedition 2024",
-    preview: "Meeting point confirmed",
-    time: "Yesterday",
-    unread: 0,
-    online: false,
-    isGroup: true,
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBRrXE--YB_mmudPLrM_t4jzT02PWTfh9Ztqs8LRcqtODG6vCGkpSbONPzZb2He6QkbXqYojzzfX0qEhz0rqp23zP9ge0yoStSW0jvBYsvYPs9-IYWzAKKcyn_dQm49mRlu-tsWKgaoPYgKuNyTg7dHr7oUxt_sDMkmgmVdqtGYoMMmWKXCH_-DgyvDSakTjzcIn6zKfSH9dKrASVvXiJ8d7YL2e7UKJC3JIzuEmyHGiQsIbP0dciJA9qT-y0xMWSioXmnjdLAKxkQk",
-  },
-  {
-    id: "6",
-    name: "Luxor Temple Tour",
-    preview: "See you all at 9 AM!",
-    time: "2d ago",
-    unread: 0,
-    online: false,
-    isGroup: false,
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDkdoBcnN9vkR14fwD8m8laeZgZLzSqmC4RaAz2gXdyfVcVpXlO7hZrZYfUruhDJSMJ8mKaBndf5SbASQHnln6HU5CeaE4VdkP1o70DV8-pHz__ERPtJ7mM6Ih5mcVxln3aFcCF9Waru86-ewOpNsoQXMEdhdK6y3Vjqlm6XtUYwNKfH5MT1j1Tucs2vFlxX6AfV6AWW7y9MUa7Ns7WJXDoW0rOm36wAAi9e9j3F6eTAI0CxLAaJPKGAomdIlHO_WJif-uubmVr-sOK",
-  },
-];
+function formatRelativeTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const now = Date.now();
+  const date = new Date(iso);
+  const diffMs = now - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+function getInitials(name: string | null): string {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+const AVATAR_COLORS = ["#359EFF", "#FF6B6B", "#4CAF50", "#FF9800", "#9C27B0", "#00BCD4", "#F44336", "#3F51B5"];
+
+function avatarColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
@@ -82,6 +47,70 @@ export default function MessagesScreen() {
   const isDark = colorScheme === "dark";
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+
+  const { conversations, isLoading, isRefreshing, refresh, hasNextPage, loadMore } = useConversations();
+
+  const filtered = useMemo(() => {
+    let list = conversations;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((c) => (c.title ?? "").toLowerCase().includes(q));
+    }
+    if (filter === "Unread") {
+      list = list.filter((c) => parseInt(c.unreadCount, 10) > 0);
+    }
+    return list;
+  }, [conversations, search, filter]);
+
+  const renderItem = ({ item: conv }: { item: (typeof conversations)[number] }) => {
+    const unread = parseInt(conv.unreadCount, 10);
+    return (
+      <Pressable
+        key={conv.id}
+        onPress={() =>
+          router.push(
+            `/chat/group/${conv.id}?title=${encodeURIComponent(conv.title ?? "Group Chat")}`,
+          )
+        }
+        className="flex-row items-center px-6 py-4 border-b border-slate-50 dark:border-slate-800"
+      >
+        <View className="relative">
+          {conv.imageUrl ? (
+            <View className="w-14 h-14 rounded-xl overflow-hidden bg-slate-200">
+              <Image source={{ uri: conv.imageUrl }} className="w-full h-full" resizeMode="cover" />
+            </View>
+          ) : (
+            <View
+              className="w-14 h-14 rounded-xl items-center justify-center"
+              style={{ backgroundColor: avatarColor(conv.id) }}
+            >
+              <Text className="text-white text-lg font-bold">{getInitials(conv.title)}</Text>
+            </View>
+          )}
+        </View>
+        <View className="flex-1 ml-4">
+          <View className="flex-row justify-between items-baseline mb-0.5">
+            <Text className="font-bold text-[#0c141d] dark:text-white truncate flex-1 mr-2">
+              {conv.title ?? "Group Chat"}
+            </Text>
+            <Text className={`text-xs font-semibold ${unread > 0 ? "text-primary" : "text-slate-400"}`}>
+              {formatRelativeTime(conv.lastMessage?.sentAt ?? conv.updatedAt)}
+            </Text>
+          </View>
+          <View className="flex-row justify-between items-center">
+            <Text className="text-sm text-slate-500 dark:text-slate-400 truncate flex-1 mr-2">
+              {conv.lastMessage?.text ?? "No messages yet"}
+            </Text>
+            {unread > 0 && (
+              <View className="bg-primary rounded-full min-w-[20px] h-5 px-1.5 items-center justify-center flex-shrink-0">
+                <Text className="text-white text-[11px] font-bold">{unread > 99 ? "99+" : unread}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Pressable>
+    );
+  };
 
   return (
     <View className="flex-1 bg-white dark:bg-[#0f1923]" style={{ paddingTop: insets.top }}>
@@ -124,40 +153,56 @@ export default function MessagesScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1 mb-24">
-        <View className="divide-y divide-slate-50 dark:divide-slate-800">
-          {CONVERSATIONS.map((conv) => (
-            <Pressable
-              key={conv.id}
-              onPress={() => router.push(conv.isGroup ? `/chat/group/${conv.id}` : `/chat/${conv.id}`)}
-              className="flex-row items-center px-6 py-4 border-b border-slate-50 dark:border-slate-800"
-            >
-              <View className="relative">
-                <View className={`w-14 h-14 ${conv.isGroup ? "rounded-xl" : "rounded-full"} overflow-hidden bg-slate-200`}>
-                  <Image source={{ uri: conv.avatar }} className="w-full h-full" resizeMode="cover" />
-                </View>
-                {conv.online && (
-                  <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-[#0f1923]" />
-                )}
-              </View>
-              <View className="flex-1 ml-4">
-                <View className="flex-row justify-between items-baseline mb-0.5">
-                  <Text className="font-bold text-[#0c141d] dark:text-white truncate flex-1 mr-2">{conv.name}</Text>
-                  <Text className={`text-xs font-semibold ${conv.unread > 0 ? "text-primary" : "text-slate-400"}`}>
-                    {conv.time}
-                  </Text>
-                </View>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-sm text-slate-500 dark:text-slate-400 truncate flex-1 mr-2">{conv.preview}</Text>
-                  {conv.unread > 0 && (
-                    <View className="w-2.5 h-2.5 bg-primary rounded-full flex-shrink-0" />
-                  )}
-                </View>
-              </View>
-            </Pressable>
-          ))}
+      <Pressable
+        onPress={() => router.push("/profile/users")}
+        className="mx-4 mb-3 flex-row items-center gap-3 bg-primary/5 dark:bg-primary/10 px-4 py-3 rounded-2xl border border-primary/10 active:opacity-70"
+      >
+        <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
+          <MaterialIcons name="person-search" size={22} color="#359EFF" />
         </View>
-      </ScrollView>
+        <View className="flex-1">
+          <Text className="text-sm font-bold text-[#0c141d] dark:text-white">Find People</Text>
+          <Text className="text-xs text-slate-500 dark:text-slate-400">Browse all travellers & guides</Text>
+        </View>
+        <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
+      </Pressable>
+
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#359EFF" />
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          className="flex-1 mb-24"
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#359EFF" />
+          }
+          onEndReached={hasNextPage ? loadMore : undefined}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            hasNextPage ? (
+              <View className="py-4 items-center">
+                <ActivityIndicator size="small" color="#359EFF" />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <View className="flex-1 items-center justify-center py-20 px-6">
+              <MaterialIcons name="chat-bubble-outline" size={64} color="#94a3b8" />
+              <Text className="text-lg font-semibold text-slate-500 dark:text-slate-400 mt-4 text-center">
+                No conversations yet
+              </Text>
+              <Text className="text-sm text-slate-400 dark:text-slate-500 mt-1 text-center">
+                Find people to start chatting
+              </Text>
+            </View>
+          }
+        />
+      )}
 
       <Pressable
         onPress={() => router.push("/chat/ai")}

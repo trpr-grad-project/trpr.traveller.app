@@ -1,67 +1,168 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
+  ScrollView,
   StatusBar,
   Text,
   View,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
+import { router } from "expo-router";
+import Toast from "react-native-toast-message";
 
 import BackButton from "@/components/BackButton";
-import PrimaryButton from "@/components/PrimaryButton";
+import { useProfile } from "@/context/ProfileContext";
+import { profileService } from "@/services";
+import { ProfileLanguage } from "@/types";
 
-const LANGUAGES = [
-  { flag: "🇺🇸", name: "English (US)", id: "en" },
-  { flag: "🇪🇬", name: "Arabic (العربية)", id: "ar" },
-  { flag: "🇫🇷", name: "French (Français)", id: "fr" },
-  { flag: "🇪🇸", name: "Spanish (Español)", id: "es" },
-  { flag: "🇩🇪", name: "German (Deutsch)", id: "de" },
-];
+const LANG_EMOJI_MAP: Record<string, string> = {
+  en: "\uD83C\uDDEC\uD83C\uDDE7",
+  es: "\uD83C\uDDEA\uD83C\uDDF8",
+  fr: "\uD83C\uDDEB\uD83C\uDDF7",
+  de: "\uD83C\uDDE9\uD83C\uDDEA",
+  zh: "\uD83C\uDDE8\uD83C\uDDF3",
+  ja: "\uD83C\uDDEF\uD83C\uDDF5",
+  ko: "\uD83C\uDDF0\uD83C\uDDF7",
+  pt: "\uD83C\uDDF5\uD83C\uDDF9",
+  ru: "\uD83C\uDDF7\uD83C\uDDFA",
+  ar: "\uD83C\uDDF8\uD83C\uDDE6",
+};
+
+function LangIcon({ code }: { code: string }) {
+  const emoji = LANG_EMOJI_MAP[code];
+  if (emoji) {
+    return <Text className="text-2xl">{emoji}</Text>;
+  }
+  return (
+    <Text className="text-xs font-bold text-[#1A1A1A] dark:text-white uppercase">
+      {code}
+    </Text>
+  );
+}
 
 export default function LanguageScreen() {
   const insets = useSafeAreaInsets();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const [selected, setSelected] = useState("en");
+  const { languages: selectedLanguages, updateProfile } = useProfile();
+  const [availableLanguages, setAvailableLanguages] = useState<ProfileLanguage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<number | null>(
+    selectedLanguages.length > 0 ? selectedLanguages[0].id : null,
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    profileService
+      .getProfileSetupData()
+      .then((data) => setAvailableLanguages(data.languages ?? []))
+      .catch(() => Toast.show({ type: "error", text1: "Failed to load languages" }))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    if (selectedId === null) return;
+    setIsSaving(true);
+    try {
+      await updateProfile({ languageIds: [String(selectedId)] });
+      Toast.show({ type: "success", text1: "Language updated" });
+      router.back();
+    } catch {
+      Toast.show({ type: "error", text1: "Failed to update language" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-white dark:bg-background-dark items-center justify-center">
+        <ActivityIndicator size="large" color="#359EFF" />
+      </View>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
-      <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+    <View className="flex-1 bg-white dark:bg-background-dark">
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      <View className="flex-row items-center px-4 py-3">
-        <BackButton iconSize={18} iconName="arrow-back-ios-new" />
-        <Text className="text-lg font-bold text-main-light dark:text-white ml-2">Language</Text>
+      <View style={{ paddingTop: insets.top + 8 }} className="px-2 pb-4 items-start">
+        <BackButton />
+        <Text className="text-[#1A1A1A] dark:text-white text-2xl font-bold tracking-tight text-center px-4 pt-2">
+          Select Your Language
+        </Text>
       </View>
 
-      <View className="mx-4 mt-2 bg-white dark:bg-neutral-dark rounded-2xl border border-neutral-light dark:border-neutral-dark overflow-hidden shadow-sm">
-        {LANGUAGES.map((lang, i) => {
-          const isSelected = selected === lang.id;
-          return (
-            <Pressable
-              key={lang.id}
-              onPress={() => setSelected(lang.id)}
-              className={`flex-row items-center px-4 py-4 gap-3 ${
-                i !== LANGUAGES.length - 1 ? "border-b border-neutral-light dark:border-neutral-dark" : ""
-              }`}
-            >
-              <Text className="text-2xl">{lang.flag}</Text>
-              <Text className="flex-1 text-sm font-semibold text-main-light dark:text-white">{lang.name}</Text>
-              <View
-                className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
-                  isSelected ? "border-primary" : "border-gray-300 dark:border-gray-600"
+      <ScrollView
+        className="flex-1 px-5 pt-2"
+        contentContainerStyle={{ paddingBottom: insets.bottom + 160 }}
+      >
+        <View className="gap-4 max-w-md mx-auto w-full">
+          {availableLanguages.map((lang) => {
+            const isSelected = selectedId === lang.id;
+            return (
+              <Pressable
+                key={lang.id}
+                onPress={() => setSelectedId(lang.id)}
+                className={`flex-row items-center gap-4 rounded-xl border-2 p-4 active:scale-[0.98] ${
+                  isSelected
+                    ? "border-primary bg-white dark:bg-neutral-dark"
+                    : "border-neutral-light dark:border-neutral-dark bg-white dark:bg-neutral-dark"
                 }`}
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 12,
+                  elevation: 2,
+                }}
               >
-                {isSelected && <View className="w-3 h-3 rounded-full bg-primary" />}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
+                <View className="size-12 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800">
+                  <LangIcon code={lang.code} />
+                </View>
 
-      <View className="flex-1 justify-end px-4" style={{ paddingBottom: insets.bottom + 16 }}>
-        <PrimaryButton title="Apply Changes" onPress={() => {}} />
+                <View className="flex-1">
+                  <Text className="text-[#1A1A1A] dark:text-white text-base font-semibold">
+                    {lang.name}
+                  </Text>
+                  <Text className="text-[#828282] dark:text-gray-400 text-xs font-normal">
+                    {lang.nativeName}
+                  </Text>
+                </View>
+
+                <View
+                  className={`h-6 w-6 rounded-full border-2 items-center justify-center ${
+                    isSelected
+                      ? "border-primary"
+                      : "border-[#E0E0E0] dark:border-gray-600"
+                  }`}
+                >
+                  {isSelected && (
+                    <View className="h-3 w-3 rounded-full bg-primary" />
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      <View
+        className="absolute bottom-0 left-0 right-0 p-6 bg-white dark:bg-background-dark"
+        style={{ paddingBottom: insets.bottom + 16 }}
+      >
+        <View className="max-w-md mx-auto w-full">
+          <Pressable
+            onPress={handleSave}
+            disabled={selectedId === null || isSaving}
+            className="flex w-full items-center justify-center rounded-2xl h-[56px] bg-primary active:opacity-90 shadow-lg shadow-primary/20 disabled:opacity-50"
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text className="text-white text-[20px] font-bold">Save</Text>
+            )}
+          </Pressable>
+        </View>
       </View>
     </View>
   );
