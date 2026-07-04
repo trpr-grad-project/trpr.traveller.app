@@ -90,7 +90,7 @@ export default function DayAccordion({
                           return;
                         }
                         const h = parseInt(t, 10);
-                        if (!isNaN(h) && h >= 0) onDurationChange(i, h);
+                        if (!isNaN(h) && h >= 0) onDurationChange(i, Math.min(h, 24));
                       }}
                       keyboardType="number-pad"
                       className="w-20 h-10 bg-slate-50 dark:bg-slate-900 rounded-xl px-3 text-sm font-medium text-[#0c141d] dark:text-white"

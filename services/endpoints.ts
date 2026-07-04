@@ -13,7 +13,7 @@ export const ENDPOINTS = {
   },
 
   conversation: {
-    ai: "/conversation/ai",
+    ai: "/conversations/ai",
   },
 
   conversations: {
@@ -22,8 +22,14 @@ export const ENDPOINTS = {
 
   trip: {
     formData: "/trip/form-data",
-    create: "/trip",
+    create: "/trip/user",
+    get: "/trip/",
+    myTrips: "/trip/me",
     uploadImages: "/trip/images/upload-images",
+    home: "/trip/home",
+    join: "/trip/join/",
+    start: "/trip/start/",
+    acceptParticipant: "/trip/accept",
   },
 
   place: {

@@ -71,6 +71,14 @@ export default function CreateTripStep3() {
         });
         return;
       }
+      if (draft.days[i].duration > 24) {
+        Toast.show({
+          type: "error",
+          text1: `Day ${i + 1} exceeds 24 hours`,
+          text2: "Duration cannot exceed 24 hours per day",
+        });
+        return;
+      }
     }
 
     const allUploaded = draft.images.every(
@@ -85,6 +93,10 @@ export default function CreateTripStep3() {
       return;
     }
 
+    const locationLabel = draft.governorateId
+      ? `${draft.governorateName}, Egypt`
+      : "Not specified";
+
     const payload: CreateTripPayload = {
       themeId: String(draft.themeId!),
       title: draft.title,
@@ -92,9 +104,9 @@ export default function CreateTripStep3() {
       price: "0",
       startDate: draft.startDate!,
       images: draft.images.map((i) => i.filename!),
-      autoApprove: true,
+      autoApprove: draft.autoApprove,
       tripVisibility: draft.visibility,
-      publishMode: "DirectPublish",
+      publishMode: draft.publishMode,
       segments: draft.days.map((d) => ({
         duration: String(d.duration),
         placesIds: d.placeIds.map(String),
@@ -116,7 +128,7 @@ export default function CreateTripStep3() {
           data?.data?.id ??
           (data as any)?.createdTrip?.id;
         if (tripId) {
-          router.replace(`/trips/planCreated/${tripId}`);
+          router.replace(`/trips/planCreated/${tripId}?location=${encodeURIComponent(locationLabel)}`);
         } else {
           router.replace("/(traveler)");
         }

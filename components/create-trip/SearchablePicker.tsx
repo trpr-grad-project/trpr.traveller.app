@@ -25,7 +25,7 @@ export interface SearchablePickerRef {
 interface SearchablePickerProps {
   items: PickerItem[];
   selectedId: number | null;
-  onSelect: (id: number) => void;
+  onSelect: (item: PickerItem) => void;
   labelExtractor?: (item: PickerItem) => string;
   snapPoints?: string[];
 }
@@ -116,7 +116,7 @@ const SearchablePicker = forwardRef<SearchablePickerRef, SearchablePickerProps>(
                 return (
                   <Pressable
                     onPress={() => {
-                      onSelect(item.id);
+                      onSelect(item);
                       sheetRef.current?.close();
                     }}
                     className={`flex-row items-center px-4 py-3.5 rounded-xl mb-1 ${

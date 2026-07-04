@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -9,264 +11,684 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
-import BackButton from "@/components/BackButton";
+import { useLocalSearchParams, router } from "expo-router";
 import { useColorScheme } from "nativewind";
 
-const ACTION_BUTTONS = [
-  { icon: "auto-awesome" as const, label: "AI Chat", primary: true },
-  { icon: "near-me" as const, label: "Directions" },
-  { icon: "cloud" as const, label: "Weather" },
-  { icon: "camera-enhance" as const, label: "AI Scan" },
-];
+import BackButton from "@/components/BackButton";
+import PrimaryButton from "@/components/PrimaryButton";
+import { useAuth } from "@/context/AuthContext";
+import { useTripDetails } from "@/hooks/useTripDetails";
+import { useJoinTrip } from "@/hooks/useJoinTrip";
+import { useStartTrip } from "@/hooks/useStartTrip";
+import { useRespondToParticipant } from "@/hooks/useRespondToParticipant";
+import { STATUS_TO_LABEL, STATUS_COLORS } from "@/utils/tripSegments";
+import { resolveImageUrl } from "@/utils/constants";
+import type { TripResponse } from "@/types";
 
-const GUIDES = [
-  { name: "Hiroshi", specialty: "History", active: true, avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCWp6muKsHer3B746DB4Gw7TKeZwxiFsHAIlxHngFZp0p6920v8izAzcrI0kgg7Sr8J7MkcdDGkyta6aN5RyiT3ZWWjY4GNBx7a_9LZuah-3pkRbBAYN6kMz7XKCUoA6TXLNnZmT3lXoyDpABUlaggEsdJvQ1UiGVRVMFXTwhlZMzhP4zQWRR1CW8aMRJ-IM6cJsfu_4q9ugKCCo9MQOH8Rb6Z3xRj3aqPGKLrK_Q9374HGa-q_ZIuyJFCuMa1Oz_06J_TZUMzJpL3T" },
-  { name: "Yumi", specialty: "Foodie", active: false, avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhnfKxIa3b0GI99-MVJL7x6e0uqmCL99iuEM-RGFMG9qQqs6klMWY14P7eXXvIQtIgnab92VDnFRvCZx6GtQvoxzmcsYu1PEJIB9JcE7l4lAOOYQzf1lBFwpEbI9xgyevAuNxrFFNRPFwfc07NeaemCs4cAhtYf726wN8IhJgZpzksMOLS8eiYR4uA_RQs35S7DtgPGe0MCexY2EnDPT_FUCoFr5AqMB2p7K_pnPPrcTYlnSw4HImWQ0S6VQmlM6Xt8jWB-e6G5F4F" },
-  { name: "Kenji", specialty: "Nature", active: false, avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuClIu0mck1l-r6ixA8ZthE9w706dqpYArYU1EcxCafFuj9KB5-wrPaX8RiyncsO0wt2JNWveS36iPeBcK8u6iOPRWUeY72QnxvMlNUTz-rbLRwsTUFouWq-gUgWaSOmrsFwWLsR9KLbkyZc0wxZDec0ZufCpbw12fWJzZ0nXFuvAXGHUnC_-jGJUe3FVJn5hctYTCfkvaEFQIUsSxo__kbem4M6Jp0zIhFhrIyMohoNXGQ6Z26lgwaufYZ-KF1i0Lmd8haegckxFyMl" },
-  { name: "Sakura", specialty: "Art", active: false, avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCso2-LRCqrCUZYwt8IFl3SESh4bm0b6B5v2jKqHRTJ_3qyIfobl62A9wCIDAcafUMZepl_zISKE_0EJxSIGcugg2G9WudlhA6weJJthFu1jR0buNgyUgVSO0BYzV4X_8fuelQzncyjbZ_gqAv3B-gMliBb0cf_bj_ajbpXJwvzNVOe8jA613WL0sdNcVsky1J0Wv3fKBvnynei9VTK_pfYDOnMlh3-qnt9F4PbP0aDaHwnLqxlbF2r9d-PV6tYcj-jsgsc-fIPn9qS" },
-];
+function getTripLocation(trip: TripResponse): string {
+  const governorate =
+    trip.segments?.[0]?.places?.[0]?.governorate?.name ?? "";
+  return governorate ? `${governorate}, Egypt` : "";
+}
 
-const PLANS = [
-  { title: "Ancient Temples", type: "Historical • Walking", duration: "3 hrs", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuD1nmHH070ExQeLXMq4sk8jDW5Wjz-QC_pgEPD66vTnKSrfcHpQsqNz1bqBKCbchNCNq51ts-YD8HAQHqr3wZjQXoSq5uQ6zSTdPZ1d-dRBRNEc4dGkyorSGshps16v4fkHm1pEifMJ5_HLHdiYxyFahQX1Ilu-b3opQtAfRtbyn0ctaEcWHg5-yLY9k5M5IfoTpmJXwIebZxXLv2PFEpAMdbg6OFvPNLdUU9I74JyMTszmTqrNePf_biXtDBxaGrrOlMvME0pnVYav" },
-  { title: "Street Food Walk", type: "Food • Culture", duration: "2 hrs", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDxgxRii_OpzVnlwevplAqeBo95FDx_pGX4Vju82pWnMCnnqzJ9q4rXCM9jF9YTSBA2XhlcJQd6dPOdefz2bDzUMqmZqxKa5-s647rwxph-Wxi2gaauX_qmd1YWue4a-9Ia9W7sCF9X2N3-hbHUtwDPP_1Kg4ptrDwTWBXeaZ_jaOgiC5KcTs-pjt0UanMPpUJexVgKIqeiR1G36zInp-cvnQzk4qnq_72h-NOexpcYw3rjy_ejvUrBkR2fKsoPk4kQGqT8z68w6m2t" },
-  { title: "Zen Gardens", type: "Relaxation • Nature", duration: "4 hrs", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAn3S50r7o9aBJPZaeC-iQTPmxdfEeNkZPhlnkiujlDykgwwcA-YzmWdzdmBnpxeh9bf4AqB9vVuJIGXxOp7hqa6h9Ns37gRoYh7XekncGWb-8pyghwrP7pUSg8NB-ICZWQiFzu-eFebaNpu2cRj2GqzUpl5vGhIRu554_R95MREUK1o5aHQExeN3fbmE0J5pblyw6E71wFNf0iEhdfUDyCrIks-dRJ14wy29RKKb5mqWOLDHGlsdQCHixfF1arhD976TV-uUD5lR5-" },
+function formatDate(dateStr: string): string {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function getInitials(firstName?: string, lastName?: string): string {
+  return `${firstName?.charAt(0) ?? ""}${lastName?.charAt(0) ?? ""}`.toUpperCase() || "?";
+}
+
+function formatVisitTime(minutes: number | null): string {
+  if (!minutes) return "";
+  return minutes >= 60
+    ? `${Math.round(minutes / 60)}h`
+    : `${minutes}m`;
+}
+
+const AVATAR_COLORS = [
+  "#359EFF", "#22c55e", "#eab308", "#ef4444",
+  "#a855f7", "#ec4899", "#f97316", "#06b6d4",
 ];
 
 export default function TripDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [activeTab, setActiveTab] = useState("Overview");
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
 
+  const { data: trip, isLoading, isError, refetch } = useTripDetails(id ?? "");
+  const { user } = useAuth();
+  const joinMutation = useJoinTrip();
+  const startTripMutation = useStartTrip();
+  const respondMutation = useRespondToParticipant();
+  const [joinRequested, setJoinRequested] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [expandedDay, setExpandedDay] = useState<number | null>(1);
+  const [expandedDesc, setExpandedDesc] = useState(false);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center" style={{ paddingTop: insets.top }}>
+        <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+        <ActivityIndicator size="large" color="#359EFF" />
+      </View>
+    );
+  }
+
+  if (isError || !trip) {
+    return (
+      <View className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center px-6" style={{ paddingTop: insets.top }}>
+        <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+        <MaterialIcons name="error-outline" size={48} color="#ef4444" />
+        <Text className="text-base font-semibold text-slate-500 dark:text-slate-400 mt-4 text-center">
+          Failed to load trip details.
+        </Text>
+        <Pressable
+          onPress={() => refetch()}
+          className="mt-6 bg-primary rounded-xl py-3 px-8"
+        >
+          {({ pressed }) => (
+            <Text className="text-white font-bold text-sm" style={{ opacity: pressed ? 0.7 : 1 }}>
+              Retry
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    );
+  }
+
+  const label = STATUS_TO_LABEL[trip.status] ?? trip.status;
+  const statusColor = STATUS_COLORS[label];
+  const location = getTripLocation(trip);
+  const theme = trip.theme;
+  const creator = trip.createdByUser;
+  const participantsCount = trip.approvedParticipants?.length ?? 0;
+  const spotsLeft = trip.maxParticipantsCount - participantsCount;
+  const creatorInitials = getInitials(creator?.firstName, creator?.lastName);
+
+  const isCreator = user?.id === trip.createdByUser?.id;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const isStartDay = trip.startDate === todayStr;
+  const isApproved = trip.approvedParticipants?.some((p) => p.id === user?.id) ?? false;
+  const isPending = trip.pendingParticipants?.some((p) => p.id === user?.id) ?? false;
+
+  let buttonTitle: string;
+  let buttonDisabled: boolean;
+  if (isCreator) {
+    buttonTitle = "Start Trip";
+    buttonDisabled = !isStartDay;
+  } else if (isApproved || (joinRequested && trip.autoApprove)) {
+    buttonTitle = "Joined";
+    buttonDisabled = true;
+  } else if (isPending || joinRequested) {
+    buttonTitle = "Waiting for acceptance";
+    buttonDisabled = true;
+  } else {
+    buttonTitle = trip.autoApprove ? "Join Trip" : "Request to Join";
+    buttonDisabled = false;
+  }
+
+  const quickStats = [
+    {
+      icon: "calendar-today" as const,
+      label: "Start",
+      value: formatDate(trip.startDate),
+    },
+    {
+      icon: "schedule" as const,
+      label: "Duration",
+      value: trip.tripTime || "N/A",
+    },
+    {
+      icon: "people" as const,
+      label: "Group",
+      value: `${participantsCount}/${trip.maxParticipantsCount}`,
+    },
+    {
+      icon: "star" as const,
+      label: "Rating",
+      value: creator?.rating ? creator.rating.toFixed(1) : "—",
+    },
+  ];
+
   return (
-    <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingBottom: insets.bottom }}>
+    <View className="flex-1 bg-background-light dark:bg-background-dark">
       <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
-        {/* Hero image */}
-        <View className="relative h-[45vh]">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await refetch();
+              setRefreshing(false);
+            }}
+          />
+        }
+      >
+        {/* Hero */}
+        <View className="relative w-full aspect-[4/3]">
           <Image
-            source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuD_A7ZqCz5E9As9AlEupTNdVkKAvpM7-G-IA1s8zX7_vLrgCHBGI9CtLoUs-S9Z_v0jftpicmexl1C3DGFWMEBmewfTQ_vWffFAW-GcnsEDCelrPtcnckFk985I5jcVcdRJUX2Om64wXJ7w4hYqkvUdA2VnqiPIct90Bx4QxAJsmTgzIJ3z-I1ZUR1sBiDo49ei-L4c27iTxIFp4yEtOeaezfTjqCevVBt08-xGka57j2nepZdriQveVoGpJunFxBXwusGUBKdJKKeB" }}
+            source={{ uri: resolveImageUrl(trip.imagesUrls?.[0] ?? "") }}
             className="absolute inset-0 w-full h-full"
             resizeMode="cover"
           />
-          {/* Dark gradient overlay */}
-          <View className="absolute inset-0 bg-black/50" />
+          <View className="absolute inset-0 bg-black/30" />
 
           {/* Top controls */}
           <View
-            className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4 pt-4"
-            style={{ paddingTop: insets.top + 16 }}
+            className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4"
+            style={{ paddingTop: insets.top + 12 }}
           >
-            <BackButton iconSize={18} iconName="arrow-back-ios-new" className="w-10 h-10 bg-white/20" />
-            <View className="flex-row gap-3">
-              <Pressable className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
-                <MaterialIcons name="share" size={22} color="white" />
+            <View className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
+              <BackButton iconSize={18} iconName="chevron-left" className="!min-w-0 !min-h-0 w-10 h-10" />
+            </View>
+            <View className="flex-row gap-2">
+              <Pressable className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
+                {({ pressed }) => (
+                  <MaterialIcons
+                    name="share"
+                    size={20}
+                    color="white"
+                    style={{ opacity: pressed ? 0.6 : 1 }}
+                  />
+                )}
               </Pressable>
-              <Pressable className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
-                <MaterialIcons name="favorite" size={22} color="#359EFF" />
+              <Pressable className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
+                {({ pressed }) => (
+                  <MaterialIcons
+                    name="favorite-border"
+                    size={20}
+                    color="white"
+                    style={{ opacity: pressed ? 0.6 : 1 }}
+                  />
+                )}
               </Pressable>
             </View>
           </View>
 
-          {/* Bottom hero text */}
-          <View className="absolute bottom-6 left-4 right-4">
-            <View className="flex-row items-center gap-2 mb-2">
-              <View className="flex-row items-center gap-1.5 bg-primary/20 border border-primary/30 px-2.5 py-1 rounded-full">
-                <View className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <Text className="text-xs font-bold text-primary">LIVE STATUS: BUSY</Text>
-              </View>
-              <View className="flex-row items-center gap-1 bg-black/40 px-2.5 py-1 rounded-full">
-                <MaterialIcons name="star" size={14} color="#eab308" />
-                <Text className="text-xs font-medium text-white">4.9 (2k Reviews)</Text>
-              </View>
+          {/* Bottom badges */}
+          <View className="absolute bottom-8 left-4 right-4 flex-row items-center gap-2">
+            <View
+              className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg"
+              style={{ backgroundColor: statusColor?.bg ?? "#359EFF" }}
+            >
+              <MaterialIcons name="verified" size={14} color="white" />
+              <Text className="text-[10px] font-bold text-white uppercase tracking-wider">
+                {label}
+              </Text>
             </View>
-            <Text className="text-4xl font-bold text-white drop-shadow-md">Kyoto, Japan</Text>
+            {theme && (
+              <View className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30">
+                <Text className="text-[10px] font-bold text-white uppercase tracking-wider">
+                  {theme}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Content card */}
-        <View className="-mt-4 rounded-t-3xl bg-background-light dark:bg-background-dark pt-8">
-          {/* Action buttons */}
-          <View className="flex-row justify-between px-6 mb-8">
-            {ACTION_BUTTONS.map((btn) => (
-              <Pressable
-                key={btn.label}
-                onPress={() => btn.label === "AI Chat" && router.push("/chat/ai")}
-                className="items-center gap-2"
-              >
-                <View className={`w-14 h-14 rounded-2xl items-center justify-center ${
-                  btn.primary ? "bg-primary/10" : "bg-gray-100 dark:bg-gray-800"
-                }`}>
-                  <MaterialIcons name={btn.icon} size={28} color={btn.primary ? "#359EFF" : "#64748b"} />
+        {/* Content */}
+        <View className="-mt-4 bg-background-light dark:bg-background-dark pt-6 px-4">
+          {/* Title + Price */}
+          <View className="flex-row justify-between items-start mb-1">
+            <View className="flex-1 mr-4">
+              <Text className="text-2xl font-bold text-[#0c141d] dark:text-white leading-tight">
+                {trip.title}
+              </Text>
+              {location && (
+                <View className="flex-row items-center gap-1.5 mt-1.5">
+                  <MaterialIcons name="location-on" size={16} color="#94a3b8" />
+                  <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    {location}
+                  </Text>
                 </View>
-                <Text className="text-xs font-semibold text-gray-600 dark:text-gray-300">{btn.label}</Text>
-              </Pressable>
-            ))}
+              )}
+            </View>
+            <Text className="text-2xl font-bold text-primary">
+              {trip.price === 0 ? "Free" : `$${trip.price}`}
+            </Text>
           </View>
 
-          {/* Tab switcher */}
-          <View className="px-4 mb-6">
-            <View className="flex-row bg-gray-200 dark:bg-gray-800 rounded-xl p-1">
-              {["Overview", "Attractions", "Plans"].map((tab) => (
-                <Pressable
-                  key={tab}
-                  onPress={() => setActiveTab(tab)}
-                  className={`flex-1 py-2 rounded-lg ${
-                    activeTab === tab ? "bg-white dark:bg-gray-700 shadow-sm" : "bg-transparent"
-                  }`}
-                >
-                  <Text className={`text-sm font-bold text-center ${
-                    activeTab === tab ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"
-                  }`}>
-                    {tab}
+          {/* Meta row */}
+          <View className="flex-row items-center gap-2 mt-1 mb-5">
+            {trip.tripTime && (
+              <View className="flex-row items-center gap-1">
+                <MaterialIcons name="schedule" size={14} color="#94a3b8" />
+                <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {trip.tripTime}
+                </Text>
+              </View>
+            )}
+            {trip.startDate && (
+              <>
+                <View className="w-1 h-1 rounded-full bg-slate-300" />
+                <View className="flex-row items-center gap-1">
+                  <MaterialIcons name="calendar-today" size={13} color="#94a3b8" />
+                  <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    {formatDate(trip.startDate)}
                   </Text>
-                </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* Quick Stats */}
+          <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700 mb-6">
+            <View className="flex-row justify-between">
+              {quickStats.map((stat) => (
+                <View key={stat.label} className="items-center flex-1">
+                  <MaterialIcons name={stat.icon} size={20} color="#359EFF" />
+                  <Text className="text-xs font-bold text-[#0c141d] dark:text-white mt-1.5">
+                    {stat.value}
+                  </Text>
+                  <Text className="text-[10px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+                    {stat.label}
+                  </Text>
+                </View>
               ))}
             </View>
           </View>
 
-          <View className="flex-col gap-8 px-4">
-            {/* About */}
-            <View>
-              <Text className="text-lg font-bold text-gray-900 dark:text-white mb-2">About</Text>
-              <Text className="text-base leading-relaxed text-gray-600 dark:text-gray-300">
-                The cultural capital of Japan, famous for its classical Buddhist temples, as well as gardens, imperial palaces, Shinto shrines and traditional wooden houses.
-              </Text>
-            </View>
-
-            {/* Location map placeholder */}
-            <View>
-              <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">Location</Text>
-              <View className="relative h-48 w-full overflow-hidden rounded-2xl bg-slate-200 shadow-sm">
-                {/* Simulated map */}
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <View key={`h${i}`} className="absolute left-0 right-0 h-px bg-slate-300" style={{ top: `${i * 25}%` }} />
-                ))}
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <View key={`v${i}`} className="absolute top-0 bottom-0 w-px bg-slate-300" style={{ left: `${i * 25}%` }} />
-                ))}
-                <View className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
-                  <View className="w-12 h-12 rounded-full bg-primary/20 items-center justify-center">
-                    <View className="w-4 h-4 rounded-full bg-primary shadow-lg" />
-                  </View>
-                  <View className="mt-1 bg-white dark:bg-gray-800 px-2 py-1 rounded-md">
-                    <Text className="text-[10px] font-bold dark:text-white">You are here</Text>
-                  </View>
+          {/* Host Card */}
+          {creator && (
+            <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700 mb-6">
+              <View className="flex-row items-center gap-4">
+                <View className="w-14 h-14 rounded-xl bg-primary/10 items-center justify-center">
+                  <Text className="text-lg font-bold text-primary">
+                    {creatorInitials}
+                  </Text>
                 </View>
-              </View>
-            </View>
-
-            {/* Top Guides */}
-            <View>
-              <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-lg font-bold text-gray-900 dark:text-white">Top Guides</Text>
-                <Pressable onPress={() => router.push("/trips/guides")}>
-                  <Text className="text-sm font-bold text-primary">View All</Text>
+                <View className="flex-1">
+                  <View className="flex-row items-center gap-1.5">
+                    <Text className="text-base font-bold text-[#0c141d] dark:text-white">
+                      {creator.firstName} {creator.lastName}
+                    </Text>
+                    <MaterialIcons name="verified" size={16} color="#22c55e" />
+                  </View>
+                  {creator.rating && (
+                    <View className="flex-row items-center gap-1 mt-0.5">
+                      <MaterialIcons name="star" size={14} color="#eab308" />
+                      <Text className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                        {creator.rating.toFixed(1)}
+                      </Text>
+                    </View>
+                  )}
+                  <Text className="text-xs text-slate-400 mt-0.5">
+                    @{creator.userName}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => router.push(`/trips/user/${creator.id}`)}
+                  className="px-4 py-2 rounded-lg border border-primary/30"
+                >
+                  {({ pressed }) => (
+                    <Text
+                      className="text-xs font-bold text-primary"
+                      style={{ opacity: pressed ? 0.6 : 1 }}
+                    >
+                      View Profile
+                    </Text>
+                  )}
                 </Pressable>
               </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 8 }}>
-                {GUIDES.map((guide) => (
-                  <Pressable key={guide.name} className="items-center gap-2">
-                    <View className={`relative w-16 h-16 rounded-full p-0.5 ${guide.active ? "border-2 border-primary" : ""}`}>
-                      <View className={`w-full h-full rounded-full overflow-hidden ${!guide.active ? "opacity-60" : ""}`}>
-                        <Image source={{ uri: guide.avatar }} className="w-full h-full" resizeMode="cover" />
-                      </View>
-                      {guide.active && (
-                        <View className="absolute bottom-0 right-0 w-5 h-5 bg-white dark:bg-gray-800 rounded-full items-center justify-center">
-                          <Text className="text-xs">⭐</Text>
+            </View>
+          )}
+
+          {/* About */}
+          <View className="mb-6">
+            <Text className="text-lg font-bold text-[#0c141d] dark:text-white mb-2">
+              About this trip
+            </Text>
+            <Text className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              {trip.description
+                ? trip.description.length > 120 && !expandedDesc
+                  ? trip.description.slice(0, 120).trimEnd() + "... "
+                  : trip.description
+                : "No description available."}
+              {trip.description && trip.description.length > 120 && (
+                <Text
+                  className="text-primary font-bold"
+                  onPress={() => setExpandedDesc(!expandedDesc)}
+                >
+                  {expandedDesc ? "Show less" : "Read more"}
+                </Text>
+              )}
+            </Text>
+          </View>
+
+          {/* Participants */}
+          {trip.maxParticipantsCount > 0 && (
+            <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-50 dark:border-slate-700 mb-6">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-base font-bold text-[#0c141d] dark:text-white">
+                  Participants
+                </Text>
+                <Text className="text-xs font-bold text-primary">
+                  {participantsCount}/{trip.maxParticipantsCount}
+                </Text>
+              </View>
+
+              {trip.approvedParticipants && trip.approvedParticipants.length > 0 && (
+                <View className="flex-row items-center mb-3">
+                  {trip.approvedParticipants.slice(0, 6).map((p, idx) => (
+                    <View
+                      key={p.id}
+                      className="w-9 h-9 rounded-full items-center justify-center -ml-1.5 first:ml-0 border-2 border-white dark:border-slate-800"
+                      style={{ backgroundColor: AVATAR_COLORS[idx % AVATAR_COLORS.length], zIndex: 6 - idx }}
+                    >
+                      <Text className="text-[10px] font-bold text-white">
+                        {getInitials(p.firstName, p.lastName)}
+                      </Text>
+                    </View>
+                  ))}
+                  {participantsCount > 6 && (
+                    <View className="w-9 h-9 rounded-full items-center justify-center -ml-1.5 border-2 border-white dark:border-slate-800 bg-slate-100 dark:bg-slate-700">
+                      <Text className="text-[10px] font-bold text-slate-500 dark:text-slate-300">
+                        +{participantsCount - 6}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-2">
+                  {spotsLeft > 0 ? (
+                    <>
+                      <MaterialIcons name="people-alt" size={16} color="#22c55e" />
+                      <Text className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        {spotsLeft} spot{spotsLeft !== 1 ? "s" : ""} left
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <MaterialIcons name="group-off" size={16} color="#ef4444" />
+                      <Text className="text-xs font-bold text-red-500">
+                        Fully booked
+                      </Text>
+                    </>
+                  )}
+                </View>
+                {trip.autoApprove && (
+                  <View className="flex-row items-center gap-1">
+                    <MaterialIcons name="check-circle" size={14} color="#22c55e" />
+                    <Text className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                      Auto-approve
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Pending requests (creator only) */}
+          {isCreator && trip.pendingParticipants && trip.pendingParticipants.length > 0 && (
+            <View className="mb-6">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-lg font-bold text-[#0c141d] dark:text-white">
+                  Pending Requests
+                </Text>
+                <Text className="text-xs font-bold text-primary">
+                  {trip.pendingParticipants.length} request{trip.pendingParticipants.length !== 1 ? "s" : ""}
+                </Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
+                {trip.pendingParticipants.map((p, idx) => (
+                  <View
+                    key={p.id}
+                    className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-50 dark:border-slate-700 shadow-sm w-44"
+                  >
+                    <View
+                      className="w-12 h-12 rounded-full items-center justify-center mb-3"
+                      style={{ backgroundColor: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                    >
+                      <Text className="text-sm font-bold text-white">
+                        {getInitials(p.firstName, p.lastName)}
+                      </Text>
+                    </View>
+                    <Text className="text-sm font-bold text-[#0c141d] dark:text-white mb-1" numberOfLines={1}>
+                      {p.firstName} {p.lastName}
+                    </Text>
+                    <Text className="text-[11px] text-slate-400 mb-4" numberOfLines={1}>
+                      @{p.userName}
+                    </Text>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        className="flex-1 h-9 rounded-lg bg-emerald-500 items-center justify-center"
+                        onPress={() =>
+                          respondMutation.mutate({
+                            tripId: trip.id,
+                            participantId: p.id,
+                            action: "accept",
+                          })
+                        }
+                      >
+                        <MaterialIcons name="check" size={18} color="white" />
+                      </Pressable>
+                      <Pressable
+                        className="flex-1 h-9 rounded-lg bg-red-500 items-center justify-center"
+                        onPress={() =>
+                          respondMutation.mutate({
+                            tripId: trip.id,
+                            participantId: p.id,
+                            action: "reject",
+                          })
+                        }
+                      >
+                        <MaterialIcons name="close" size={18} color="white" />
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Itinerary */}
+          {trip.segments && trip.segments.length > 0 && (
+            <View className="mb-6">
+              <Text className="text-lg font-bold text-[#0c141d] dark:text-white mb-4">
+                Itinerary
+              </Text>
+              <View className="gap-3">
+                {trip.segments.map((segment) => {
+                  const isExpanded = expandedDay === segment.day;
+                  const places = segment.places ?? [];
+                  const placesCount = places.length;
+                  return (
+                    <View
+                      key={segment.day}
+                      className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-50 dark:border-slate-700 shadow-sm overflow-hidden"
+                    >
+                      <Pressable
+                        onPress={() => setExpandedDay(isExpanded ? null : segment.day)}
+                      >
+                        {({ pressed }) => (
+                          <View
+                            className="flex-row items-center justify-between p-4"
+                            style={{ opacity: pressed ? 0.7 : 1 }}
+                          >
+                            <View className="flex-row items-center gap-4">
+                              <View className="w-10 h-10 rounded-xl bg-primary items-center justify-center">
+                                <Text className="text-white font-bold">{segment.day}</Text>
+                              </View>
+                              <View>
+                                <Text className="text-xs font-bold text-slate-400 uppercase">
+                                  Day {segment.day}
+                                </Text>
+                                <Text className="text-sm font-bold text-[#0c141d] dark:text-white">
+                                  {places[0]?.title ?? "Explore"}
+                                </Text>
+                                <Text className="text-[11px] text-slate-400 mt-0.5">
+                                  {placesCount} stop{placesCount !== 1 ? "s" : ""}
+                                  {segment.duration ? ` · ${formatVisitTime(segment.duration)}` : ""}
+                                </Text>
+                              </View>
+                            </View>
+                            <MaterialIcons
+                              name={isExpanded ? "expand-less" : "expand-more"}
+                              size={20}
+                              color={isExpanded ? "#359EFF" : "#94A3B8"}
+                            />
+                          </View>
+                        )}
+                      </Pressable>
+
+                      {isExpanded && places.length > 0 && (
+                        <View className="px-4 pb-4 pt-1 border-t border-slate-50 dark:border-slate-700">
+                          {places.map((place, idx) => (
+                            <View key={place.id} className="flex-row gap-3">
+                              {/* Timeline column */}
+                              <View className="items-center">
+                                <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
+                                  <Text className="text-xs font-bold text-primary">
+                                    {idx + 1}
+                                  </Text>
+                                </View>
+                                {idx < places.length - 1 && (
+                                  <View className="flex-1 w-px bg-primary/20 my-1" style={{ minHeight: 24 }} />
+                                )}
+                              </View>
+
+                              {/* Place content */}
+                              <View className="flex-1 pb-4">
+                                <View className="flex-row justify-between items-start">
+                                  <View className="flex-1 mr-2">
+                                    <Text className="text-sm font-bold text-[#0c141d] dark:text-white">
+                                      {place.title}
+                                    </Text>
+                                    {place.description && (
+                                      <Text
+                                        className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed"
+                                        numberOfLines={2}
+                                      >
+                                        {place.description}
+                                      </Text>
+                                    )}
+                                  </View>
+                                  {place.averageVisitTime && (
+                                    <View className="px-2 py-0.5 rounded-md bg-primary/10">
+                                      <Text className="text-[10px] font-bold text-primary">
+                                        {formatVisitTime(place.averageVisitTime)}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+
+                                <View className="flex-row items-center gap-2 mt-1.5 flex-wrap">
+                                  {place.governorate?.name && (
+                                    <View className="flex-row items-center gap-1">
+                                      <MaterialIcons name="location-on" size={12} color="#94a3b8" />
+                                      <Text className="text-[11px] text-slate-400">
+                                        {place.governorate.name}
+                                      </Text>
+                                    </View>
+                                  )}
+                                  {place.category?.name && (
+                                    <>
+                                      <View className="w-1 h-1 rounded-full bg-slate-300" />
+                                      <View className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700">
+                                        <Text className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                                          {place.category.name}
+                                        </Text>
+                                      </View>
+                                    </>
+                                  )}
+                                  {place.tags && place.tags.length > 0 && (
+                                    <>
+                                      <View className="w-1 h-1 rounded-full bg-slate-300" />
+                                      <Text className="text-[11px] text-slate-400">
+                                        {place.tags.slice(0, 2).map((t) => t.name).join(", ")}
+                                      </Text>
+                                    </>
+                                  )}
+                                </View>
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      {isExpanded && places.length === 0 && (
+                        <View className="px-4 pb-4 pt-3 border-t border-slate-50 dark:border-slate-700">
+                          <Text className="text-sm text-slate-400 italic">
+                            No details available for this day.
+                          </Text>
                         </View>
                       )}
                     </View>
-                    <View className="items-center">
-                      <Text className="text-sm font-bold text-gray-900 dark:text-white">{guide.name}</Text>
-                      <Text className="text-[10px] text-gray-500 dark:text-gray-400">{guide.specialty}</Text>
-                    </View>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-
-            {/* Featured Plans */}
-            <View>
-              <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">Featured Plans</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 8 }}>
-                {PLANS.map((plan) => (
-                  <View key={plan.title} className="w-40 gap-2">
-                    <View className="relative rounded-xl overflow-hidden" style={{ aspectRatio: 3 / 4 }}>
-                      <Image source={{ uri: plan.image }} className="w-full h-full" resizeMode="cover" />
-                      <View className="absolute bottom-2 left-2 bg-black/50 px-1.5 py-0.5 rounded">
-                        <Text className="text-[10px] font-bold text-white">{plan.duration}</Text>
-                      </View>
-                    </View>
-                    <View>
-                      <Text className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{plan.title}</Text>
-                      <Text className="text-xs text-gray-500 dark:text-gray-400">{plan.type}</Text>
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-
-            {/* Rating card */}
-            <View className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm mb-4">
-              <View className="flex-row gap-8 flex-wrap">
-                <View className="gap-1">
-                  <Text className="text-4xl font-black text-gray-900 dark:text-white leading-tight">4.9</Text>
-                  <View className="flex-row gap-0.5">
-                    {[1,2,3,4].map((i) => (
-                      <MaterialIcons key={i} name="star" size={18} color="#359EFF" />
-                    ))}
-                    <MaterialIcons name="star-half" size={18} color="#359EFF" />
-                  </View>
-                  <Text className="text-xs font-medium text-gray-500 dark:text-gray-400">2,341 reviews</Text>
-                </View>
-                <View className="flex-1 gap-2 min-w-[180px]">
-                  {[
-                    { stars: 5, pct: 80 }, { stars: 4, pct: 15 },
-                    { stars: 3, pct: 3 }, { stars: 2, pct: 1 }, { stars: 1, pct: 1 },
-                  ].map((row) => (
-                    <View key={row.stars} className="flex-row items-center gap-3">
-                      <Text className="text-xs font-medium text-gray-900 dark:text-gray-300 w-2">{row.stars}</Text>
-                      <View className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <View className="h-full bg-primary rounded-full" style={{ width: `${row.pct}%` }} />
-                      </View>
-                      <Text className="text-xs font-medium text-primary w-7 text-right">{row.pct}%</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-              <View className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3 items-center">
-                <Pressable>
-                  <Text className="text-sm font-bold text-gray-900 dark:text-white">Read all reviews</Text>
-                </Pressable>
+                  );
+                })}
               </View>
             </View>
-          </View>
+          )}
+
+          {/* Bottom spacing */}
+          <View className="h-8" />
         </View>
       </ScrollView>
 
-      {/* Sticky footer */}
+      {/* Sticky CTA */}
       <View
-        className="absolute bottom-0 left-0 right-0 flex-row items-center justify-between border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-background-dark/90 px-6 py-4"
+        className="absolute bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 px-6 py-4"
         style={{ paddingBottom: insets.bottom + 16 }}
       >
-        <View>
-          <Text className="text-xs font-medium text-gray-500 dark:text-gray-400">Est. cost</Text>
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">
-            $120<Text className="text-sm font-normal text-gray-500 dark:text-gray-400">/day</Text>
-          </Text>
+        <View className="flex-row items-center justify-between mb-3">
+          <View>
+            <Text className="text-lg font-bold text-[#0c141d] dark:text-white">
+              {trip.price === 0 ? "Free" : `$${trip.price}`}
+            </Text>
+            {!isCreator && (
+              <Text className="text-xs text-slate-400">
+                {spotsLeft > 0
+                  ? `${spotsLeft} spot${spotsLeft !== 1 ? "s" : ""} left`
+                  : "Fully booked"}
+              </Text>
+            )}
+          </View>
+          {!isCreator && (
+            <View className="flex-row items-center gap-1">
+              {trip.autoApprove && (
+                <MaterialIcons name="bolt" size={16} color="#22c55e" />
+              )}
+              <Text className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                {trip.autoApprove ? "Instant booking" : "Request to join"}
+              </Text>
+            </View>
+          )}
         </View>
-        <Pressable
-          onPress={() => router.push("/trips/guides")}
-          className="flex-row items-center gap-2 bg-primary px-8 py-3 rounded-xl shadow-lg"
-          style={{ shadowColor: "#359EFF", shadowOpacity: 0.25 }}
-        >
-          <Text className="text-white text-base font-bold">Start Plan</Text>
-          <MaterialIcons name="arrow-forward" size={20} color="white" />
-        </Pressable>
+        <PrimaryButton
+          title={buttonTitle}
+          disabled={buttonDisabled}
+          isLoading={joinMutation.isPending || startTripMutation.isPending}
+          onPress={async () => {
+            if (isCreator) {
+              await startTripMutation.mutateAsync(id);
+            } else if (!isApproved && !isPending) {
+              setJoinRequested(true);
+              try {
+                await joinMutation.mutateAsync(id);
+              } catch {
+                setJoinRequested(false);
+              }
+            }
+          }}
+        />
       </View>
     </View>
   );

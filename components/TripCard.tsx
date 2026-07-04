@@ -20,6 +20,7 @@ type TripCardProps = {
   badgeLabel: string;
   badgeVariant?: BadgeVariant;
   onPress?: () => void;
+  price?: string;
 };
 
 export default function TripCard({
@@ -30,6 +31,7 @@ export default function TripCard({
   badgeLabel,
   badgeVariant = "company",
   onPress,
+  price,
 }: TripCardProps) {
   const isGroup = badgeVariant === "group";
 
@@ -72,6 +74,11 @@ export default function TripCard({
           <Text className="text-slate-500 dark:text-slate-400 text-sm font-medium">
             {info}
           </Text>
+          {price && (
+            <Text className="text-primary font-bold text-sm mt-1">
+              {price}
+            </Text>
+          )}
         </View>
       </View>
     </Pressable>

@@ -12,6 +12,7 @@ export type DayDraft = {
 };
 
 export type TripVisibility = "Public" | "Private";
+export type PublishMode = "DirectPublish" | "Bidding";
 
 export type MapLocation = {
   lat: number;
@@ -26,8 +27,11 @@ export interface TripDraftState {
   startDate: string | null;
   images: ImageItem[];
   visibility: TripVisibility;
+  autoApprove: boolean;
+  publishMode: PublishMode;
   maxParticipants: number;
   governorateId: number | null;
+  governorateName: string | null;
   mapLocation: MapLocation | null;
   days: DayDraft[];
   placeNames: Record<number, string>;
@@ -37,8 +41,10 @@ export interface TripDraftState {
   setDescription: (description: string) => void;
   setStartDate: (date: string | null) => void;
   setVisibility: (v: TripVisibility) => void;
+  setAutoApprove: (v: boolean) => void;
+  setPublishMode: (v: PublishMode) => void;
   setMaxParticipants: (n: number) => void;
-  setGovernorate: (id: number) => void;
+  setGovernorate: (id: number, name: string) => void;
   setMapLocation: (loc: MapLocation) => void;
   setDayCount: (n: number) => void;
   addPlacesToDay: (dayIndex: number, placeIds: number[]) => void;
@@ -60,8 +66,11 @@ const initialState = {
   startDate: null as string | null,
   images: [] as ImageItem[],
   visibility: "Public" as TripVisibility,
+  autoApprove: true,
+  publishMode: "DirectPublish" as PublishMode,
   maxParticipants: 1,
   governorateId: null as number | null,
+  governorateName: null as string | null,
   mapLocation: null as MapLocation | null,
   days: [{ duration: 12, placeIds: [] as number[] }],
   placeNames: {} as Record<number, string>,
@@ -80,10 +89,14 @@ export const useTripDraftStore = create<TripDraftState>()((set, get) => ({
 
   setVisibility: (v) => set({ visibility: v }),
 
+  setAutoApprove: (v) => set({ autoApprove: v }),
+
+  setPublishMode: (v) => set({ publishMode: v }),
+
   setMaxParticipants: (n) => set({ maxParticipants: n }),
 
-  setGovernorate: (id) =>
-    set({ governorateId: id, mapLocation: null }),
+  setGovernorate: (id, name) =>
+    set({ governorateId: id, governorateName: name, mapLocation: null }),
 
   setMapLocation: (loc) =>
     set({ mapLocation: loc, governorateId: null }),

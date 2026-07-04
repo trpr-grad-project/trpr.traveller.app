@@ -1,5 +1,6 @@
 import api from "./api";
 import { ENDPOINTS } from "./endpoints";
+import type { HomeTripsResponse, MyTrip } from "@/types";
 
 export const tripService = {
 
@@ -10,6 +11,40 @@ export const tripService = {
 
   createTrip: async (payload: any) => {
     const response = await api.post(ENDPOINTS.trip.create, payload);
+    return response.data;
+  },
+
+  getTripById: async (id: string) => {
+    const response = await api.get(ENDPOINTS.trip.get + id);
+    return response.data;
+  },
+
+  getMyTrips: async (): Promise<MyTrip[]> => {
+    const response = await api.get(ENDPOINTS.trip.myTrips);
+    return response.data.items as MyTrip[];
+  },
+
+  getHomeTrips: async (): Promise<HomeTripsResponse> => {
+    const response = await api.get(ENDPOINTS.trip.home);
+    return response.data;
+  },
+
+  joinTrip: async (id: string) => {
+    const response = await api.put(ENDPOINTS.trip.join + id, {});
+    return response.data;
+  },
+
+  startTrip: async (id: string) => {
+    const response = await api.put(ENDPOINTS.trip.start + id, {});
+    return response.data;
+  },
+
+  acceptParticipant: async (tripId: string, userId: string, isApproved: boolean) => {
+    const response = await api.put(ENDPOINTS.trip.acceptParticipant, {
+      isApproved,
+      tripId,
+      userId,
+    });
     return response.data;
   },
 

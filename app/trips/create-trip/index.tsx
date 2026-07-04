@@ -327,38 +327,140 @@ export default function CreateTripStep1() {
             </Pressable>
           </View>
 
-          {draft.visibility === "Public" && (
-            <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700">
-              <Text className="text-xs font-semibold text-slate-500 mb-2">
-                Max Participants
-              </Text>
-              <View className="flex-row items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-4 py-3 border border-slate-100 dark:border-slate-700">
-                <Pressable
-                  onPress={() =>
-                    draft.setMaxParticipants(
-                      Math.max(2, draft.maxParticipants - 1),
-                    )
-                  }
-                  className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-600 items-center justify-center"
-                >
-                  <MaterialIcons name="remove" size={20} color="#64748b" />
-                </Pressable>
-                <Text className="text-xl font-bold text-[#0c141d] dark:text-white">
-                  {draft.maxParticipants}
-                </Text>
-                <Pressable
-                  onPress={() =>
-                    draft.setMaxParticipants(
-                      Math.min(50, draft.maxParticipants + 1),
-                    )
-                  }
-                  className="w-10 h-10 rounded-full bg-primary items-center justify-center"
-                >
-                  <MaterialIcons name="add" size={20} color="white" />
-                </Pressable>
+          <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700">
+            <Text className="text-xs font-semibold text-slate-500 mb-3">
+              Auto Approve
+            </Text>
+            <Pressable
+              onPress={() => draft.setAutoApprove(true)}
+              className={`flex-row items-center gap-3 p-3 rounded-xl mb-2 ${
+                draft.autoApprove
+                  ? "bg-primary/10 border border-primary/20"
+                  : ""
+              }`}
+            >
+              <View
+                className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+                  draft.autoApprove
+                    ? "border-primary bg-primary"
+                    : "border-slate-300 dark:border-slate-600"
+                }`}
+              >
+                {draft.autoApprove && (
+                  <View className="w-2 h-2 rounded-full bg-white" />
+                )}
               </View>
+              <Text className="flex-1 text-sm font-bold text-[#0c141d] dark:text-white">
+                Yes
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => draft.setAutoApprove(false)}
+              className={`flex-row items-center gap-3 p-3 rounded-xl ${
+                !draft.autoApprove
+                  ? "bg-primary/10 border border-primary/20"
+                  : ""
+              }`}
+            >
+              <View
+                className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+                  !draft.autoApprove
+                    ? "border-primary bg-primary"
+                    : "border-slate-300 dark:border-slate-600"
+                }`}
+              >
+                {!draft.autoApprove && (
+                  <View className="w-2 h-2 rounded-full bg-white" />
+                )}
+              </View>
+              <Text className="flex-1 text-sm font-bold text-[#0c141d] dark:text-white">
+                No
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700">
+            <Text className="text-xs font-semibold text-slate-500 mb-3">
+              Publish Mode
+            </Text>
+            <Pressable
+              onPress={() => draft.setPublishMode("DirectPublish")}
+              className={`flex-row items-center gap-3 p-3 rounded-xl mb-2 ${
+                draft.publishMode === "DirectPublish"
+                  ? "bg-primary/10 border border-primary/20"
+                  : ""
+              }`}
+            >
+              <View
+                className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+                  draft.publishMode === "DirectPublish"
+                    ? "border-primary bg-primary"
+                    : "border-slate-300 dark:border-slate-600"
+                }`}
+              >
+                {draft.publishMode === "DirectPublish" && (
+                  <View className="w-2 h-2 rounded-full bg-white" />
+                )}
+              </View>
+              <Text className="flex-1 text-sm font-bold text-[#0c141d] dark:text-white">
+                Direct Publish
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => draft.setPublishMode("Bidding")}
+              className={`flex-row items-center gap-3 p-3 rounded-xl ${
+                draft.publishMode === "Bidding"
+                  ? "bg-primary/10 border border-primary/20"
+                  : ""
+              }`}
+            >
+              <View
+                className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+                  draft.publishMode === "Bidding"
+                    ? "border-primary bg-primary"
+                    : "border-slate-300 dark:border-slate-600"
+                }`}
+              >
+                {draft.publishMode === "Bidding" && (
+                  <View className="w-2 h-2 rounded-full bg-white" />
+                )}
+              </View>
+              <Text className="flex-1 text-sm font-bold text-[#0c141d] dark:text-white">
+                Bidding
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700">
+            <Text className="text-xs font-semibold text-slate-500 mb-2">
+              Max Participants
+            </Text>
+            <View className="flex-row items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-4 py-3 border border-slate-100 dark:border-slate-700">
+              <Pressable
+                onPress={() =>
+                  draft.setMaxParticipants(
+                    Math.max(2, draft.maxParticipants - 1),
+                  )
+                }
+                className="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-600 items-center justify-center"
+              >
+                <MaterialIcons name="remove" size={20} color="#64748b" />
+              </Pressable>
+              <Text className="text-xl font-bold text-[#0c141d] dark:text-white">
+                {draft.maxParticipants}
+              </Text>
+              <Pressable
+                onPress={() =>
+                  draft.setMaxParticipants(
+                    Math.min(50, draft.maxParticipants + 1),
+                  )
+                }
+                className="w-10 h-10 rounded-full bg-primary items-center justify-center"
+              >
+                <MaterialIcons name="add" size={20} color="white" />
+              </Pressable>
             </View>
-          )}
+          </View>
 
           <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700">
             <Text className="text-xs font-semibold text-slate-500 mb-2">
@@ -410,7 +512,7 @@ export default function CreateTripStep1() {
         ref={themePickerRef}
         items={themes}
         selectedId={draft.themeId}
-        onSelect={draft.setTheme}
+        onSelect={(item) => draft.setTheme(item.id)}
       />
     </View>
   );

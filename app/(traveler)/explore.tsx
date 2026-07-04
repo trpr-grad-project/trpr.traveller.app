@@ -1,9 +1,12 @@
-import React, { useState } from "react";
-import { Image, Pressable, ScrollView, StatusBar, Text, TextInput, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, Image, Pressable, ScrollView, StatusBar, Text, TextInput, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useHomeTrips } from "@/hooks/useHomeTrips";
+import { resolveImageUrl } from "@/utils/constants";
+import type { MyTrip } from "@/types";
 
 const CATEGORIES = ["All", "Adventure", "Culture", "Beach", "Nature", "Historical"];
 
@@ -21,73 +24,41 @@ const TYPE_OPTIONS = [
   { label: "Shared / Group Trips", value: "shared" },
 ];
 
-const TRIPS = [
-  {
-    id: "1",
-    title: "Luxor Temples Discovery",
-    location: "Upper Egypt",
-    duration: "2 Days",
-    price: "$150",
-    rating: "4.8",
-    category: "CULTURE",
-    type: "BY COMPANY",
-    typeValue: "company",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDGxYJqtmpl3VOiV7lH0QE5KD4mh8HTmMLkahkhYLZ6Of1qQ1hxahPjUKcLJCjTXhLJWMybJYe3Ogq4Za0QcrBztbPiUsDnD0ul2MVY-XLtLnb5uGMblpVwBvrXH5qGMXJaPPO3o4QEIWIEK0NxFuO0bVWv69zkLzkphFFSsxI67kQ4lQd1jdRt6HJLYLcqZiEKv9L3WMzG2dXsOFdwnAJ7-1WAjw-rjWM9C6dDcXQAJtssjtdMG1sPo4UPEEMMoyVhGmGdB9_B-nXm",
-  },
-  {
-    id: "2",
-    title: "Giza Plateau Highlights",
-    location: "Cairo, Egypt",
-    duration: "3 Days",
-    price: "Free",
-    rating: "4.9",
-    category: "HISTORICAL",
-    type: "GROUP TRIP",
-    typeValue: "shared",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuATlIyLdX0EzgB-ANyT3YzRHbzi5AAHhodUiHybWfcMYHJ2weJk1LNoLScSpGgq7lMHI5Ctz7c0HsPxU5pLIe547mXqVc-F1NeSkkMYbXTxlR4bOuKCWJvKjzh6KI7ZNjBImDiDLe1ogwzDCzCscW4JQ854MCbG34O7JJmC6ai9nV5aG-OakGRh2s9AyumPSC8ZcIJoCXJz23wBGq-8psvPormuFzaqwMNHbCy5JjCjZQqlYv0rVFWd0-qKymgT4KJJL_Kp5E7zQmMs",
-  },
-  {
-    id: "3",
-    title: "Siwa Oasis Desert Expedition",
-    location: "Western Desert",
-    duration: "5 Days",
-    price: "Free",
-    rating: "4.7",
-    category: "ADVENTURE",
-    type: "GROUP TRIP",
-    typeValue: "shared",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCjkNX33Ui4_7LlmzgVcrTHCS3XXN6yfxSwclOXPAaOhllkcp4F-us6JFQeDLpRqN7QQDahqgYlYBx5KvLMt2n4brCspWnohknaYyvWtQwA5PJQ2v8ropSgdFCHQ-BZs22FAAven2iRoM_pnxSsMKbDVuWcqCUECqLAyFflTu_8wPwSSygX4I1Wj4BSZfUh8MYJ3OzbxqdnOZgFKSOEDYlj_p04incbF0f1FMYnivu8XYTC3HSmAzXOBFpdLL53LFQUdXDCByO2s7Wf",
-  },
-  {
-    id: "4",
-    title: "Aswan Nile Felucca",
-    location: "Aswan",
-    duration: "1 Day",
-    price: "$45",
-    rating: "4.6",
-    category: "ADVENTURE",
-    type: "BY GUIDE",
-    typeValue: "guide",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuANeO4WOrOcetZrYjzvqwfqCPkuEe_tG8D5wpwVgmKQn-3dZvZCTR2fSPc8yLEdaFGeALkWMyviuF4j5q2lNMndo-0bz0kO8fQ0JPOS82rUK-_e9i-yUu0p1MYjz68owfQkGDj8_H-f9EemeDh9kVLR87Dqb02blChGbAnGXJjeEjt50Gf4iA-fOLOcIf_vz4kKIF7iMbkCQ3mT211hn0MTwC6WZbXE75gHptCaq3zlbzFP6OAdJRc1gILY9en-99phSaLUl1Ex64n4",
-  },
-  {
-    id: "5",
-    title: "Red Sea Diving",
-    location: "Hurghada",
-    duration: "3 Days",
-    price: "$210",
-    rating: "4.9",
-    category: "NATURE",
-    type: "BY COMPANY",
-    typeValue: "company",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuB5jyoWqrmp_gyaMrH5WOQ4YpjP532JE-wRwIvh2dRKcpl7Pg6eYGhLFw4mav2nyhikqRji9mQ9znrIPPjnB0Aj68HCBqKZbLwrSWa07UnpL4mgVzbKz2V_tk6nMHW7ChvHWUat1llcakEYPBMx9TUe2DybdzkQYzmu2AZDrZRzoYyrPEI2rz5iJhBfwiGXTRUuviEW8kT8W_CjtcxDUTEeCvQA0n8eMldIndNSDKWB7gaLEEz1GKL11QxGx2aMbi3AJ8SbS4Kf0BUO",
-  },
-];
+type TripCardData = {
+  id: string;
+  title: string;
+  location: string;
+  duration: string;
+  price: string;
+  rating: string;
+  category: string;
+  type: string;
+  typeValue: string;
+  image: string;
+};
+
+type SectionKey = "byCompany" | "byGuide" | "shared";
+
+function mapTrip(item: MyTrip, section: SectionKey): TripCardData {
+  const typeMap: Record<SectionKey, { type: string; typeValue: string }> = {
+    byCompany: { type: "BY COMPANY", typeValue: "company" },
+    byGuide: { type: "BY GUIDE", typeValue: "guide" },
+    shared: { type: "GROUP TRIP", typeValue: "shared" },
+  };
+  const { type, typeValue } = typeMap[section];
+  return {
+    id: item.tripId,
+    title: item.title,
+    location: item.segments?.[0]?.places?.[0]?.governorate?.name ?? "",
+    duration: item.tripTime || "",
+    price: item.price === 0 ? "Free" : `$${item.price}`,
+    rating: "0",
+    category: (item.theme ?? "").toUpperCase(),
+    type,
+    typeValue,
+    image: resolveImageUrl(item.imagesUrls?.[0] ?? ""),
+  };
+}
 
 const TYPE_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
   "BY COMPANY": { bg: "bg-primary/90", text: "text-white" },
@@ -106,9 +77,20 @@ export default function ExploreScreen() {
   const [selectedSort, setSelectedSort] = useState("popular");
   const [selectedType, setSelectedType] = useState("all");
 
+  const { data, isLoading, isError, refetch } = useHomeTrips();
+
+  const allTrips = useMemo<TripCardData[]>(() => {
+    if (!data) return [];
+    const result: TripCardData[] = [];
+    data.byCompany.items.forEach((item) => result.push(mapTrip(item, "byCompany")));
+    data.byGuide.items.forEach((item) => result.push(mapTrip(item, "byGuide")));
+    data.shared.items.forEach((item) => result.push(mapTrip(item, "shared")));
+    return result;
+  }, [data]);
+
   const selectedTypeLabel = TYPE_OPTIONS.find((o) => o.value === selectedType)?.label ?? "All Trips";
 
-  const filtered = TRIPS.filter((t) => {
+  const filtered = allTrips.filter((t) => {
     if (selectedCat !== "All" && t.category !== selectedCat.toUpperCase()) return false;
     if (selectedType === "company" && t.typeValue !== "company") return false;
     if (selectedType === "guide" && t.typeValue !== "guide") return false;
@@ -117,11 +99,42 @@ export default function ExploreScreen() {
     return true;
   });
 
-  const getPlanRoute = (trip: (typeof TRIPS)[number]) => {
+  const getPlanRoute = (trip: TripCardData) => {
     if (trip.typeValue === "company") return `/trips/plan-by-company/${trip.id}`;
     if (trip.typeValue === "guide") return `/trips/plan-by-guide/${trip.id}`;
     return `/trips/plan-by-user/${trip.id}`;
   };
+
+  if (isLoading && !data) {
+    return (
+      <View className="flex-1 bg-white dark:bg-background-dark items-center justify-center" style={{ paddingTop: insets.top }}>
+        <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+        <ActivityIndicator size="large" color="#359EFF" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View className="flex-1 bg-white dark:bg-background-dark items-center justify-center px-6" style={{ paddingTop: insets.top }}>
+        <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+        <MaterialIcons name="error-outline" size={48} color="#ef4444" />
+        <Text className="text-base font-semibold text-slate-500 dark:text-slate-400 mt-4 text-center">
+          Failed to load trips.
+        </Text>
+        <Pressable
+          onPress={() => refetch()}
+          className="mt-6 bg-primary rounded-xl py-3 px-8"
+        >
+          {({ pressed }) => (
+            <Text className="text-white font-bold text-sm" style={{ opacity: pressed ? 0.7 : 1 }}>
+              Retry
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white dark:bg-background-dark" style={{ paddingTop: insets.top }}>
@@ -259,6 +272,15 @@ export default function ExploreScreen() {
           </View>
         )}
 
+        {filtered.length === 0 && (
+          <View className="items-center py-12">
+            <MaterialIcons name="search-off" size={48} color="#94a3b8" />
+            <Text className="text-sm text-slate-400 dark:text-slate-500 mt-3 text-center">
+              No trips match your filters.
+            </Text>
+          </View>
+        )}
+
         {filtered.map((trip) => (
           <Pressable
             key={trip.id}
@@ -281,7 +303,7 @@ export default function ExploreScreen() {
             <View className="px-1 flex-row justify-between items-start">
               <View>
                 <Text className="font-bold text-lg text-[#0c141d] dark:text-white leading-tight">{trip.title}</Text>
-                <Text className="text-sm text-slate-500 font-medium">{trip.location} • {trip.duration}</Text>
+                <Text className="text-sm text-slate-500 font-medium">{trip.location ? `${trip.location} · ` : ""}{trip.duration}</Text>
               </View>
               <Text className="text-lg font-bold text-primary">{trip.price}</Text>
             </View>

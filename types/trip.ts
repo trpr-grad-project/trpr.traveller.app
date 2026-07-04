@@ -1,3 +1,39 @@
+import type { TripSegment } from "./trip-creation";
+
+export interface PaginatedItems<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface HomeTripsResponse {
+  shared: PaginatedItems<MyTrip>;
+  byCompany: PaginatedItems<MyTrip>;
+  byGuide: PaginatedItems<MyTrip>;
+}
+
+export interface MyTrip {
+  tripId: string;
+  createdByUser: string;
+  theme: string;
+  creatorRoles: string[];
+  title: string;
+  autoApprove: boolean;
+  description: string;
+  price: number;
+  startDate: string;
+  imagesUrls: string[];
+  tripVisibility: "Public" | "Private";
+  status: string;
+  segments: TripSegment[];
+  tripTime: string;
+  maxParticipantsCount: number;
+  guideId: string | null;
+  rejectionReason: string | null;
+}
+
 export interface Trip {
   id: string;
   title: string;

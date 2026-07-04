@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -14,71 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 import TripCard, { SOFT_SHADOW } from "@/components/TripCard";
 import { router } from "expo-router";
-
-const FEATURED_TRIPS = [
-  {
-    id: "1",
-    title: "Luxor Temples",
-    info: "4 Days \u2022 Cultural Tour",
-    rating: "4.9",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDGxYJqtmpl3VOiV7lH0QE5KD4mh8HTmMLkahkhYLZ6Of1qQ1hxahPjUKcLJCjTXhLJWMybJYe3Ogq4Za0QcrBztbPiUsDnD0ul2MVY-XLtLnb5uGMblpVwBvrXH5qGMXJaPPO3o4QEIWIEK0NxFuO0bVWv69zkLzkphFFSsxI67kQ4lQd1jdRt6HJLYLcqZiEKv9L3WMzG2dXsOFdwnAJ7-1WAjw-rjWM9C6dDcXQAJtssjtdMG1sPo4UPEEMMoyVhGmGdB9_B-nXm",
-  },
-  {
-    id: "2",
-    title: "Giza Plateau",
-    info: "3 Days \u2022 Historical Hub",
-    rating: "4.8",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuATlIyLdX0EzgB-ANyT3YzRHbzi5AAHhodUiHybWfcMYHJ2weJk1LNoLScSpGgq7lMHI5Ctz7c0HsPxU5pLIe547mXqVc-F1NeSkkMYbXTxlR4bOuKCWJvKjzh6KI7ZNjBImDiDLe1ogwzDCzCscW4JQ854MCbG34O7JJmC6ai9nV5aG-OakGRh2s9AyumPSC8ZcIJoCXJz23wBGq-8psvPormuFzaqwMNHbCy5JjCjZQqlYv0rVFWd0-qKymgT4KJJL_Kp5E7zQmMs",
-  },
-];
-
-const SHARED_PLANS = [
-  {
-    id: "1",
-    title: "Cairo Street Food",
-    info: "1 Day \u2022 Local Experience",
-    rating: "4.6",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCjkNX33Ui4_7LlmzgVcrTHCS3XXN6yfxSwclOXPAaOhllkcp4F-us6JFQeDLpRqN7QQDahqgYlYBx5KvLMt2n4brCspWnohknaYyvWtQwA5PJQ2v8ropSgdFCHQ-BZs22FAAven2iRoM_pnxSsMKbDVuWcqCUECqLAyFflTu_8wPwSSygX4I1Wj4BSZfUh8MYJ3OzbxqdnOZgFKSOEDYlj_p04incbF0f1FMYnivu8XYTC3HSmAzXOBFpdLL53LFQUdXDCByO2s7Wf",
-  },
-  {
-    id: "2",
-    title: "Siwa Oasis Trip",
-    info: "5 Days \u2022 Hidden Gem",
-    rating: "4.9",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAzQ7N0H5Ctb9KFdHW5X5RkDqziM8sPwCZ2V9GYbKuGg13Eb2RDqaT1R1YclOrGOnwvD1q9uNXuhHhqc340CqLxhYRLyM7etEKwyea3rwhVhqrcn695IQtLvn-8ILyLd1BNbUMkJ_s-yvShyh4mvjFPeGlXpitxyaGjO6zp7T9jlSvsifgEUj6nQ-Cg7c_l5dF6Q6rL7nOFvsMQj-ZT3aLhRp_rLfFaYE0fJ4DLFiNZpCRGAtUsGLR-bHAPwDVMQFPbHcJ-ETqkuJGu",
-  },
-];
-
-const GUIDE_PLANS = [
-  {
-    id: "1",
-    title: "Nile River Cruise",
-    location: "Cairo & Aswan",
-    guideName: "Amira K.",
-    guideAvatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDIb8G2snwYgyYPVsfFWkowb1l-xb-B2NDysBsL8L1_kKhsqIb6o6QpUbUxL20hWPMsY9ZP-3OqXPHEgjpwAPbyUFUQWpZ89E5I0r6_1ah5bkjCt22oCyVja2_Sw6vO7yKLFPhUsd7SW-9Rklb51bCcX46lTuia1BhcQnlAcoePJClCA3RMCcEG0yOmMIE0TbkKLXTKHJ6pCxmSO-zf7XTsq7UKlPH8jd-jc1-Xv6cn2HcCh631Fxci0n4LUJM9EmjReJGRJ_Q5KAfp",
-    rating: "4.9",
-    price: "$450/day",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCjkNX33Ui4_7LlmzgVcrTHCS3XXN6yfxSwclOXPAaOhllkcp4F-us6JFQeDLpRqN7QQDahqgYlYBx5KvLMt2n4brCspWnohknaYyvWtQwA5PJQ2v8ropSgdFCHQ-BZs22FAAven2iRoM_pnxSsMKbDVuWcqCUECqLAyFflTu_8wPwSSygX4I1Wj4BSZfUh8MYJ3OzbxqdnOZgFKSOEDYlj_p04incbF0f1FMYnivu8XYTC3HSmAzXOBFpdLL53LFQUdXDCByO2s7Wf",
-  },
-  {
-    id: "2",
-    title: "Sharm El-Sheikh Getaway",
-    location: "Red Sea Coast",
-    guideName: "Omar R.",
-    guideAvatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBwXRoVjBVWbDU44_1uomE99h_eCRFBzvkWREFuBLAzPWn3geroTnaF2T42Mh4XoUXUNkFYI5uLgKPQcEfpRHzbFQI9cTnE7URgs7g57Xlc6eERlVukkxKQ9ebxRMcdXAdjhBcSIhP42_fY3BZ2ENO2hrLKt3L9ffYvPV6v_nYy6xUMsEjEYmZVO0VQO198CiZ7Uv9m5KNF3w6KzugouRsodXT0gRGyLuHqhW_WolGBhGIMcYviRov_HXZvvgj7BxbiOPk6oOrhcKJK",
-    rating: "4.7",
-    price: "$320/day",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAzQ7N0H5Ctb9KFdHW5X5RkDqziM8sPwCZ2V9GYbKuGg13Eb2RDqaT1R1YclOrGOnwvD1q9uNXuhHhqc340CqLxhYRLyM7etEKwyea3rwhVhqrcn695IQtLvn-8ILyLd1BNbUMkJ_s-yvShyh4mvjFPeGlXpitxyaGjO6zp7T9jlSvsifgEUj6nQ-Cg7c_l5dF6Q6rL7nOFvsMQj-ZT3aLhRp_rLfFaYE0fJ4DLFiNZpCRGAtUsGLR-bHAPwDVMQFPbHcJ-ETqkuJGu",
-  },
-];
+import { useHomeTrips } from "@/hooks/useHomeTrips";
+import { resolveImageUrl } from "@/utils/constants";
 
 const THEMES = ["History", "Romantic", "Adventure", "Family"];
 
@@ -88,6 +27,39 @@ export default function TravelerHome() {
   const isDark = colorScheme === "dark";
   const [search, setSearch] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("History");
+
+  const { data, isLoading, isError, refetch, isRefetching } = useHomeTrips();
+
+  if (isLoading && !data) {
+    return (
+      <View className="flex-1 bg-white dark:bg-background-dark items-center justify-center" style={{ paddingTop: insets.top }}>
+        <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+        <ActivityIndicator size="large" color="#359EFF" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View className="flex-1 bg-white dark:bg-background-dark items-center justify-center px-6" style={{ paddingTop: insets.top }}>
+        <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+        <MaterialIcons name="error-outline" size={48} color="#ef4444" />
+        <Text className="text-base font-semibold text-slate-500 dark:text-slate-400 mt-4 text-center">
+          Failed to load trips.
+        </Text>
+        <Pressable
+          onPress={() => refetch()}
+          className="mt-6 bg-primary rounded-xl py-3 px-8"
+        >
+          {({ pressed }) => (
+            <Text className="text-white font-bold text-sm" style={{ opacity: pressed ? 0.7 : 1 }}>
+              Retry
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white dark:bg-background-dark" style={{ paddingTop: insets.top }}>
@@ -106,7 +78,13 @@ export default function TravelerHome() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#359EFF" />
+        }
+      >
         {/* Search + Create Plan */}
         <View className="px-4 py-2 mt-2 gap-4">
           <Pressable
@@ -161,34 +139,37 @@ export default function TravelerHome() {
         </View>
 
         {/* Featured Trips by Companies */}
-        <View className="mt-6">
-          <View className="flex-row items-center justify-between px-4 pb-2">
-            <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
-              Featured Trips by Companies
-            </Text>
-            <Pressable onPress={() => router.push("/(traveler)/explore")}>
-              <Text className="text-primary text-sm font-semibold">See all</Text>
-            </Pressable>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 16 }}
-          >
-            {FEATURED_TRIPS.map((trip) => (
-              <Pressable key={trip.id} onPress={() => router.push(`/trips/plan-by-company/${trip.id}`)}>
+        {data?.byCompany.items && data.byCompany.items.length > 0 && (
+          <View className="mt-6">
+            <View className="flex-row items-center justify-between px-4 pb-2">
+              <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
+                Featured Trips by Companies
+              </Text>
+              <Pressable onPress={() => router.push("/(traveler)/explore")}>
+                <Text className="text-primary text-sm font-semibold">See all</Text>
+              </Pressable>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 16 }}
+            >
+              {data.byCompany.items.map((trip) => (
                 <TripCard
-                  image={trip.image}
+                  key={trip.tripId}
+                  image={resolveImageUrl(trip.imagesUrls?.[0] ?? "")}
                   title={trip.title}
-                  info={trip.info}
-                  rating={trip.rating}
+                  info={trip.tripTime || "N/A"}
+                  rating="0"
                   badgeLabel="BY COMPANY"
                   badgeVariant="company"
+                  price={trip.price === 0 ? "Free" : `$${trip.price}`}
+                  onPress={() => router.push(`/trips/${trip.tripId}`)}
                 />
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Popular Themes */}
         <View className="mt-8">
@@ -221,97 +202,99 @@ export default function TravelerHome() {
         </View>
 
         {/* Shared Plans */}
-        <View className="mt-8">
-          <View className="px-4 pb-2">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
-                Shared Plans
+        {data?.shared.items && data.shared.items.length > 0 && (
+          <View className="mt-8">
+            <View className="px-4 pb-2">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
+                  Shared Plans
+                </Text>
+                <Pressable onPress={() => router.push("/(traveler)/explore")}>
+                  <Text className="text-primary text-sm font-semibold">See all</Text>
+                </Pressable>
+              </View>
+              <Text className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
+                Join trips created by other travelers and explore new experiences together.
               </Text>
-              <Pressable onPress={() => router.push("/(traveler)/explore")}>
-                <Text className="text-primary text-sm font-semibold">See all</Text>
-              </Pressable>
             </View>
-            <Text className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
-              Join trips created by other travelers and explore new experiences together.
-            </Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 16 }}
-          >
-            {SHARED_PLANS.map((plan) => (
-              <Pressable key={plan.id} onPress={() => router.push(`/trips/plan-by-user/${plan.id}`)}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 16 }}
+            >
+              {data.shared.items.map((plan) => (
                 <TripCard
-                  image={plan.image}
+                  key={plan.tripId}
+                  image={resolveImageUrl(plan.imagesUrls?.[0] ?? "")}
                   title={plan.title}
-                  info={plan.info}
-                  rating={plan.rating}
+                  info={plan.tripTime || "N/A"}
+                  rating="0"
                   badgeLabel="GROUP TRIP"
                   badgeVariant="group"
+                  price={plan.price === 0 ? "Free" : `$${plan.price}`}
+                  onPress={() => router.push(`/trips/${plan.tripId}`)}
                 />
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Plans by Local Guides */}
-        <View className="mt-8 px-4">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
-              Plans by Local Guides
-            </Text>
-            <Pressable onPress={() => router.push("/(traveler)/explore")}>
-              <Text className="text-primary text-sm font-semibold">View All</Text>
-            </Pressable>
-          </View>
-          <View className="gap-4">
-            {GUIDE_PLANS.map((plan) => (
-              <View
-                key={plan.id}
-                className="bg-white dark:bg-slate-800 p-3 rounded-xl flex-row gap-4 border border-slate-50 dark:border-slate-700"
-                style={SOFT_SHADOW}
-              >
-                <View className="w-24 h-24 rounded-lg overflow-hidden">
-                  <Image source={{ uri: plan.image }} className="w-full h-full" resizeMode="cover" />
-                </View>
-                <View className="flex-1 justify-between py-0.5">
-                  <View>
-                    <View className="flex-row items-center gap-2 mb-1.5">
-                      <Image
-                        source={{ uri: plan.guideAvatar }}
-                        className="w-5 h-5 rounded-full border border-slate-100"
-                        resizeMode="cover"
-                      />
-                      <View>
-                        <Text className="text-[10px] font-bold text-primary tracking-[0.05em] uppercase leading-none mb-0.5">
-                          Local Guide
-                        </Text>
-                        <Text className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wide">
-                          {plan.guideName}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text className="text-sm font-bold text-[#0c141d] dark:text-white">{plan.title}</Text>
-                    <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{plan.location}</Text>
+        {data?.byGuide.items && data.byGuide.items.length > 0 && (
+          <View className="mt-8 px-4">
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
+                Plans by Local Guides
+              </Text>
+              <Pressable onPress={() => router.push("/(traveler)/explore")}>
+                <Text className="text-primary text-sm font-semibold">View All</Text>
+              </Pressable>
+            </View>
+            <View className="gap-4">
+              {data.byGuide.items.map((plan) => (
+                <Pressable
+                  key={plan.tripId}
+                  onPress={() => router.push(`/trips/${plan.tripId}`)}
+                  className="bg-white dark:bg-slate-800 p-3 rounded-xl flex-row gap-4 border border-slate-50 dark:border-slate-700 active:opacity-80"
+                  style={SOFT_SHADOW}
+                >
+                  <View className="w-24 h-24 rounded-lg overflow-hidden">
+                    <Image source={{ uri: resolveImageUrl(plan.imagesUrls?.[0] ?? "") }} className="w-full h-full" resizeMode="cover" />
                   </View>
-                  <View className="flex-row items-center justify-between mt-1">
+                  <View className="flex-1 justify-between py-0.5">
                     <View>
-                      <View className="flex-row items-center gap-1">
-                        <MaterialIcons name="star" size={14} color="#eab308" />
-                        <Text className="text-xs font-bold text-slate-700 dark:text-slate-300">{plan.rating}</Text>
+                      <View className="flex-row items-center gap-2 mb-1.5">
+                        <View className="w-5 h-5 rounded-full bg-primary/20 items-center justify-center">
+                          <MaterialIcons name="person" size={14} color="#359EFF" />
+                        </View>
+                        <View>
+                          <Text className="text-[10px] font-bold text-primary tracking-[0.05em] uppercase leading-none mb-0.5">
+                            Local Guide
+                          </Text>
+                          <Text className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wide">
+                            Guide
+                          </Text>
+                        </View>
                       </View>
-                      <Text className="text-primary font-bold text-sm">{plan.price}</Text>
+                      <Text className="text-sm font-bold text-[#0c141d] dark:text-white">{plan.title}</Text>
+                      <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {plan.segments?.[0]?.places?.[0]?.governorate?.name || plan.theme}
+                      </Text>
                     </View>
-                    <Pressable onPress={() => router.push(`/trips/plan-by-guide/${plan.id}`)} className="bg-primary px-4 py-2 rounded-lg">
-                      <Text className="text-white text-[12px] font-bold">View Plan</Text>
-                    </Pressable>
+                    <View className="flex-row items-center justify-between mt-1">
+                      <Text className="text-primary font-bold text-sm">
+                        {plan.price === 0 ? "Free" : `$${plan.price}`}
+                      </Text>
+                      <View className="bg-primary px-4 py-2 rounded-lg">
+                        <Text className="text-white text-[12px] font-bold">View Plan</Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </View>
-            ))}
+                </Pressable>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </View>
   );

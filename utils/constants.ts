@@ -11,6 +11,13 @@ export const API_URL = Platform.select({
   default: LOCAL_URL,
 });
 
+export function resolveImageUrl(url: string): string {
+  if (Platform.OS === "android") {
+    return url.replace("localhost", "10.0.2.2");
+  }
+  return url;
+}
+
 // Storage Keys
 export const STORAGE_KEYS = {
   USER_ID: "user_id",

@@ -98,7 +98,7 @@ export default function CreateTripStep2() {
         ref={governoratePickerRef}
         items={governorates}
         selectedId={draft.governorateId}
-        onSelect={draft.setGovernorate}
+        onSelect={(item) => draft.setGovernorate(item.id, item.name)}
       />
     </View>
   );
