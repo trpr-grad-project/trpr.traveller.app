@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTripDetails } from "@/hooks/useTripDetails";
 import { useJoinTrip } from "@/hooks/useJoinTrip";
 import { useStartTrip } from "@/hooks/useStartTrip";
+import { useEndTrip } from "@/hooks/useEndTrip";
 import { useRespondToParticipant } from "@/hooks/useRespondToParticipant";
 import { STATUS_TO_LABEL, STATUS_COLORS } from "@/utils/tripSegments";
 import { resolveImageUrl } from "@/utils/constants";
@@ -71,6 +72,7 @@ export default function TripDetailsScreen() {
   const { user } = useAuth();
   const joinMutation = useJoinTrip();
   const startTripMutation = useStartTrip();
+  const endTripMutation = useEndTrip();
   const respondMutation = useRespondToParticipant();
   const [joinRequested, setJoinRequested] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -122,10 +124,34 @@ export default function TripDetailsScreen() {
   const isStartDay = trip.startDate === todayStr;
   const isApproved = trip.approvedParticipants?.some((p) => p.id === user?.id) ?? false;
   const isPending = trip.pendingParticipants?.some((p) => p.id === user?.id) ?? false;
+  const tripDays = parseInt(trip.tripTime, 10) || 1;
+  const endDateObj = new Date(trip.startDate);
+  endDateObj.setDate(endDateObj.getDate() + tripDays - 1);
+  const endDateStr = endDateObj.toISOString().slice(0, 10);
+  const isEndDay = todayStr >= endDateStr;
+  const isStarted = trip.status === "Started";
+  const isFinished = trip.status === "Finished";
 
   let buttonTitle: string;
   let buttonDisabled: boolean;
-  if (isCreator) {
+  if (isFinished) {
+    buttonTitle = "Completed";
+    buttonDisabled = true;
+  } else if (isStarted) {
+    if (isCreator) {
+      buttonTitle = "End Trip";
+      buttonDisabled = !isEndDay;
+    } else if (isApproved || (joinRequested && trip.autoApprove)) {
+      buttonTitle = "In Progress";
+      buttonDisabled = true;
+    } else if (isPending || joinRequested) {
+      buttonTitle = "Waiting for acceptance";
+      buttonDisabled = true;
+    } else {
+      buttonTitle = "In Progress";
+      buttonDisabled = true;
+    }
+  } else if (isCreator) {
     buttonTitle = "Start Trip";
     buttonDisabled = !isStartDay;
   } else if (isApproved || (joinRequested && trip.autoApprove)) {
@@ -550,7 +576,24 @@ export default function TripDetailsScreen() {
                       </Pressable>
 
                       {isExpanded && places.length > 0 && (
-                        <View className="px-4 pb-4 pt-1 border-t border-slate-50 dark:border-slate-700">
+                        <>
+                        <Pressable
+                          onPress={() => router.push(`/trips/day-map?tripId=${trip.id}&day=${segment.day}`)}
+                          className="relative aspect-[21/9] rounded-xl overflow-hidden mx-4"
+                        >
+                          <Image
+                            source={{ uri: resolveImageUrl(trip.imagesUrls?.[0] ?? "") }}
+                            className="absolute inset-0 w-full h-full"
+                            resizeMode="cover"
+                          />
+                          <View className="absolute inset-0 bg-black/30 items-center justify-center">
+                            <View className="bg-white/90 dark:bg-slate-800/90 px-5 py-2 rounded-full flex-row items-center gap-2 shadow-lg">
+                              <MaterialIcons name="map" size={16} color="#359EFF" />
+                              <Text className="text-xs font-bold text-slate-900 dark:text-white">View Map</Text>
+                            </View>
+                          </View>
+                        </Pressable>
+                        <View className="px-4 pb-4 pt-3 border-t border-slate-50 dark:border-slate-700">
                           {places.map((place, idx) => (
                             <View key={place.id} className="flex-row gap-3">
                               {/* Timeline column */}
@@ -622,6 +665,7 @@ export default function TripDetailsScreen() {
                             </View>
                           ))}
                         </View>
+                        </>
                       )}
 
                       {isExpanded && places.length === 0 && (
@@ -675,9 +719,12 @@ export default function TripDetailsScreen() {
         <PrimaryButton
           title={buttonTitle}
           disabled={buttonDisabled}
-          isLoading={joinMutation.isPending || startTripMutation.isPending}
+          isLoading={joinMutation.isPending || startTripMutation.isPending || endTripMutation.isPending}
+          className={isCreator && isStarted ? "!bg-red-500" : ""}
           onPress={async () => {
-            if (isCreator) {
+            if (isCreator && isStarted) {
+              await endTripMutation.mutateAsync(id);
+            } else if (isCreator) {
               await startTripMutation.mutateAsync(id);
             } else if (!isApproved && !isPending) {
               setJoinRequested(true);

@@ -35,13 +35,13 @@ export default React.memo(function PrimaryButton({
     >
       {({ pressed }) => (
         <View
-          className={`flex h-14 w-full items-center justify-center rounded-xl ${className} ${
-            disabled || isLoading
-              ? "bg-primary-dark opacity-50"
-              : pressed
-              ? "bg-primary-dark"
-              : "bg-primary"
-          }`}
+           className={`flex h-14 w-full items-center justify-center rounded-xl ${
+             disabled || isLoading
+               ? "bg-primary-dark opacity-50"
+               : pressed
+               ? "bg-primary-dark"
+               : "bg-primary"
+           } ${className}`}
         >
           {isLoading ? (
             <ActivityIndicator color="white" />

@@ -154,15 +154,15 @@ export default function MessagesScreen() {
       </View>
 
       <Pressable
-        onPress={() => router.push("/profile/users")}
+        onPress={() => router.push("/chat/monument")}
         className="mx-4 mb-3 flex-row items-center gap-3 bg-primary/5 dark:bg-primary/10 px-4 py-3 rounded-2xl border border-primary/10 active:opacity-70"
       >
         <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-          <MaterialIcons name="person-search" size={22} color="#359EFF" />
+          <MaterialIcons name="photo-camera" size={22} color="#359EFF" />
         </View>
         <View className="flex-1">
-          <Text className="text-sm font-bold text-[#0c141d] dark:text-white">Find People</Text>
-          <Text className="text-xs text-slate-500 dark:text-slate-400">Browse all travellers & guides</Text>
+          <Text className="text-sm font-bold text-[#0c141d] dark:text-white">Recognize a monument</Text>
+          <Text className="text-xs text-slate-500 dark:text-slate-400">Snap a photo to identify any monument</Text>
         </View>
         <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
       </Pressable>
@@ -206,11 +206,11 @@ export default function MessagesScreen() {
 
       <Pressable
         onPress={() => router.push("/chat/ai")}
-        className="fixed bottom-[119px] right-6 z-[60] flex-row items-center gap-2 bg-[#359EFF] px-5 py-3.5 rounded-t-[28px] rounded-bl-[28px] rounded-br-none shadow-lg"
+        className="z-[60] flex-row items-center gap-2 bg-[#359EFF] px-5 py-3.5 rounded-t-[28px] rounded-bl-[28px] rounded-br-none shadow-lg"
         style={{
           position: "absolute",
-          bottom: insets.bottom + 90,
-          right: 24,
+          bottom: insets.bottom + 20,
+          right: 15,
           shadowColor: "#359EFF",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,

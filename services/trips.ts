@@ -39,6 +39,11 @@ export const tripService = {
     return response.data;
   },
 
+  endTrip: async (id: string) => {
+    const response = await api.put(ENDPOINTS.trip.end + id, {});
+    return response.data;
+  },
+
   acceptParticipant: async (tripId: string, userId: string, isApproved: boolean) => {
     const response = await api.put(ENDPOINTS.trip.acceptParticipant, {
       isApproved,

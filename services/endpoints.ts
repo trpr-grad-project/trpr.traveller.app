@@ -29,6 +29,7 @@ export const ENDPOINTS = {
     home: "/trip/home",
     join: "/trip/join/",
     start: "/trip/start/",
+    end: "/trip/end/",
     acceptParticipant: "/trip/accept",
   },
 
