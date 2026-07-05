@@ -140,7 +140,7 @@ export function createConversationRepository(): IConversationRepository {
         lastReadSequence: string;
         unreadCount: string;
         updatedAt: string;
-      }>(`SELECT * FROM conversations ORDER BY CAST(COALESCE(lastMessageSequence, '0') AS INTEGER) DESC, updatedAt DESC`);
+      }>(`SELECT * FROM conversations ORDER BY CASE WHEN lastMessageSentAt IS NULL OR lastMessageSentAt = '' THEN 0 ELSE 1 END DESC, lastMessageSentAt DESC`);
       return rows.map(fromRow);
     },
 

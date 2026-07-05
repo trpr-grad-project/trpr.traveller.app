@@ -115,7 +115,13 @@ export default function GroupChatScreen() {
         >
           <View className="max-w-[85%] flex-col items-end gap-1">
             <View className="px-4 py-3 bg-primary rounded-xl rounded-br-none shadow-sm">
-              <Text className="text-white text-[15px] font-normal leading-relaxed">{msg.content}</Text>
+              <Text
+                className="text-white text-[15px] font-normal leading-5"
+                allowFontScaling={false}
+                includeFontPadding={false}
+              >
+                {msg.content}
+              </Text>
             </View>
             <Text className="text-[11px] text-gray-400 font-medium">
               {isPending ? "Sending..." : formatRelativeTime(msg.sentAtUtc)}
@@ -136,7 +142,13 @@ export default function GroupChatScreen() {
         <View className="flex-1 flex-col gap-1 items-start">
           <Text className="text-primary text-[12px] font-bold">{displayName}</Text>
           <View className="max-w-[85%] px-4 py-3 bg-white dark:bg-gray-800 rounded-xl rounded-bl-none shadow-sm">
-            <Text className="text-main-light dark:text-white text-[15px] font-normal leading-relaxed">{msg.content}</Text>
+            <Text
+              className="text-main-light dark:text-white text-[15px] font-normal leading-5"
+              allowFontScaling={false}
+              includeFontPadding={false}
+            >
+              {msg.content}
+            </Text>
           </View>
           <Text className="text-[11px] text-gray-400 font-medium">{formatRelativeTime(msg.sentAtUtc)}</Text>
         </View>

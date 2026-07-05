@@ -12,3 +12,11 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   }
   return _db;
 }
+
+export async function clearDatabase(): Promise<void> {
+  const db = await getDatabase();
+  await db.execAsync("DELETE FROM pending_messages;");
+  await db.execAsync("DELETE FROM messages;");
+  await db.execAsync("DELETE FROM conversations;");
+  await db.execAsync("DELETE FROM notifications;");
+}

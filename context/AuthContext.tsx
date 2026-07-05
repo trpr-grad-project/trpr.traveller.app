@@ -15,12 +15,17 @@ import {
 } from "@/services";
 import { setChatUserId } from "@/store/chatStore";
 import { initializeChat, disconnectChat } from "@/services/chat/initializeChat";
+import {
+  initializeNotifications,
+  disconnectNotifications,
+} from "@/services/notification/initializeNotification";
 import { LoginResponse, RegisterRequest, User } from "@/types";
 import {
   clearProfileSetupCompleted,
   clearUserData,
   getProfileSetupCompleted,
   getUserData,
+  loadLastSeenSequenceNumber,
   loadProfileSetupCompleted,
   loadUserData,
   setProfileSetupCompleted,
@@ -72,6 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = useCallback(async () => {
     await disconnectChat();
+    await disconnectNotifications();
     setSession(null);
     setUser(null);
     setProfileSetupCompletedState(null);
@@ -90,6 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await loadUserId();
         await loadProfileSetupCompleted();
         await loadUserData();
+        await loadLastSeenSequenceNumber();
         const id = getUserId();
 
         if (id) {
@@ -110,6 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setProfileSetupCompletedState(getProfileSetupCompleted());
 
           await initializeChat().catch(console.error);
+          await initializeNotifications().catch(console.error);
         }
       } catch (e) {
         console.error("Failed to load session", e);
@@ -165,6 +173,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(decoded.sub);
 
     await initializeChat().catch(console.error);
+    await initializeNotifications().catch(console.error);
   }, []);
 
   // Auth methods

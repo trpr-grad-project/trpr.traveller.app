@@ -52,6 +52,7 @@ export function useMessages(conversationId: string) {
     if (!conversationId) return;
     setIsLoading(true);
     try {
+      await chatSync.syncConversationMessages(conversationId);
       await reload();
     } finally {
       setIsLoading(false);

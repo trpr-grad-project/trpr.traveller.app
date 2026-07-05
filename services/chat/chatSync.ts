@@ -79,6 +79,8 @@ export class ChatSync {
         messageContent,
       });
 
+      message.content = message.content || messageContent;
+
       const msgRepo = createMessageRepository();
       await msgRepo.insertMessage(message);
 
@@ -228,8 +230,17 @@ export class ChatSync {
       }
 
       if (response.items.length > 0) {
-        const lastMsg = response.items[response.items.length - 1];
         const convRepo = createConversationRepository();
+        const existing = await convRepo.findConversation(conversationId);
+        if (!existing) {
+          try {
+            const metadata = await conversationsApi.getConversation(conversationId);
+            await convRepo.insertOrUpdateConversation(metadata);
+          } catch (error) {
+            console.error("Failed to fetch conversation metadata", error);
+          }
+        }
+        const lastMsg = response.items[response.items.length - 1];
         await convRepo.updateLastMessage(conversationId, {
           id: lastMsg.id,
           sequenceNumber: lastMsg.sequenceNumber,
@@ -272,26 +283,11 @@ export class ChatSync {
     if (!localConv) {
       console.log("Conversation not found locally, fetching messages", conversationId);
       await this.syncConversationMessages(conversationId);
-
-      const stillMissing = await convRepo.findConversation(conversationId);
-      if (!stillMissing) {
-        console.log("Conversation still missing after message sync, fetching metadata", conversationId);
-        try {
-          const metadata = await conversationsApi.getConversation(conversationId);
-          await convRepo.insertOrUpdateConversation(metadata);
-          console.log("Conversation metadata stored", conversationId);
-        } catch (error) {
-          console.error("Failed to fetch conversation metadata", error);
-        }
-      }
-
-      this.notify("messages", conversationId);
-      this.notify("conversations");
       return;
     }
 
     const localSeq = parseInt(
-      localConv.lastMessage?.lastMessage?.sequenceNumber ?? "0",
+      localConv.lastMessage?.sequenceNumber ?? "0",
       10,
     );
     const incomingSeq = parseInt(String(msg.sequenceNumber ?? "0"), 10);

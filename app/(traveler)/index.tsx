@@ -17,6 +17,7 @@ import { useColorScheme } from "nativewind";
 import TripCard, { SOFT_SHADOW } from "@/components/TripCard";
 import { router } from "expo-router";
 import { useHomeTrips } from "@/hooks/useHomeTrips";
+import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { resolveImageUrl } from "@/utils/constants";
 
 const THEMES = ["History", "Romantic", "Adventure", "Family"];
@@ -29,6 +30,7 @@ export default function TravelerHome() {
   const [selectedTheme, setSelectedTheme] = useState("History");
 
   const { data, isLoading, isError, refetch, isRefetching } = useHomeTrips();
+  const { hasUnread } = useUnreadCount();
 
   if (isLoading && !data) {
     return (
@@ -73,7 +75,9 @@ export default function TravelerHome() {
           </Text>
           <Pressable onPress={() => router.push("/notifications")} className="relative p-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800">
             <MaterialIcons name="notifications-none" size={22} color={isDark ? "#ffffff" : "#0c141d"} />
-            <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-background-dark" />
+            {hasUnread && (
+              <View className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-background-dark" />
+            )}
           </Pressable>
         </View>
       </View>

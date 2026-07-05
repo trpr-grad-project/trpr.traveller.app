@@ -102,3 +102,30 @@ export const clearUserData = async () => {
     SecureStore.deleteItemAsync(STORAGE_KEYS.USER_EMAIL),
   ]);
 };
+
+// Last seen notification sequence number
+let lastSeenSequenceNumber = 0;
+
+export const loadLastSeenSequenceNumber = async () => {
+  const stored = await SecureStore.getItemAsync(
+    STORAGE_KEYS.LAST_SEEN_SEQUENCE_NUMBER,
+  );
+  lastSeenSequenceNumber = stored ? parseInt(stored, 10) : 0;
+};
+
+export const getLastSeenSequenceNumber = () => lastSeenSequenceNumber;
+
+export const setLastSeenSequenceNumber = async (n: number) => {
+  lastSeenSequenceNumber = n;
+  await SecureStore.setItemAsync(
+    STORAGE_KEYS.LAST_SEEN_SEQUENCE_NUMBER,
+    String(n),
+  );
+};
+
+export const clearLastSeenSequenceNumber = async () => {
+  lastSeenSequenceNumber = 0;
+  await SecureStore.deleteItemAsync(
+    STORAGE_KEYS.LAST_SEEN_SEQUENCE_NUMBER,
+  );
+};

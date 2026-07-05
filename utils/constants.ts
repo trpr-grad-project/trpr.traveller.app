@@ -26,4 +26,5 @@ export const STORAGE_KEYS = {
   USER_FIRST_NAME: "user_first_name",
   USER_LAST_NAME: "user_last_name",
   USER_EMAIL: "user_email",
+  LAST_SEEN_SEQUENCE_NUMBER: "last_seen_sequence_number",
 } as const;

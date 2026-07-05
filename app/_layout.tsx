@@ -3,6 +3,7 @@ import { toastConfig } from "@/config/toast.config";
 import Toast from "react-native-toast-message";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import ChatLifecycleManager from "@/components/ChatLifecycleManager";
+import NotificationLifecycleManager from "@/components/NotificationLifecycleManager";
 import OfflineQueueProcessor from "@/components/OfflineQueueProcessor";
 import "@/global.css";
 import {
@@ -79,6 +80,7 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
     <>
       <OfflineQueueProcessor />
       <ChatLifecycleManager />
+      <NotificationLifecycleManager />
       <Stack screenOptions={{ headerShown: false }} />
     </>
   );

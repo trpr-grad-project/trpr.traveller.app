@@ -41,4 +41,6 @@ export const ENDPOINTS = {
   users: {
     all: "/users",
   },
+
+  notifications: "/notifications",
 } as const;
