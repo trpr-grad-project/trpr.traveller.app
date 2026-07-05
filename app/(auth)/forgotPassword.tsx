@@ -1,11 +1,9 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import SegmentedControl from "@react-native-segmented-control/segmented-control";
 import { useRouter } from "expo-router";
-import { useColorScheme } from "nativewind";
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Text, View, type NativeSyntheticEvent } from "react-native";
+import { Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -15,46 +13,24 @@ import FormInput from "@/components/FormInput";
 import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/utils/errorHandler";
-import {
-  forgotPasswordEmailSchema,
-  forgotPasswordPhoneSchema,
-} from "@/utils/validation";
+import { forgotPasswordEmailSchema } from "@/utils/validation";
 
-type Method = "email" | "phone";
 type FormValues = { inputValue: string };
 
 export default function ForgotPassword() {
   const router = useRouter();
   const { forgotPassword } = useAuth();
   const insets = useSafeAreaInsets();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const [selectedMethod, setSelectedMethod] = useState<Method>("email");
-
-  const schema =
-    selectedMethod === "email"
-      ? forgotPasswordEmailSchema
-      : forgotPasswordPhoneSchema;
+  const schema = forgotPasswordEmailSchema;
 
   const {
     control,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { inputValue: "" },
   });
-
-  const handleMethodChange = useCallback(
-    (event: NativeSyntheticEvent<{ selectedSegmentIndex: number }>) => {
-      const method: Method =
-        event.nativeEvent.selectedSegmentIndex === 0 ? "email" : "phone";
-      setSelectedMethod(method);
-      reset({ inputValue: "" });
-    },
-    [reset],
-  );
 
   const onSubmit = useCallback(
     async (data: FormValues) => {
@@ -74,8 +50,6 @@ export default function ForgotPassword() {
     },
     [forgotPassword, router],
   );
-
-  const isEmail = selectedMethod === "email";
 
   return (
     <KeyboardAwareScrollView
@@ -109,31 +83,9 @@ export default function ForgotPassword() {
             Forgot Password?
           </Text>
           <Text className="font-display text-base font-normal leading-relaxed text-slate-500 dark:text-slate-400">
-            Don&apos;t worry! It happens. Please enter the email or phone number
+            Don&apos;t worry! It happens. Please enter the email address
             associated with your account to receive a reset code.
           </Text>
-        </View>
-
-        {/* Method Selector */}
-        <View className="mb-6">
-          <SegmentedControl
-            values={["Email", "Phone"]}
-            selectedIndex={isEmail ? 0 : 1}
-            onChange={handleMethodChange}
-            style={{ height: 45 }}
-            backgroundColor={isDark ? "#1E2D2D" : "#E5E7EB"}
-            tintColor={isDark ? "#2C3E3E" : "#FFFFFF"}
-            fontStyle={{
-              color: isDark ? "#A0AEC0" : "#4F4F4F",
-              fontSize: 13,
-              fontWeight: "600",
-            }}
-            activeFontStyle={{
-              color: "#359EFF",
-              fontSize: 13,
-              fontWeight: "600",
-            }}
-          />
         </View>
 
         {/* Input */}
@@ -142,13 +94,13 @@ export default function ForgotPassword() {
           name="inputValue"
           render={({ field: { onChange, value } }) => (
             <FormInput
-              label={isEmail ? "Email Address" : "Phone Number"}
-              icon={isEmail ? "mail-outline" : "phone"}
+              label="Email Address"
+              icon="mail-outline"
               value={value}
               onChangeText={onChange}
               error={errors.inputValue?.message}
-              placeholder={isEmail ? "user@example.com" : "+20 123 456 7890"}
-              keyboardType={isEmail ? "email-address" : "phone-pad"}
+              placeholder="user@example.com"
+              keyboardType="email-address"
               editable={!isSubmitting}
             />
           )}

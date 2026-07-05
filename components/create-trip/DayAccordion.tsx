@@ -1,14 +1,18 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { useState } from "react";
+import { Platform, Pressable, Text, TextInput, View } from "react-native";
 import DraggableFlatList, {
   RenderItemParams,
 } from "react-native-draggable-flatlist";
+import { displayDateTime, formatRFC3339 } from "@/utils/dates";
 
 interface DayAccordionProps {
   dayCount: number;
-  days: { duration: number; placeIds: number[] }[];
+  days: { duration: number; placeIds: number[]; dayDate: string | null }[];
   placeNames: Record<number, string>;
   onDurationChange: (dayIndex: number, hours: number) => void;
+  onDayDateChange: (dayIndex: number, date: string | null) => void;
   onRemovePlace: (dayIndex: number, placeId: number) => void;
   onReorderPlace: (dayIndex: number, fromIndex: number, toIndex: number) => void;
   onAddPlace: (dayIndex: number) => void;
@@ -22,6 +26,7 @@ export default function DayAccordion({
   days,
   placeNames,
   onDurationChange,
+  onDayDateChange,
   onRemovePlace,
   onReorderPlace,
   onAddPlace,
@@ -29,6 +34,9 @@ export default function DayAccordion({
   expandedIndex,
   onToggle,
 }: DayAccordionProps) {
+  const [dayDatePickerIndex, setDayDatePickerIndex] = useState<number | null>(null);
+  const [dayDatePickerDate, setDayDatePickerDate] = useState(new Date());
+
   const dayLabels = [
     "First", "Second", "Third", "Fourth", "Fifth",
     "Sixth", "Seventh", "Eighth", "Ninth", "Tenth",
@@ -38,7 +46,7 @@ export default function DayAccordion({
     <View className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
       {Array.from({ length: dayCount }, (_, i) => {
         const isExpanded = expandedIndex === i;
-        const day = days[i] ?? { duration: 12, placeIds: [] };
+        const day = days[i] ?? { duration: 12, placeIds: [], dayDate: null };
         const label = dayLabels[i] ?? `Day ${i + 1}`;
 
         return (
@@ -77,6 +85,45 @@ export default function DayAccordion({
 
             {isExpanded && (
               <View className="px-4 pb-4 bg-white dark:bg-slate-800">
+                <View className="mb-3">
+                  <Text className="text-xs font-semibold text-slate-500 mb-1">
+                    Day Date
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      setDayDatePickerDate(day.dayDate ? new Date(day.dayDate) : new Date());
+                      setDayDatePickerIndex(i);
+                    }}
+                    className="flex-row items-center h-10 px-3 bg-slate-50 dark:bg-slate-900 rounded-xl"
+                  >
+                    <MaterialIcons name="calendar-today" size={16} color="#359EFF" />
+                    <Text
+                      className={`flex-1 text-sm font-medium ml-2 ${
+                        day.dayDate
+                          ? "text-[#0c141d] dark:text-white"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      {displayDateTime(day.dayDate)}
+                    </Text>
+                    <MaterialIcons name="chevron-right" size={18} color="#94a3b8" />
+                  </Pressable>
+                  {dayDatePickerIndex === i && (
+                    <DateTimePicker
+                      value={dayDatePickerDate}
+                      mode={Platform.OS === "ios" ? "datetime" : "date"}
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={(_event, selectedDate) => {
+                        if (Platform.OS === "android") setDayDatePickerIndex(null);
+                        if (selectedDate) {
+                          setDayDatePickerDate(selectedDate);
+                          onDayDateChange(i, formatRFC3339(selectedDate));
+                        }
+                      }}
+                    />
+                  )}
+                </View>
+
                 <View className="mb-3">
                   <Text className="text-xs font-semibold text-slate-500 mb-1">
                     Hours planned

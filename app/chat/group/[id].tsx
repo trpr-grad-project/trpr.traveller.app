@@ -18,7 +18,7 @@ import BackButton from "@/components/BackButton";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import { queryClient } from "@/app/query-provider";
+import { queryClient } from "@/providers/query-provider";
 import { createConversationRepository } from "@/database/repositories/conversationRepositoryImpl";
 import { createMessageRepository } from "@/database/repositories/messageRepositoryImpl";
 import { useMessages } from "@/hooks/useMessages";

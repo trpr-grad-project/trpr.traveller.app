@@ -103,12 +103,14 @@ export default function CreateTripStep3() {
       description: draft.description,
       price: "0",
       startDate: draft.startDate!,
+      endDate: draft.endDate ?? draft.startDate ?? "",
       images: draft.images.map((i) => i.filename!),
       autoApprove: draft.autoApprove,
       tripVisibility: draft.visibility,
       publishMode: draft.publishMode,
       segments: draft.days.map((d) => ({
         duration: String(d.duration),
+        dayDate: d.dayDate ?? "",
         placesIds: d.placeIds.map(String),
       })),
       maxParticipantsCount: String(draft.maxParticipants),
@@ -202,6 +204,7 @@ export default function CreateTripStep3() {
               days={draft.days}
               placeNames={draft.placeNames}
               onDurationChange={draft.setDayDuration}
+              onDayDateChange={draft.setDayDate}
               onRemovePlace={draft.removePlaceFromDay}
               onReorderPlace={draft.reorderDayPlace}
               onAddPlace={(dayIndex) =>

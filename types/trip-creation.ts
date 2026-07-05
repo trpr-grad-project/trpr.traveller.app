@@ -4,12 +4,14 @@ export interface CreateTripPayload {
   description: string;
   price: string;
   startDate: string;
+  endDate: string;
   images: string[];
   autoApprove: boolean;
   tripVisibility: "Public" | "Private";
   publishMode: "DirectPublish" | "Bidding";
   segments: {
     duration: string;
+    dayDate: string;
     placesIds: string[];
   }[];
   maxParticipantsCount: string;

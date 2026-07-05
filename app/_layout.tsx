@@ -1,6 +1,6 @@
-import QueryProvider from "@/app/query-provider";
-import { toastConfig } from "@/config/toast.config";
+import QueryProvider from "@/providers/query-provider";
 import Toast from "react-native-toast-message";
+import { toastConfig } from "@/config/toast.config";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import ChatLifecycleManager from "@/components/ChatLifecycleManager";
 import NotificationLifecycleManager from "@/components/NotificationLifecycleManager";

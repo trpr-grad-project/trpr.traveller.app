@@ -9,6 +9,7 @@ export type ImageItem = {
 export type DayDraft = {
   duration: number;
   placeIds: number[];
+  dayDate: string | null;
 };
 
 export type TripVisibility = "Public" | "Private";
@@ -25,6 +26,7 @@ export interface TripDraftState {
   title: string;
   description: string;
   startDate: string | null;
+  endDate: string | null;
   images: ImageItem[];
   visibility: TripVisibility;
   autoApprove: boolean;
@@ -40,6 +42,7 @@ export interface TripDraftState {
   setTitle: (title: string) => void;
   setDescription: (description: string) => void;
   setStartDate: (date: string | null) => void;
+  setEndDate: (date: string | null) => void;
   setVisibility: (v: TripVisibility) => void;
   setAutoApprove: (v: boolean) => void;
   setPublishMode: (v: PublishMode) => void;
@@ -50,6 +53,7 @@ export interface TripDraftState {
   addPlacesToDay: (dayIndex: number, placeIds: number[]) => void;
   removePlaceFromDay: (dayIndex: number, placeId: number) => void;
   setDayDuration: (dayIndex: number, hours: number) => void;
+  setDayDate: (dayIndex: number, date: string | null) => void;
   addImage: (localUri: string) => void;
   setImageUploaded: (localUri: string, filename: string) => void;
   removeImage: (localUri: string) => void;
@@ -64,6 +68,7 @@ const initialState = {
   title: "",
   description: "",
   startDate: null as string | null,
+  endDate: null as string | null,
   images: [] as ImageItem[],
   visibility: "Public" as TripVisibility,
   autoApprove: true,
@@ -72,7 +77,7 @@ const initialState = {
   governorateId: null as number | null,
   governorateName: null as string | null,
   mapLocation: null as MapLocation | null,
-  days: [{ duration: 12, placeIds: [] as number[] }],
+  days: [{ duration: 12, placeIds: [] as number[], dayDate: null }],
   placeNames: {} as Record<number, string>,
 };
 
@@ -86,6 +91,8 @@ export const useTripDraftStore = create<TripDraftState>()((set, get) => ({
   setDescription: (description) => set({ description }),
 
   setStartDate: (date) => set({ startDate: date }),
+
+  setEndDate: (date) => set({ endDate: date }),
 
   setVisibility: (v) => set({ visibility: v }),
 
@@ -109,6 +116,7 @@ export const useTripDraftStore = create<TripDraftState>()((set, get) => ({
       const added = Array.from({ length: n - days.length }, () => ({
         duration: 12,
         placeIds: [] as number[],
+        dayDate: null as string | null,
       }));
       set({ days: [...days, ...added] });
     } else {
@@ -144,6 +152,16 @@ export const useTripDraftStore = create<TripDraftState>()((set, get) => ({
     const updated = days.map((d, i) => {
       if (i !== dayIndex) return d;
       return { ...d, duration: hours };
+    });
+    set({ days: updated });
+  },
+
+  setDayDate: (dayIndex, date) => {
+    const { days } = get();
+    if (dayIndex < 0 || dayIndex >= days.length) return;
+    const updated = days.map((d, i) => {
+      if (i !== dayIndex) return d;
+      return { ...d, dayDate: date };
     });
     set({ days: updated });
   },

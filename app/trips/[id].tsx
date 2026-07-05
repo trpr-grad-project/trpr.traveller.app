@@ -121,7 +121,7 @@ export default function TripDetailsScreen() {
 
   const isCreator = user?.id === trip.createdByUser?.id;
   const todayStr = new Date().toISOString().slice(0, 10);
-  const isStartDay = trip.startDate === todayStr;
+  const isStartDay = trip.startDate?.startsWith(todayStr) ?? false;
   const isApproved = trip.approvedParticipants?.some((p) => p.id === user?.id) ?? false;
   const isPending = trip.pendingParticipants?.some((p) => p.id === user?.id) ?? false;
   const tripDays = parseInt(trip.tripTime, 10) || 1;

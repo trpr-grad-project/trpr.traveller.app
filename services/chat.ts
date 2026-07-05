@@ -4,7 +4,7 @@ import { ENDPOINTS } from "./endpoints";
 
 export const chatService = {
   sendMessage: async (data: AiChatRequest): Promise<AiChatResponse> => {
-    const response = await api.post(ENDPOINTS.conversation.ai, data);
+    const response = await api.post(ENDPOINTS.conversation.ai, data, { timeout: 90000 });
     return response.data;
   },
 };

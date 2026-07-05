@@ -25,6 +25,7 @@ import PrimaryButton from "@/components/PrimaryButton";
 import SearchablePicker from "@/components/create-trip/SearchablePicker";
 import type { SearchablePickerRef } from "@/components/create-trip/SearchablePicker";
 import ImageGrid from "@/components/create-trip/ImageGrid";
+import { formatRFC3339, displayDateTime } from "@/utils/dates";
 import { useTripDraftStore } from "@/store/tripCreation";
 import { useTripFormData } from "@/hooks/useTripFormData";
 import { useUploadImage } from "@/hooks/useUploadImage";
@@ -35,19 +36,6 @@ const fieldSchema = z.object({
 });
 
 type FieldData = z.infer<typeof fieldSchema>;
-
-function formatDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function displayDate(dateStr: string | null): string {
-  if (!dateStr) return "Select date";
-  const [y, m, d] = dateStr.split("-");
-  return `${d}/${m}/${y}`;
-}
 
 export default function CreateTripStep1() {
   const insets = useSafeAreaInsets();
@@ -61,6 +49,8 @@ export default function CreateTripStep1() {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [datePickerDate, setDatePickerDate] = useState(new Date());
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [endDatePickerDate, setEndDatePickerDate] = useState(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -478,21 +468,62 @@ export default function CreateTripStep1() {
                     : "text-slate-400"
                 }`}
               >
-                {displayDate(draft.startDate)}
+                {displayDateTime(draft.startDate)}
               </Text>
               <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
             </Pressable>
             {showDatePicker && (
               <DateTimePicker
                 value={datePickerDate}
-                mode="date"
+                mode={Platform.OS === "ios" ? "datetime" : "date"}
                 display={Platform.OS === "ios" ? "spinner" : "default"}
-                minimumDate={new Date()}
+                minimumDate={Platform.OS === "ios" ? new Date(new Date().setHours(0, 0, 0, 0)) : new Date()}
                 onChange={(_event, selectedDate) => {
                   if (Platform.OS === "android") setShowDatePicker(false);
                   if (selectedDate) {
                     setDatePickerDate(selectedDate);
-                    draft.setStartDate(formatDate(selectedDate));
+                    draft.setStartDate(formatRFC3339(selectedDate));
+                    if (!draft.endDate || selectedDate > endDatePickerDate) {
+                      setEndDatePickerDate(selectedDate);
+                      draft.setEndDate(formatRFC3339(selectedDate));
+                    }
+                  }
+                }}
+              />
+            )}
+          </View>
+
+          <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700">
+            <Text className="text-xs font-semibold text-slate-500 mb-2">
+              End Date
+            </Text>
+            <Pressable
+              onPress={() => setShowEndDatePicker(true)}
+              className="flex-row items-center h-12 px-4 bg-slate-50 dark:bg-slate-900 rounded-xl"
+            >
+              <MaterialIcons name="calendar-today" size={18} color="#359EFF" />
+              <Text
+                className={`flex-1 text-sm font-medium ml-2 ${
+                  draft.endDate
+                    ? "text-[#0c141d] dark:text-white"
+                    : "text-slate-400"
+                }`}
+              >
+                {displayDateTime(draft.endDate)}
+              </Text>
+              <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
+            </Pressable>
+            {showEndDatePicker && (
+              <DateTimePicker
+                value={endDatePickerDate}
+                mode={Platform.OS === "ios" ? "datetime" : "date"}
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                minimumDate={draft.startDate ? new Date(draft.startDate) : Platform.OS === "ios" ? new Date(new Date().setHours(0, 0, 0, 0)) : new Date()}
+                onChange={(_event, selectedDate) => {
+                  if (Platform.OS === "android") setShowEndDatePicker(false);
+                  if (selectedDate) {
+                    setEndDatePickerDate(selectedDate);
+                    draft.setEndDate(formatRFC3339(selectedDate));
                   }
                 }}
               />

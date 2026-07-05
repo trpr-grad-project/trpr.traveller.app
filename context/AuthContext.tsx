@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 
+import { setDatabaseUser } from "@/database/database";
 import {
   authService,
   profileService,
@@ -76,6 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   >(null);
 
   const signOut = useCallback(async () => {
+    setDatabaseUser(null);
     await disconnectChat();
     await disconnectNotifications();
     setSession(null);
@@ -100,6 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const id = getUserId();
 
         if (id) {
+          setDatabaseUser(id);
           setApiUserId(id);
           await setChatUserId(id);
           const stored = getUserData();
@@ -159,6 +162,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // Perform React state updates synchronously to ensure proper batching
+    setDatabaseUser(decoded.sub);
     setApiUserId(decoded.sub);
     await setChatUserId(decoded.sub);
     const userData = {
