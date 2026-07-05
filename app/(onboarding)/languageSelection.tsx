@@ -30,11 +30,7 @@ const LANG_EMOJI_MAP: Record<string, string> = {
 function LangIcon({ code }: { code: string }) {
   const emoji = LANG_EMOJI_MAP[code];
   if (emoji) {
-    return (
-      <Text className="text-2xl">
-        {emoji}
-      </Text>
-    );
+    return <Text className="text-2xl">{emoji}</Text>;
   }
   return (
     <Text className="text-xs font-bold text-[#1A1A1A] dark:text-white uppercase">
@@ -43,7 +39,25 @@ function LangIcon({ code }: { code: string }) {
   );
 }
 
-const LanguageItem = React.memo(function LanguageItem({ lang, isSelected, onPress }: { lang: any, isSelected: boolean, onPress: (id: number) => void }) {
+function sortLanguages(languages: any[]) {
+  return [...languages].sort((a, b) => {
+    if (a.code === "en") return -1;
+    if (b.code === "en") return 1;
+    if (a.code === "ar") return -1;
+    if (b.code === "ar") return 1;
+    return 0;
+  });
+}
+
+const LanguageItem = React.memo(function LanguageItem({
+  lang,
+  isSelected,
+  onPress,
+}: {
+  lang: any;
+  isSelected: boolean;
+  onPress: (id: number) => void;
+}) {
   return (
     <Pressable
       onPress={() => onPress(lang.id)}
@@ -74,15 +88,13 @@ const LanguageItem = React.memo(function LanguageItem({ lang, isSelected, onPres
       </View>
 
       <View
-        className={`h-6 w-6 rounded-full border-2 items-center justify-center ${
+        className={`h-6 w-6 rounded-md border-2 items-center justify-center ${
           isSelected
-            ? "border-primary"
+            ? "border-primary bg-primary"
             : "border-[#E0E0E0] dark:border-gray-600"
         }`}
       >
-        {isSelected && (
-          <View className="h-3 w-3 rounded-full bg-primary" />
-        )}
+        {isSelected && <MaterialIcons name="check" size={16} color="white" />}
       </View>
     </Pressable>
   );
@@ -91,28 +103,42 @@ const LanguageItem = React.memo(function LanguageItem({ lang, isSelected, onPres
 export default function LanguageSelectionScreen() {
   const insets = useSafeAreaInsets();
   const { languages, isLoading, error } = useProfileFormData();
-  const { languageId, setLanguageId } = useOnboardingSelections();
+  const { languageIds, setLanguageIds } = useOnboardingSelections();
   const navigating = React.useRef(false);
+
+  const sortedLanguages = React.useMemo(
+    () => sortLanguages(languages),
+    [languages],
+  );
 
   useFocusEffect(React.useCallback(() => { navigating.current = false; }, []));
 
-  const handleSelect = React.useCallback((id: number) => {
-    setLanguageId(id);
-  }, [setLanguageId]);
+  const handleSelect = React.useCallback(
+    (id: number) => {
+      setLanguageIds((prev) =>
+        prev.includes(id)
+          ? prev.filter((v) => v !== id)
+          : [...prev, id],
+      );
+    },
+    [setLanguageIds],
+  );
 
   const handleContinue = React.useCallback(() => {
-    if (!languageId || navigating.current) return;
+    if (languageIds.length === 0 || navigating.current) return;
     navigating.current = true;
     router.push("/(onboarding)/interestsSelection");
-  }, [languageId]);
+  }, [languageIds]);
 
-  // Auto-select English (code "en") when data loads and nothing is selected yet
+  // Pre-select English when data loads and nothing is selected yet
   React.useEffect(() => {
-    if (languages.length > 0 && languageId === null) {
+    if (languages.length > 0 && languageIds.length === 0) {
       const english = languages.find((l) => l.code === "en");
-      setLanguageId(english?.id ?? languages[0].id);
+      if (english) {
+        setLanguageIds([english.id]);
+      }
     }
-  }, [languages, languageId, setLanguageId]);
+  }, [languages, languageIds, setLanguageIds]);
 
   return (
     <View className="flex-1 bg-white dark:bg-background-dark">
@@ -126,7 +152,7 @@ export default function LanguageSelectionScreen() {
       <View style={{ paddingTop: insets.top + 8 }} className="px-2 pb-4 items-start">
         <BackButton />
         <Text className="text-[#1A1A1A] dark:text-white text-2xl font-bold tracking-tight text-center px-4 pt-2">
-          Select Your Language
+          Select Your Languages
         </Text>
       </View>
 
@@ -147,11 +173,11 @@ export default function LanguageSelectionScreen() {
           </View>
         ) : (
           <View className="gap-4 max-w-md mx-auto w-full">
-            {languages.map((lang) => (
+            {sortedLanguages.map((lang) => (
               <LanguageItem
                 key={lang.id}
                 lang={lang}
-                isSelected={languageId === lang.id}
+                isSelected={languageIds.includes(lang.id)}
                 onPress={handleSelect}
               />
             ))}
@@ -176,7 +202,7 @@ export default function LanguageSelectionScreen() {
 
           <Pressable
             onPress={handleContinue}
-            disabled={!languageId}
+            disabled={languageIds.length === 0}
             className="flex w-full items-center justify-center rounded-2xl h-[56px] bg-primary active:opacity-90 shadow-lg shadow-primary/20 disabled:opacity-50"
           >
             <Text className="text-white text-[20px] font-bold">Continue</Text>

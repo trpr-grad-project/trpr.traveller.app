@@ -9,11 +9,11 @@ import React, {
 import { profileService } from "@/services";
 
 interface OnboardingSelectionsContextType {
-  languageId: number | null;
+  languageIds: number[];
   interestIds: number[];
-  setLanguageId: (id: number) => void;
+  setLanguageIds: React.Dispatch<React.SetStateAction<number[]>>;
   setInterestIds: React.Dispatch<React.SetStateAction<number[]>>;
-  submitProfile: (vibeId: number) => Promise<void>;
+  submitProfile: (vibeIds: number[]) => Promise<void>;
   isSubmitting: boolean;
 }
 
@@ -35,37 +35,37 @@ export const OnboardingSelectionsProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [languageId, setLanguageId] = useState<number | null>(null);
+  const [languageIds, setLanguageIds] = useState<number[]>([]);
   const [interestIds, setInterestIds] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submitProfile = useCallback(
-    async (vibeId: number) => {
+    async (vibeIds: number[]) => {
       setIsSubmitting(true);
       try {
         await profileService.setupProfile({
           bio: "",
-          languageIds: languageId ? [String(languageId)] : [],
+          languageIds: languageIds.map(String),
           interestIds: interestIds.map(String),
-          vibeIds: [String(vibeId)],
+          vibeIds: vibeIds.map(String),
         });
       } finally {
         setIsSubmitting(false);
       }
     },
-    [languageId, interestIds],
+    [languageIds, interestIds],
   );
 
   const value = useMemo(
     () => ({
-      languageId,
+      languageIds,
       interestIds,
-      setLanguageId,
+      setLanguageIds,
       setInterestIds,
       submitProfile,
       isSubmitting,
     }),
-    [languageId, interestIds, submitProfile, isSubmitting],
+    [languageIds, interestIds, submitProfile, isSubmitting],
   );
 
   return (

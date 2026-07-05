@@ -56,7 +56,7 @@ export const ProfileProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const { session } = useAuth();
+  const { session, profileSetupCompleted } = useAuth();
   const [profile, setProfile] = useState<ProfileSetupResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,9 +78,9 @@ export const ProfileProvider = ({
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || profileSetupCompleted === false) return;
     fetchProfile();
-  }, [fetchProfile, session]);
+  }, [fetchProfile, session, profileSetupCompleted]);
 
   const updateProfile = useCallback(
     async (updates: {

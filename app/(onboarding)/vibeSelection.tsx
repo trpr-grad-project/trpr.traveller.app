@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Map vibe name to a Material icon
 function vibeIcon(name: string): string {
   const map: Record<string, string> = {
     solo: "person",
@@ -27,126 +26,54 @@ function vibeIcon(name: string): string {
   return map[name.toLowerCase()] ?? "star";
 }
 
-// Per-vibe accent colour for the thumbnail tint
-function vibeAccent(id: number): string {
-  const colours = ["#359EFF", "#f97316", "#ec4899", "#22c55e"];
-  return colours[(id - 1) % colours.length];
-}
-
-const VibeItem = React.memo(function VibeItem({ vibe, isSelected, onPress }: { vibe: any, isSelected: boolean, onPress: (id: number) => void }) {
+const VibeItem = React.memo(function VibeItem({
+  vibe,
+  isSelected,
+  onPress,
+}: {
+  vibe: any;
+  isSelected: boolean;
+  onPress: (id: number) => void;
+}) {
   return (
     <Pressable
       onPress={() => onPress(vibe.id)}
-      className="active:scale-[0.98]"
+      className="relative flex flex-col items-center rounded-2xl border-2 p-5 active:scale-[0.98]"
       style={{
-        borderRadius: 24,
-        overflow: "hidden",
-        borderWidth: 2.5,
-        borderColor: isSelected ? "#359EFF" : "transparent",
-        shadowColor: isSelected ? "#359EFF" : "#000",
-        shadowOffset: { width: 0, height: isSelected ? 8 : 4 },
-        shadowOpacity: isSelected ? 0.25 : 0.08,
-        shadowRadius: 16,
-        elevation: isSelected ? 8 : 3,
+        width: "47%",
+        borderColor: isSelected ? "#359EFF" : "#E0E0E0",
+        backgroundColor: "white",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 2,
       }}
     >
-      {/* Thumbnail area */}
-      <View
-        style={{
-          height: 140,
-          backgroundColor: "#f3f4f6",
-          overflow: "hidden",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {/* Coloured tint per vibe */}
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: vibeAccent(vibe.id),
-            opacity: 0.15,
-          }}
-        />
+      {isSelected && (
+        <View className="absolute top-2 right-2">
+          <MaterialIcons name="check-circle" size={20} color="#359EFF" />
+        </View>
+      )}
+
+      <View className="bg-gray-50 dark:bg-gray-800 rounded-full p-4 mb-3">
         <MaterialIcons
           name={vibeIcon(vibe.name) as any}
-          size={56}
-          color={isSelected ? "#359EFF" : "#9ca3af"}
+          size={32}
+          color={isSelected ? "#359EFF" : "#1A1A1A"}
         />
-
-        {/* Selected badge */}
-        {isSelected && (
-          <View
-            style={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              backgroundColor: "#359EFF",
-              borderRadius: 20,
-              padding: 4,
-            }}
-          >
-            <MaterialIcons name="check" size={16} color="white" />
-          </View>
-        )}
       </View>
 
-      {/* Label row */}
-      <View
-        style={{
-          backgroundColor: "white",
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
+      <Text className="text-[#1A1A1A] dark:text-white text-sm font-semibold text-center">
+        {vibe.name}
+      </Text>
+
+      <Text
+        className="text-[#828282] dark:text-gray-400 text-xs text-center mt-1"
+        numberOfLines={2}
       >
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontSize: 17,
-              fontWeight: "700",
-              color: isSelected ? "#359EFF" : "#1A1A1A",
-              marginBottom: 2,
-            }}
-          >
-            {vibe.name}
-          </Text>
-          <Text
-            style={{
-              fontSize: 12,
-              color: "#828282",
-              lineHeight: 18,
-            }}
-            numberOfLines={2}
-          >
-            {vibe.description}
-          </Text>
-        </View>
-
-        <View
-          style={{
-            marginLeft: 12,
-            width: 28,
-            height: 28,
-            borderRadius: 14,
-            borderWidth: 2,
-            borderColor: isSelected ? "#359EFF" : "#E0E0E0",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: isSelected ? "#359EFF" : "transparent",
-          }}
-        >
-          {isSelected && (
-            <MaterialIcons name="check" size={16} color="white" />
-          )}
-        </View>
-      </View>
+        {vibe.description}
+      </Text>
     </Pressable>
   );
 });
@@ -155,10 +82,14 @@ export default function VibeSelectionScreen() {
   const insets = useSafeAreaInsets();
   const { vibes, isLoading, error } = useProfileFormData();
   const { submitProfile, isSubmitting } = useOnboardingSelections();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const handleSelect = React.useCallback((id: number) => {
-    setSelectedId(id);
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((v) => v !== id)
+        : [...prev, id],
+    );
   }, []);
 
   const navigating = useRef(false);
@@ -166,10 +97,10 @@ export default function VibeSelectionScreen() {
   useFocusEffect(React.useCallback(() => { navigating.current = false; }, []));
 
   const handleContinue = useCallback(async () => {
-    if (!selectedId || isSubmitting || navigating.current) return;
+    if (selectedIds.length === 0 || isSubmitting || navigating.current) return;
     navigating.current = true;
     try {
-      await submitProfile(selectedId);
+      await submitProfile(selectedIds);
       router.push("/(onboarding)/locationPermission");
     } catch (err) {
       navigating.current = false;
@@ -179,7 +110,7 @@ export default function VibeSelectionScreen() {
         text2: getErrorMessage(err, "Failed to save your vibe. Please try again."),
       });
     }
-  }, [selectedId, isSubmitting, submitProfile]);
+  }, [selectedIds, isSubmitting, submitProfile]);
 
   return (
     <View className="flex-1 bg-white dark:bg-background-dark">
@@ -197,15 +128,14 @@ export default function VibeSelectionScreen() {
             What&apos;s your travel vibe?
           </Text>
           <Text className="text-[#828282] dark:text-gray-400 text-sm leading-relaxed">
-            Choose the experience that best describes your trip.
+            Choose the experiences that describe your trip.
           </Text>
         </View>
       </View>
 
       <ScrollView
-        className="flex-1 px-6 pt-2"
-        contentContainerStyle={{ paddingBottom: 160 }}
-        showsVerticalScrollIndicator={false}
+        className="flex-1 px-6 pt-4"
+        contentContainerStyle={{ paddingBottom: insets.bottom + 160 }}
       >
         {isLoading ? (
           <View className="flex-1 items-center justify-center py-20">
@@ -219,12 +149,12 @@ export default function VibeSelectionScreen() {
             </Text>
           </View>
         ) : (
-          <View className="gap-4 max-w-md mx-auto w-full">
+          <View className="flex-row flex-wrap gap-4 max-w-md mx-auto">
             {vibes.map((vibe) => (
               <VibeItem
                 key={vibe.id}
                 vibe={vibe}
-                isSelected={selectedId === vibe.id}
+                isSelected={selectedIds.includes(vibe.id)}
                 onPress={handleSelect}
               />
             ))}
@@ -238,7 +168,7 @@ export default function VibeSelectionScreen() {
         style={{ paddingBottom: insets.bottom + 16 }}
       >
         <View className="max-w-md mx-auto w-full items-center">
-          {/* Progress Dots — step 4 of 5 */}
+          {/* Progress Dots */}
           <View className="flex-row justify-center items-center gap-2 mb-8">
             <View className="h-2 w-2 rounded-full bg-neutral-light dark:bg-gray-700" />
             <View className="h-2 w-2 rounded-full bg-neutral-light dark:bg-gray-700" />
@@ -248,7 +178,7 @@ export default function VibeSelectionScreen() {
           </View>
 
           <Pressable
-            disabled={!selectedId || isSubmitting}
+            disabled={selectedIds.length === 0 || isSubmitting}
             onPress={handleContinue}
             className="flex w-full items-center justify-center rounded-2xl h-[56px] bg-primary active:opacity-90 shadow-lg shadow-primary/20 disabled:opacity-50"
           >
@@ -265,5 +195,3 @@ export default function VibeSelectionScreen() {
     </View>
   );
 }
-
-
