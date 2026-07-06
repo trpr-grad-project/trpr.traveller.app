@@ -2,8 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
   Pressable,
   RefreshControl,
   StatusBar,
@@ -17,7 +16,7 @@ import Toast from "react-native-toast-message";
 import BackButton from "@/components/BackButton";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { queryClient } from "@/providers/query-provider";
 import { createConversationRepository } from "@/database/repositories/conversationRepositoryImpl";
 import { createMessageRepository } from "@/database/repositories/messageRepositoryImpl";
@@ -58,10 +57,24 @@ export default function GroupChatScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const [input, setInput] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
   const currentUserId = getUserId();
   const { messages, isLoading, isLoadingOlder, isRefreshing, refresh, loadOlder, hasMore } = useMessages(id);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", (e) =>
+      setKeyboardHeight(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardHeight(0),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // Mark conversation as read when messages are loaded
   useEffect(() => {
@@ -76,6 +89,13 @@ export default function GroupChatScreen() {
       }
     }).catch(console.error);
   }, [id, messages.length]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh().catch(console.error);
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    }, [refresh]),
+  );
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
@@ -157,13 +177,8 @@ export default function GroupChatScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-background-light dark:bg-background-dark"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? insets.top : 0}
-    >
+    <View className="flex-1 bg-background-light dark:bg-background-dark">
       <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
-
       <View className="flex-1" style={{ paddingTop: insets.top }}>
         {/* Header */}
         <View className="bg-white/80 dark:bg-background-dark/80 border-b border-gray-100 dark:border-gray-800">
@@ -172,7 +187,12 @@ export default function GroupChatScreen() {
             <Text className="text-main-light dark:text-white text-lg font-bold flex-1 text-center">
               {title ?? "Group Chat"}
             </Text>
-            <View className="w-10 h-10" />
+            <Pressable
+              onPress={() => router.push(`/chat/group/${id}/settings`)}
+              className="p-2 rounded-full"
+            >
+              <MaterialIcons name="more-vert" size={24} color="#64748b" />
+            </Pressable>
           </View>
         </View>
 
@@ -220,23 +240,20 @@ export default function GroupChatScreen() {
         {/* Input */}
         <View
           className="p-4 bg-white dark:bg-background-dark border-t border-gray-100 dark:border-gray-800"
-          style={{ paddingBottom: insets.bottom + 16 }}
+          style={{ paddingBottom: keyboardHeight + insets.bottom + 16 }}
         >
           <View className="flex-row items-center gap-3">
-            <View className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center">
-              <MaterialIcons name="add" size={22} color={isDark ? "#E2E8F0" : "#0F172A"} />
-            </View>
-            <View className="flex-1 relative flex-row items-center">
+            <View className="flex-1 flex-row items-center">
               <TextInput
                 value={input}
                 onChangeText={setInput}
                 placeholder="Type a message..."
                 placeholderTextColor="#9ca3af"
-                className="flex-1 h-11 bg-gray-100 dark:bg-gray-800 rounded-full px-5 text-[15px] text-main-light dark:text-white"
+                multiline
+                blurOnSubmit={false}
+                className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-5 py-2.5 text-[15px] text-main-light dark:text-white"
+                style={{ maxHeight: 96 }}
               />
-              <View className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 items-center justify-center">
-                <MaterialIcons name="mood" size={22} color="#359EFF" />
-              </View>
             </View>
             <Pressable
               onPress={handleSend}
@@ -251,6 +268,6 @@ export default function GroupChatScreen() {
           </View>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

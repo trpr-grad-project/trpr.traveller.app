@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -19,9 +22,11 @@ import PrimaryButton from "@/components/PrimaryButton";
 import { useAuth } from "@/context/AuthContext";
 import { useTripDetails } from "@/hooks/useTripDetails";
 import { useJoinTrip } from "@/hooks/useJoinTrip";
+import { checkSufficientBalance } from "@/utils/balanceCheck";
 import { useStartTrip } from "@/hooks/useStartTrip";
 import { useEndTrip } from "@/hooks/useEndTrip";
 import { useRespondToParticipant } from "@/hooks/useRespondToParticipant";
+import { useRespondToBid } from "@/hooks/useRespondToBid";
 import { STATUS_TO_LABEL, STATUS_COLORS } from "@/utils/tripSegments";
 import { resolveImageUrl } from "@/utils/constants";
 import type { TripResponse } from "@/types";
@@ -74,10 +79,21 @@ export default function TripDetailsScreen() {
   const startTripMutation = useStartTrip();
   const endTripMutation = useEndTrip();
   const respondMutation = useRespondToParticipant();
+  const bidMutation = useRespondToBid();
   const [joinRequested, setJoinRequested] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedDay, setExpandedDay] = useState<number | null>(1);
   const [expandedDesc, setExpandedDesc] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const screenWidth = Dimensions.get("window").width;
+
+  const handleImageScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offset = e.nativeEvent.contentOffset.x;
+      setActiveImageIndex(Math.round(offset / screenWidth));
+    },
+    [screenWidth],
+  );
 
   if (isLoading) {
     return (
@@ -131,6 +147,8 @@ export default function TripDetailsScreen() {
   const isEndDay = todayStr >= endDateStr;
   const isStarted = trip.status === "Started";
   const isFinished = trip.status === "Finished";
+  const isPaidTripType = trip.price > 0 &&
+    (trip.creatorRoles.includes("Company") || trip.creatorRoles.includes("Guide"));
 
   let buttonTitle: string;
   let buttonDisabled: boolean;
@@ -192,7 +210,95 @@ export default function TripDetailsScreen() {
     <View className="flex-1 bg-background-light dark:bg-background-dark">
       <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
 
+      {/* Hero */}
+      <View className="relative w-full" style={{ height: screenWidth * 0.75 }}>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleImageScroll}
+          className="absolute inset-0"
+        >
+          {(trip.imagesUrls.length > 0 ? trip.imagesUrls : [""]).map(
+            (url, idx) => (
+              <Image
+                key={idx}
+                source={{ uri: resolveImageUrl(url) }}
+                style={{ width: screenWidth, height: screenWidth * 0.75 }}
+                resizeMode="cover"
+              />
+            ),
+          )}
+        </ScrollView>
+        <View className="absolute inset-0 bg-black/30" pointerEvents="none" />
+
+        {/* Top controls */}
+        <View
+          className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4"
+          style={{ paddingTop: insets.top + 12 }}
+        >
+          <View className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
+            <BackButton iconSize={18} iconName="chevron-left" className="!min-w-0 !min-h-0 w-10 h-10" />
+          </View>
+          <View className="flex-row gap-2">
+            <Pressable className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
+              {({ pressed }) => (
+                <MaterialIcons
+                  name="share"
+                  size={20}
+                  color="white"
+                  style={{ opacity: pressed ? 0.6 : 1 }}
+                />
+              )}
+            </Pressable>
+            <Pressable className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
+              {({ pressed }) => (
+                <MaterialIcons
+                  name="favorite-border"
+                  size={20}
+                  color="white"
+                  style={{ opacity: pressed ? 0.6 : 1 }}
+                />
+              )}
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Pagination dots */}
+        {trip.imagesUrls.length > 1 && (
+          <View className="absolute bottom-2 left-0 right-0 flex-row justify-center gap-1.5">
+            {trip.imagesUrls.map((_, idx) => (
+              <View
+                key={idx}
+                className={`w-2 h-2 rounded-full ${idx === activeImageIndex ? "bg-white" : "bg-white/40"}`}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Bottom badges */}
+        <View className="absolute bottom-8 left-4 right-4 flex-row items-center gap-2">
+          <View
+            className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg"
+            style={{ backgroundColor: statusColor?.bg ?? "#359EFF" }}
+          >
+            <MaterialIcons name="verified" size={14} color="white" />
+            <Text className="text-[10px] font-bold text-white uppercase tracking-wider">
+              {label}
+            </Text>
+          </View>
+          {theme && (
+            <View className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30">
+              <Text className="text-[10px] font-bold text-white uppercase tracking-wider">
+                {theme}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
       <ScrollView
+        className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={
@@ -206,70 +312,9 @@ export default function TripDetailsScreen() {
           />
         }
       >
-        {/* Hero */}
-        <View className="relative w-full aspect-[4/3]">
-          <Image
-            source={{ uri: resolveImageUrl(trip.imagesUrls?.[0] ?? "") }}
-            className="absolute inset-0 w-full h-full"
-            resizeMode="cover"
-          />
-          <View className="absolute inset-0 bg-black/30" />
-
-          {/* Top controls */}
-          <View
-            className="absolute top-0 left-0 right-0 flex-row items-center justify-between px-4"
-            style={{ paddingTop: insets.top + 12 }}
-          >
-            <View className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
-              <BackButton iconSize={18} iconName="chevron-left" className="!min-w-0 !min-h-0 w-10 h-10" />
-            </View>
-            <View className="flex-row gap-2">
-              <Pressable className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
-                {({ pressed }) => (
-                  <MaterialIcons
-                    name="share"
-                    size={20}
-                    color="white"
-                    style={{ opacity: pressed ? 0.6 : 1 }}
-                  />
-                )}
-              </Pressable>
-              <Pressable className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
-                {({ pressed }) => (
-                  <MaterialIcons
-                    name="favorite-border"
-                    size={20}
-                    color="white"
-                    style={{ opacity: pressed ? 0.6 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Bottom badges */}
-          <View className="absolute bottom-8 left-4 right-4 flex-row items-center gap-2">
-            <View
-              className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg"
-              style={{ backgroundColor: statusColor?.bg ?? "#359EFF" }}
-            >
-              <MaterialIcons name="verified" size={14} color="white" />
-              <Text className="text-[10px] font-bold text-white uppercase tracking-wider">
-                {label}
-              </Text>
-            </View>
-            {theme && (
-              <View className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30">
-                <Text className="text-[10px] font-bold text-white uppercase tracking-wider">
-                  {theme}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
 
         {/* Content */}
-        <View className="-mt-4 bg-background-light dark:bg-background-dark pt-6 px-4">
+        <View className="bg-background-light dark:bg-background-dark pt-6 px-4">
           {/* Title + Price */}
           <View className="flex-row justify-between items-start mb-1">
             <View className="flex-1 mr-4">
@@ -525,6 +570,72 @@ export default function TripDetailsScreen() {
             </View>
           )}
 
+          {/* Bidding (creator only) */}
+          {isCreator && trip.publishMode === "Bidding" && trip.biddingsPage?.items && trip.biddingsPage.items.length > 0 && (
+            <View className="mb-6">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-lg font-bold text-[#0c141d] dark:text-white">
+                  Guide Bids
+                </Text>
+                <Text className="text-xs font-bold text-primary">
+                  {trip.biddingsPage.items.length} bid{trip.biddingsPage.items.length !== 1 ? "s" : ""}
+                </Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
+                {trip.biddingsPage.items.map((bid, idx) => (
+                  <View
+                    key={bid.id}
+                    className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-50 dark:border-slate-700 shadow-sm w-44"
+                  >
+                    <View
+                      className="w-12 h-12 rounded-full items-center justify-center mb-3"
+                      style={{ backgroundColor: AVATAR_COLORS[idx % AVATAR_COLORS.length] }}
+                    >
+                      <Text className="text-sm font-bold text-white">
+                        {getInitials(bid.guideFirstName, bid.guideLastName)}
+                      </Text>
+                    </View>
+                    <Text className="text-sm font-bold text-[#0c141d] dark:text-white mb-1" numberOfLines={1}>
+                      {bid.guideFirstName} {bid.guideLastName}
+                    </Text>
+                    <Text className="text-[11px] text-slate-400 mb-2" numberOfLines={1}>
+                      @{bid.guideUsername}
+                    </Text>
+                    <Text className="text-base font-bold text-green-500 mb-4">
+                      ${bid.proposedPrice}
+                    </Text>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        className="flex-1 h-9 rounded-lg bg-emerald-500 items-center justify-center"
+                        onPress={() =>
+                          bidMutation.mutate({
+                            tripId: trip.id,
+                            biddingId: bid.id,
+                            action: "accept",
+                          })
+                        }
+                      >
+                        <MaterialIcons name="check" size={18} color="white" />
+                      </Pressable>
+                      <Pressable
+                        className="flex-1 h-9 rounded-lg bg-red-500 items-center justify-center"
+                        onPress={() =>
+                          bidMutation.mutate({
+                            tripId: trip.id,
+                            biddingId: bid.id,
+                            action: "reject",
+                          })
+                        }
+                      >
+                        <MaterialIcons name="close" size={18} color="white" />
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Itinerary */}
           {trip.segments && trip.segments.length > 0 && (
             <View className="mb-6">
@@ -716,6 +827,15 @@ export default function TripDetailsScreen() {
             </View>
           )}
         </View>
+        {isStarted && (
+          <Pressable
+            onPress={() => router.push(`/map/userView?tripId=${id}`)}
+            className="flex-row items-center justify-center gap-2 h-12 rounded-xl bg-green-500 mb-3 active:opacity-80"
+          >
+            <MaterialIcons name="map" size={20} color="white" />
+            <Text className="text-white font-bold text-sm">View Live Map</Text>
+          </Pressable>
+        )}
         <PrimaryButton
           title={buttonTitle}
           disabled={buttonDisabled}
@@ -727,6 +847,10 @@ export default function TripDetailsScreen() {
             } else if (isCreator) {
               await startTripMutation.mutateAsync(id);
             } else if (!isApproved && !isPending) {
+              if (isPaidTripType) {
+                const hasBalance = await checkSufficientBalance(trip.price);
+                if (!hasBalance) return;
+              }
               setJoinRequested(true);
               try {
                 await joinMutation.mutateAsync(id);

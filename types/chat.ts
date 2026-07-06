@@ -42,6 +42,7 @@ export interface ConversationPreview {
   id: string;
   title: string | null;
   imageUrl: string | null;
+  tripId?: string;
   lastMessage: ConversationLastMessage | null;
   lastReadSequence: string;
   unreadCount: string;

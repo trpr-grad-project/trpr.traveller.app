@@ -20,6 +20,10 @@ import {
   initializeNotifications,
   disconnectNotifications,
 } from "@/services/notification/initializeNotification";
+import {
+  initializeTripHub,
+  disconnectTripHub,
+} from "@/services/trip/initializeTripHub";
 import { LoginResponse, RegisterRequest, User } from "@/types";
 import {
   clearProfileSetupCompleted,
@@ -80,6 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setDatabaseUser(null);
     await disconnectChat();
     await disconnectNotifications();
+    await disconnectTripHub();
     setSession(null);
     setUser(null);
     setProfileSetupCompletedState(null);
@@ -121,6 +126,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           await initializeChat().catch(console.error);
           await initializeNotifications().catch(console.error);
+          await initializeTripHub().catch(console.error);
         }
       } catch (e) {
         console.error("Failed to load session", e);
@@ -178,6 +184,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     await initializeChat().catch(console.error);
     await initializeNotifications().catch(console.error);
+    await initializeTripHub().catch(console.error);
   }, []);
 
   // Auth methods

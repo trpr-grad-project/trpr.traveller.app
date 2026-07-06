@@ -11,6 +11,15 @@ export const API_URL = Platform.select({
   default: LOCAL_URL,
 });
 
+// Uploads server — separate from API, typically a file server on port 9000
+const UPLOADS_LOCAL = process.env.EXPO_PUBLIC_UPLOADS_URL || "http://localhost:9000";
+
+export const UPLOADS_URL = Platform.select({
+  android: process.env.EXPO_PUBLIC_UPLOADS_URL || "http://10.0.2.2:9000",
+  ios: UPLOADS_LOCAL,
+  default: UPLOADS_LOCAL,
+});
+
 export function resolveImageUrl(url: string): string {
   if (Platform.OS === "android") {
     return url.replace("localhost", "10.0.2.2");

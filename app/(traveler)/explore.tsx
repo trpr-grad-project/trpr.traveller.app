@@ -35,6 +35,7 @@ type TripCardData = {
   type: string;
   typeValue: string;
   image: string;
+  startDate: string;
 };
 
 type SectionKey = "byCompany" | "byGuide" | "shared";
@@ -57,6 +58,7 @@ function mapTrip(item: MyTrip, section: SectionKey): TripCardData {
     type,
     typeValue,
     image: resolveImageUrl(item.imagesUrls?.[0] ?? ""),
+    startDate: item.startDate,
   };
 }
 
@@ -90,7 +92,10 @@ export default function ExploreScreen() {
 
   const selectedTypeLabel = TYPE_OPTIONS.find((o) => o.value === selectedType)?.label ?? "All Trips";
 
+  const today = new Date().toISOString().slice(0, 10);
+
   const filtered = allTrips.filter((t) => {
+    if (t.startDate < today) return false;
     if (selectedCat !== "All" && t.category !== selectedCat.toUpperCase()) return false;
     if (selectedType === "company" && t.typeValue !== "company") return false;
     if (selectedType === "guide" && t.typeValue !== "guide") return false;
@@ -98,12 +103,6 @@ export default function ExploreScreen() {
     if (search && !t.title.toLowerCase().includes(search.toLowerCase()) && !t.location.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
-
-  const getPlanRoute = (trip: TripCardData) => {
-    if (trip.typeValue === "company") return `/trips/plan-by-company/${trip.id}`;
-    if (trip.typeValue === "guide") return `/trips/plan-by-guide/${trip.id}`;
-    return `/trips/plan-by-user/${trip.id}`;
-  };
 
   if (isLoading && !data) {
     return (
@@ -190,7 +189,7 @@ export default function ExploreScreen() {
           className="flex-row items-center gap-1"
         >
           <Text className="text-[#4F4F4F] dark:text-slate-300 text-sm font-medium">
-            Sort by: <Text className="text-primary ml-1">{SORT_OPTIONS.find((o) => o.value === selectedSort)?.label ?? "Popular"}</Text>
+            Sort by: <Text className="text-primary ml-1 tracking-wide">{SORT_OPTIONS.find((o) => o.value === selectedSort)?.label ?? "Popular"}</Text>
           </Text>
           <MaterialIcons name="expand-more" size={18} color="#359EFF" />
         </Pressable>
@@ -199,7 +198,7 @@ export default function ExploreScreen() {
           className="flex-row items-center gap-1.5"
         >
           <MaterialIcons name="tune" size={20} color={selectedType !== "all" ? "#359EFF" : "#4F4F4F"} />
-          <Text className={`text-sm font-bold ${selectedType !== "all" ? "text-primary" : "text-[#4F4F4F] dark:text-slate-300"}`}>
+          <Text className={`text-sm font-bold tracking-wide ${selectedType !== "all" ? "text-primary" : "text-[#4F4F4F] dark:text-slate-300"}`}>
             {selectedType !== "all" ? `Type: ${selectedTypeLabel}` : "Type"}
           </Text>
         </Pressable>
@@ -215,7 +214,7 @@ export default function ExploreScreen() {
                   onPress={() => { setSelectedSort(opt.value); setSortOpen(false); }}
                   className="flex-row items-center justify-between px-3 py-2.5 rounded-xl"
                 >
-                  <Text className={`text-sm ${selectedSort === opt.value ? "font-semibold text-primary" : "font-medium text-slate-700 dark:text-slate-300"}`}>
+                  <Text className={`text-sm tracking-wide ${selectedSort === opt.value ? "font-semibold text-primary" : "font-medium text-slate-700 dark:text-slate-300"}`}>
                     {opt.label}
                   </Text>
                   {selectedSort === opt.value && (
@@ -284,7 +283,7 @@ export default function ExploreScreen() {
         {filtered.map((trip) => (
           <Pressable
             key={trip.id}
-            onPress={() => router.push(getPlanRoute(trip) as any)}
+            onPress={() => router.push(`/trips/${trip.id}`)}
             className="gap-3"
           >
             <View className="relative rounded-2xl overflow-hidden shadow-sm" style={{ aspectRatio: 16 / 10 }}>

@@ -71,5 +71,23 @@ export interface TripResponse {
   pendingParticipants: TripCreatorUser[];
   guideId: string | null;
   createdAtUTC: string;
-  biddingsPage: null;
+  biddingsPage: BiddingsPage | null;
+}
+
+export interface BiddingItem {
+  id: string;
+  tripId: string;
+  guideId: string;
+  guideUsername: string;
+  guideFirstName: string;
+  guideLastName: string;
+  proposedPrice: number;
+  proposalMessage: string | null;
+  createdAtUTC: string;
+}
+
+export interface BiddingsPage {
+  items: BiddingItem[];
+  nextCursor: string | null;
+  hasNextPage: boolean;
 }

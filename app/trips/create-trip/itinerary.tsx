@@ -1,7 +1,8 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   LayoutAnimation,
   Platform,
@@ -20,6 +21,7 @@ import PrimaryButton from "@/components/PrimaryButton";
 import DayAccordion from "@/components/create-trip/DayAccordion";
 import { useTripDraftStore } from "@/store/tripCreation";
 import { useCreateTrip } from "@/hooks/useCreateTrip";
+import { getTripSuggestion } from "@/services/suggestion";
 import type { CreateTripPayload } from "@/types/trip-creation";
 
 export default function CreateTripStep3() {
@@ -30,6 +32,7 @@ export default function CreateTripStep3() {
   const draft = useTripDraftStore();
   const createTripMutation = useCreateTrip();
   const [expandedIndex, setExpandedIndex] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const toggleDay = useCallback((idx: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -44,6 +47,53 @@ export default function CreateTripStep3() {
     },
     [draft],
   );
+
+  const handleGenerateSuggestion = useCallback(async () => {
+    if (!draft.themeId) {
+      Toast.show({ type: "error", text1: "Missing theme", text2: "Please select a theme first" });
+      return;
+    }
+    if (!draft.startDate) {
+      Toast.show({ type: "error", text1: "Missing start date", text2: "Please set a start date first" });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const params: Parameters<typeof getTripSuggestion>[0] = {
+        ThemeId: draft.themeId,
+        NumberOfDays: draft.days.length,
+        StartDateUtc: draft.startDate,
+      };
+      if (draft.governorateId) params.GovernorateId = draft.governorateId;
+      if (draft.mapLocation) {
+        params.Latitude = draft.mapLocation.lat;
+        params.Longitude = draft.mapLocation.lng;
+        params.RadiusInMeters = draft.mapLocation.radius;
+      }
+
+      const result = await getTripSuggestion(params);
+
+      for (let i = 0; i < Math.min(result.length, draft.days.length); i++) {
+        const places = result[i];
+        draft.setDayPlaces(i, places.map((p) => p.id));
+        places.forEach((p) => draft.setPlaceName(p.id, p.title));
+      }
+
+      Toast.show({
+        type: "success",
+        text1: "Itinerary generated!",
+        text2: "AI suggestions have been added to your days",
+      });
+    } catch (err: any) {
+      const data = err?.response?.data;
+      const detail =
+        data?.message ?? data?.title ?? data?.detail ?? err?.message ?? "Failed to generate suggestion";
+      Toast.show({ type: "error", text1: "Suggestion failed", text2: detail });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [draft]);
 
   const handleSubmitTrip = useCallback(() => {
     if (draft.days.length === 0) {
@@ -217,6 +267,23 @@ export default function CreateTripStep3() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <View
+        className="absolute bottom-24 right-4 z-50"
+        style={{ paddingBottom: insets.bottom + 16 }}
+      >
+        <Pressable
+          onPress={handleGenerateSuggestion}
+          disabled={isGenerating}
+          className="w-14 h-14 rounded-full bg-primary items-center justify-center shadow-lg active:opacity-80"
+        >
+          {isGenerating ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <MaterialCommunityIcons name="auto-fix" size={24} color="white" />
+          )}
+        </Pressable>
+      </View>
 
       <View
         className="bg-white/95 dark:bg-background-dark/95 border-t border-slate-100 dark:border-slate-800 px-6 py-4"

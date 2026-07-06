@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Image,
-  Pressable,
   ScrollView,
   StatusBar,
   Text,
@@ -109,13 +108,7 @@ export default function ConfirmGuideScreen() {
         style={{ paddingBottom: insets.bottom + 16 }}
       >
         <PrimaryButton title="Confirm & Send Request" onPress={() => router.push("/trips/planSuccess")} />
-        <Pressable
-          onPress={() => router.push("/chat/1")}
-          className="w-full h-11 items-center justify-center flex-row gap-2"
-        >
-          <MaterialIcons name="chat" size={18} color="#359EFF" />
-          <Text className="text-primary font-semibold">Message Guide First</Text>
-        </Pressable>
+
       </View>
     </View>
   );
