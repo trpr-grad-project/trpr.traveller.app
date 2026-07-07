@@ -14,7 +14,15 @@ import {
   setOnUnauthenticated,
   setApiUserId,
 } from "@/services";
-import { setChatUserId } from "@/store/chatStore";
+import { useP2pChatStore, setChatUserId } from "@/store/chatStore";
+import { useTripDraftStore } from "@/store/tripCreation";
+import { usePlaceDraftStore } from "@/store/placeDraft";
+import { useLocationStore } from "@/store/locationStore";
+import { useTripHubStore } from "@/store/tripHubStore";
+import { useNotificationStore } from "@/store/notificationStore";
+import { usePendingJoins } from "@/store/pendingJoins";
+import { queryClient } from "@/providers/query-provider";
+import { clearQueue } from "@/utils/offlineQueue";
 import { initializeChat, disconnectChat } from "@/services/chat/initializeChat";
 import {
   initializeNotifications,
@@ -81,18 +89,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   >(null);
 
   const signOut = useCallback(async () => {
-    setDatabaseUser(null);
-    await disconnectChat();
-    await disconnectNotifications();
-    await disconnectTripHub();
+    await Promise.all([
+      clearUserId(),
+      clearProfileSetupCompleted(),
+      clearUserData(),
+    ]);
+
+    await setDatabaseUser(null);
+    setApiUserId(null);
+    await setChatUserId(null);
     setSession(null);
     setUser(null);
     setProfileSetupCompletedState(null);
-    setApiUserId(null);
-    await setChatUserId(null);
-    await clearUserId();
-    await clearProfileSetupCompleted();
-    await clearUserData();
+
+    useTripDraftStore.getState().reset();
+    usePlaceDraftStore.getState().reset();
+    useLocationStore.getState().reset();
+    useTripHubStore.getState().reset();
+    useNotificationStore.getState().reset();
+    useP2pChatStore.getState().reset();
+    usePendingJoins.setState({ ids: [] });
+
+    queryClient.clear();
+    userCache.clear();
+    clearQueue();
+
+    await disconnectChat();
+    await disconnectNotifications();
+    await disconnectTripHub();
   }, []);
 
   // Init session and load profile flag
@@ -107,7 +131,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const id = getUserId();
 
         if (id) {
-          setDatabaseUser(id);
+          await setDatabaseUser(id);
           setApiUserId(id);
           await setChatUserId(id);
           const stored = getUserData();
@@ -122,11 +146,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             userCache.set(userData.id, userData.firstName, userData.lastName);
           }
           setSession(id);
-          setProfileSetupCompletedState(getProfileSetupCompleted());
+          const completed = getProfileSetupCompleted();
+          setProfileSetupCompletedState(completed);
 
-          await initializeChat().catch(console.error);
-          await initializeNotifications().catch(console.error);
-          await initializeTripHub().catch(console.error);
+          if (completed) {
+            await initializeChat().catch(console.error);
+            await initializeNotifications().catch(console.error);
+            await initializeTripHub().catch(console.error);
+          }
         }
       } catch (e) {
         console.error("Failed to load session", e);
@@ -168,7 +195,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // Perform React state updates synchronously to ensure proper batching
-    setDatabaseUser(decoded.sub);
+    await setDatabaseUser(decoded.sub);
     setApiUserId(decoded.sub);
     await setChatUserId(decoded.sub);
     const userData = {
@@ -182,9 +209,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setProfileSetupCompletedState(setupCompleted);
     setSession(decoded.sub);
 
-    await initializeChat().catch(console.error);
-    await initializeNotifications().catch(console.error);
-    await initializeTripHub().catch(console.error);
+    if (setupCompleted) {
+      await initializeChat().catch(console.error);
+      await initializeNotifications().catch(console.error);
+      await initializeTripHub().catch(console.error);
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    queryClient.invalidateQueries({ queryKey: ["my-trips"] });
   }, []);
 
   // Auth methods
@@ -241,6 +273,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const completeProfileSetup = useCallback(async () => {
     await setProfileSetupCompleted(true);
     setProfileSetupCompletedState(true);
+    await initializeChat().catch(console.error);
+    await initializeNotifications().catch(console.error);
+    await initializeTripHub().catch(console.error);
+
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    queryClient.invalidateQueries({ queryKey: ["my-trips"] });
   }, []);
 
   // Context value

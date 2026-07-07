@@ -2,9 +2,7 @@ import { ImageBackground, Text, View, type NativeSyntheticEvent } from "react-na
 import React, { useCallback } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
-import DarkModeToggle from "../DarkModeToggle";
 import { useColorScheme } from "nativewind";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SegmentedControl from "@react-native-segmented-control/segmented-control";
 
 interface AuthHeaderProps {
@@ -15,8 +13,6 @@ interface AuthHeaderProps {
 export default function AuthHeader({ activeTab, onTabChange }: AuthHeaderProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-  const insets = useSafeAreaInsets();
-
   const handleSegmentChange = useCallback(
     (event: NativeSyntheticEvent<{ selectedSegmentIndex: number }>) => {
       const index = event.nativeEvent.selectedSegmentIndex;
@@ -50,14 +46,6 @@ export default function AuthHeader({ activeTab, onTabChange }: AuthHeaderProps) 
 
         {/* Header Content */}
         <View className="relative z-20 flex h-full flex-col justify-end px-6 pb-6">
-          {/* Temporary dark mode button */}
-          <View
-            className="absolute right-6 z-50"
-            style={{ top: insets.top + 8 }}
-          >
-            <DarkModeToggle />
-          </View>
-
           {/* Logo and name */}
           <View className="mb-2 flex-row items-center gap-2">
             <MaterialIcons name="explore" size={32} color="#359EFF" />

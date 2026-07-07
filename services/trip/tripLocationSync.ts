@@ -42,7 +42,6 @@ class TripLocationSync {
       typeof location.latitude !== "number" ||
       typeof location.longitude !== "number"
     ) {
-      console.log("Invalid LocationUpdated payload ignored", payload);
       return;
     }
 

@@ -10,16 +10,16 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { router, useFocusEffect } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
-import { setLastSeenSequenceNumber } from "@/utils/storage";
-import { createNotificationRepository } from "@/database/repositories/notificationRepositoryImpl";
 import type { NotificationWithIsNew } from "@/hooks/useNotifications";
 
 function NotificationItem({ item }: { item: NotificationWithIsNew }) {
   return (
-    <Pressable className="flex-row items-center gap-4 px-6 py-4 border-b border-slate-50 dark:border-slate-800 active:bg-slate-50 dark:active:bg-slate-800/50">
+    <Pressable
+      onPress={() => router.push(`/notification/${item.id}`)}
+      className="flex-row items-center gap-4 px-6 py-4 border-b border-slate-50 dark:border-slate-800 active:bg-slate-50 dark:active:bg-slate-800/50"
+    >
       <View className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 items-center justify-center">
         <MaterialIcons name="notifications" size={24} color="#359EFF" />
       </View>
@@ -83,7 +83,6 @@ export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-  const queryClient = useQueryClient();
   const {
     notifications,
     isLoading,
@@ -93,21 +92,6 @@ export default function NotificationsScreen() {
     loadMore,
   } = useNotifications();
   const flatListRef = useRef<FlatList>(null);
-
-  useFocusEffect(
-    useCallback(() => {
-      createNotificationRepository()
-        .getLatestSequenceNumber()
-        .then(async (highest) => {
-          await setLastSeenSequenceNumber(highest);
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          queryClient.invalidateQueries({
-            queryKey: ["notifications", "unreadCount"],
-          });
-        })
-        .catch(console.error);
-    }, [queryClient]),
-  );
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage) {

@@ -104,7 +104,7 @@ export default function CompanyProfileScreen() {
                   <Image source={{ uri: trip.image }} className="w-full h-full" resizeMode="cover" />
                 </View>
                 <Text className="text-sm font-bold text-[#0c141d] dark:text-white leading-tight">{trip.title}</Text>
-                <Text className="text-sm font-bold text-primary">{trip.price}</Text>
+                <Text className="text-sm font-bold text-green-500">{trip.price}</Text>
               </Pressable>
             ))}
           </ScrollView>

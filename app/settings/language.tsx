@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
@@ -41,13 +42,74 @@ function LangIcon({ code }: { code: string }) {
   );
 }
 
+function sortLanguages(languages: ProfileLanguage[]) {
+  return [...languages].sort((a, b) => {
+    if (a.code === "en") return -1;
+    if (b.code === "en") return 1;
+    if (a.code === "ar") return -1;
+    if (b.code === "ar") return 1;
+    return 0;
+  });
+}
+
+const LanguageItem = React.memo(function LanguageItem({
+  lang,
+  isSelected,
+  onPress,
+}: {
+  lang: ProfileLanguage;
+  isSelected: boolean;
+  onPress: (id: number) => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => onPress(lang.id)}
+      className={`flex-row items-center gap-4 rounded-xl border-2 p-4 active:scale-[0.98] ${
+        isSelected
+          ? "border-primary bg-white dark:bg-neutral-dark"
+          : "border-neutral-light dark:border-neutral-dark bg-white dark:bg-neutral-dark"
+      }`}
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 2,
+      }}
+    >
+      <View className="size-12 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800">
+        <LangIcon code={lang.code} />
+      </View>
+
+      <View className="flex-1">
+        <Text className="text-[#1A1A1A] dark:text-white text-base font-semibold">
+          {lang.name}
+        </Text>
+        <Text className="text-[#828282] dark:text-gray-400 text-xs font-normal">
+          {lang.nativeName}
+        </Text>
+      </View>
+
+      <View
+        className={`h-6 w-6 rounded-md border-2 items-center justify-center ${
+          isSelected
+            ? "border-primary bg-primary"
+            : "border-[#E0E0E0] dark:border-gray-600"
+        }`}
+      >
+        {isSelected && <MaterialIcons name="check" size={16} color="white" />}
+      </View>
+    </Pressable>
+  );
+});
+
 export default function LanguageScreen() {
   const insets = useSafeAreaInsets();
   const { languages: selectedLanguages, updateProfile } = useProfile();
   const [availableLanguages, setAvailableLanguages] = useState<ProfileLanguage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<number | null>(
-    selectedLanguages.length > 0 ? selectedLanguages[0].id : null,
+  const [selectedIds, setSelectedIds] = useState<number[]>(
+    selectedLanguages.map((l) => l.id),
   );
   const [isSaving, setIsSaving] = useState(false);
 
@@ -59,19 +121,32 @@ export default function LanguageScreen() {
       .finally(() => setIsLoading(false));
   }, []);
 
+  const handleSelect = useCallback((id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((v) => v !== id)
+        : [...prev, id],
+    );
+  }, []);
+
   const handleSave = async () => {
-    if (selectedId === null) return;
+    if (selectedIds.length === 0) return;
     setIsSaving(true);
     try {
-      await updateProfile({ languageIds: [String(selectedId)] });
-      Toast.show({ type: "success", text1: "Language updated" });
+      await updateProfile({ languageIds: selectedIds.map(String) });
+      Toast.show({ type: "success", text1: "Languages updated" });
       router.back();
     } catch {
-      Toast.show({ type: "error", text1: "Failed to update language" });
+      Toast.show({ type: "error", text1: "Failed to update languages" });
     } finally {
       setIsSaving(false);
     }
   };
+
+  const sortedLanguages = useMemo(
+    () => sortLanguages(availableLanguages),
+    [availableLanguages],
+  );
 
   if (isLoading) {
     return (
@@ -88,7 +163,7 @@ export default function LanguageScreen() {
       <View style={{ paddingTop: insets.top + 8 }} className="px-2 pb-4 items-start">
         <BackButton />
         <Text className="text-[#1A1A1A] dark:text-white text-2xl font-bold tracking-tight text-center px-4 pt-2">
-          Select Your Language
+          Select Your Languages
         </Text>
       </View>
 
@@ -97,52 +172,14 @@ export default function LanguageScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 160 }}
       >
         <View className="gap-4 max-w-md mx-auto w-full">
-          {availableLanguages.map((lang) => {
-            const isSelected = selectedId === lang.id;
-            return (
-              <Pressable
-                key={lang.id}
-                onPress={() => setSelectedId(lang.id)}
-                className={`flex-row items-center gap-4 rounded-xl border-2 p-4 active:scale-[0.98] ${
-                  isSelected
-                    ? "border-primary bg-white dark:bg-neutral-dark"
-                    : "border-neutral-light dark:border-neutral-dark bg-white dark:bg-neutral-dark"
-                }`}
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 12,
-                  elevation: 2,
-                }}
-              >
-                <View className="size-12 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800">
-                  <LangIcon code={lang.code} />
-                </View>
-
-                <View className="flex-1">
-                  <Text className="text-[#1A1A1A] dark:text-white text-base font-semibold">
-                    {lang.name}
-                  </Text>
-                  <Text className="text-[#828282] dark:text-gray-400 text-xs font-normal">
-                    {lang.nativeName}
-                  </Text>
-                </View>
-
-                <View
-                  className={`h-6 w-6 rounded-full border-2 items-center justify-center ${
-                    isSelected
-                      ? "border-primary"
-                      : "border-[#E0E0E0] dark:border-gray-600"
-                  }`}
-                >
-                  {isSelected && (
-                    <View className="h-3 w-3 rounded-full bg-primary" />
-                  )}
-                </View>
-              </Pressable>
-            );
-          })}
+          {sortedLanguages.map((lang) => (
+            <LanguageItem
+              key={lang.id}
+              lang={lang}
+              isSelected={selectedIds.includes(lang.id)}
+              onPress={handleSelect}
+            />
+          ))}
         </View>
       </ScrollView>
 
@@ -153,13 +190,13 @@ export default function LanguageScreen() {
         <View className="max-w-md mx-auto w-full">
           <Pressable
             onPress={handleSave}
-            disabled={selectedId === null || isSaving}
+            disabled={selectedIds.length === 0 || isSaving}
             className="flex w-full items-center justify-center rounded-2xl h-[56px] bg-primary active:opacity-90 shadow-lg shadow-primary/20 disabled:opacity-50"
           >
             {isSaving ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text className="text-white text-[20px] font-bold">Save</Text>
+              <Text className="text-white text-[20px] font-bold">Save ({selectedIds.length} selected)</Text>
             )}
           </Pressable>
         </View>

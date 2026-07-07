@@ -6,5 +6,6 @@ export function useTripDetails(id: string) {
     queryKey: ["trip", id],
     queryFn: () => tripService.getTripById(id),
     enabled: !!id,
+    staleTime: 0,
   });
 }

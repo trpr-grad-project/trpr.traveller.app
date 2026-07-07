@@ -120,7 +120,7 @@ export default function PlanByUserScreen() {
                 <Text className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">{trip.tripTime}</Text>
               )}
             </View>
-            <Text className="text-2xl font-bold text-primary">
+            <Text className="text-2xl font-bold text-green-500">
               {trip.price === 0 ? "Free" : `$${trip.price}`}
             </Text>
           </View>
@@ -244,7 +244,7 @@ export default function PlanByUserScreen() {
       >
         <View className="flex-row items-center justify-between mb-3">
           <View>
-            <Text className="text-lg font-bold text-[#0c141d] dark:text-white">
+            <Text className="text-lg font-bold text-green-500">
               {trip.price === 0 ? "Free" : `$${trip.price}`}
             </Text>
             {!isCreator && (

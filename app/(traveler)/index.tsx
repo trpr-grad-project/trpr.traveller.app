@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -21,6 +21,7 @@ import { useHomeTrips } from "@/hooks/useHomeTrips";
 import { useUnreadCount } from "@/hooks/useUnreadCount";
 import { notificationSync } from "@/services/notification/notificationSync";
 import { refreshTripsToday } from "@/services/trip/initializeTripHub";
+import { profileService } from "@/services/profile";
 import { resolveImageUrl } from "@/utils/constants";
 
 export default function TravelerHome() {
@@ -49,6 +50,25 @@ export default function TravelerHome() {
   const upcomingByCompany = (data?.byCompany.items ?? []).filter((t) => t.startDate >= today);
   const upcomingShared = (data?.shared.items ?? []).filter((t) => t.startDate >= today);
   const upcomingByGuide = (data?.byGuide.items ?? []).filter((t) => t.startDate >= today);
+
+  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const ids = [...new Set(upcomingByGuide.map((t) => t.createdByUser).filter(Boolean))];
+    if (ids.length === 0) return;
+    let cancelled = false;
+    Promise.all(ids.map((id) => profileService.getProfileById(id).catch(() => null)))
+      .then((results) => {
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        results.forEach((p) => {
+          if (p) map[p.id] = `${p.firstName} ${p.lastName}`;
+        });
+        setProfileNames(map);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [upcomingByGuide]);
 
   if (isLoading && !data) {
     return (
@@ -151,7 +171,7 @@ export default function TravelerHome() {
               <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
                 Featured Trips by Companies
               </Text>
-              <Pressable onPress={() => router.push("/(traveler)/explore")}>
+              <Pressable onPress={() => router.push("/(traveler)/explore?type=company")}>
                 <Text className="text-primary text-sm font-semibold">See all</Text>
               </Pressable>
             </View>
@@ -160,18 +180,22 @@ export default function TravelerHome() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 16 }}
             >
-              {upcomingByCompany.map((trip) => (
-                <TripCard
-                  key={trip.tripId}
-                  image={resolveImageUrl(trip.imagesUrls?.[0] ?? "")}
-                  title={trip.title}
-                  info={trip.tripTime || "N/A"}
-                  badgeLabel="BY COMPANY"
-                  badgeVariant="company"
-                  price={trip.price === 0 ? "Free" : `$${trip.price}`}
-                  onPress={() => router.push(`/trips/${trip.tripId}`)}
-                />
-              ))}
+              {upcomingByCompany.map((trip) => {
+                const loc = trip.segments?.[0]?.places?.[0]?.governorate?.name;
+                return (
+                  <TripCard
+                    key={trip.tripId}
+                    image={resolveImageUrl(trip.imagesUrls?.[0] ?? "")}
+                    title={trip.title}
+                    info={trip.tripTime || "N/A"}
+                    location={loc ? `${loc}, Egypt` : undefined}
+                    badgeLabel="BY COMPANY"
+                    badgeVariant="company"
+                    price={trip.price === 0 ? "Free" : `$${trip.price}`}
+                    onPress={() => router.push(`/trips/${trip.tripId}`)}
+                  />
+                );
+              })}
             </ScrollView>
           </View>
         )}
@@ -196,7 +220,7 @@ export default function TravelerHome() {
                 <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
                   Shared Plans
                 </Text>
-                <Pressable onPress={() => router.push("/(traveler)/explore")}>
+                <Pressable onPress={() => router.push("/(traveler)/explore?type=shared")}>
                   <Text className="text-primary text-sm font-semibold">See all</Text>
                 </Pressable>
               </View>
@@ -209,18 +233,22 @@ export default function TravelerHome() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 16 }}
             >
-              {upcomingShared.map((plan) => (
-                <TripCard
-                  key={plan.tripId}
-                  image={resolveImageUrl(plan.imagesUrls?.[0] ?? "")}
-                  title={plan.title}
-                  info={plan.tripTime || "N/A"}
-                  badgeLabel="GROUP TRIP"
-                  badgeVariant="group"
-                  price={plan.price === 0 ? "Free" : `$${plan.price}`}
-                  onPress={() => router.push(`/trips/${plan.tripId}`)}
-                />
-              ))}
+              {upcomingShared.map((plan) => {
+                const loc = plan.segments?.[0]?.places?.[0]?.governorate?.name;
+                return (
+                  <TripCard
+                    key={plan.tripId}
+                    image={resolveImageUrl(plan.imagesUrls?.[0] ?? "")}
+                    title={plan.title}
+                    info={plan.tripTime || "N/A"}
+                    location={loc ? `${loc}, Egypt` : undefined}
+                    badgeLabel="GROUP TRIP"
+                    badgeVariant="group"
+                    price={plan.price === 0 ? "Free" : `$${plan.price}`}
+                    onPress={() => router.push(`/trips/${plan.tripId}`)}
+                  />
+                );
+              })}
             </ScrollView>
           </View>
         )}
@@ -232,52 +260,56 @@ export default function TravelerHome() {
               <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
                 Plans by Local Guides
               </Text>
-              <Pressable onPress={() => router.push("/(traveler)/explore")}>
+              <Pressable onPress={() => router.push("/(traveler)/explore?type=guide")}>
                 <Text className="text-primary text-sm font-semibold">View All</Text>
               </Pressable>
             </View>
             <View className="gap-4">
-              {upcomingByGuide.map((plan) => (
-                <Pressable
-                  key={plan.tripId}
-                  onPress={() => router.push(`/trips/${plan.tripId}`)}
-                  className="bg-white dark:bg-slate-800 p-3 rounded-xl flex-row gap-4 border border-slate-50 dark:border-slate-700 active:opacity-80"
-                  style={SOFT_SHADOW}
-                >
-                  <View className="w-24 h-24 rounded-lg overflow-hidden">
-                    <Image source={{ uri: resolveImageUrl(plan.imagesUrls?.[0] ?? "") }} className="w-full h-full" resizeMode="cover" />
-                  </View>
-                  <View className="flex-1 justify-between py-0.5">
-                    <View>
-                      <View className="flex-row items-center gap-2 mb-1.5">
-                        <View className="w-5 h-5 rounded-full bg-primary/20 items-center justify-center">
-                          <MaterialIcons name="person" size={14} color="#359EFF" />
+              {upcomingByGuide.map((plan) => {
+                const creatorName = profileNames[plan.createdByUser] || "Guide";
+                const loc = plan.segments?.[0]?.places?.[0]?.governorate?.name;
+                return (
+                  <Pressable
+                    key={plan.tripId}
+                    onPress={() => router.push(`/trips/${plan.tripId}`)}
+                    className="bg-white dark:bg-slate-800 p-3 rounded-xl flex-row gap-4 border border-slate-50 dark:border-slate-700 active:opacity-80"
+                    style={SOFT_SHADOW}
+                  >
+                    <View className="w-24 h-24 rounded-lg overflow-hidden">
+                      <Image source={{ uri: resolveImageUrl(plan.imagesUrls?.[0] ?? "") }} className="w-full h-full" resizeMode="cover" />
+                    </View>
+                    <View className="flex-1 justify-between py-0.5">
+                      <View>
+                        <View className="flex-row items-center gap-2 mb-1.5">
+                          <View className="w-5 h-5 rounded-full bg-primary/20 items-center justify-center">
+                            <MaterialIcons name="person" size={14} color="#359EFF" />
+                          </View>
+                          <View>
+                            <Text className="text-[10px] font-bold text-primary tracking-[0.05em] uppercase leading-none mb-0.5">
+                              Local Guide
+                            </Text>
+                            <Text className="text-[11px] font-bold text-slate-800 dark:text-white flex-shrink">
+                              {creatorName}
+                            </Text>
+                          </View>
                         </View>
-                        <View>
-                          <Text className="text-[10px] font-bold text-primary tracking-[0.05em] uppercase leading-none mb-0.5">
-                            Local Guide
-                          </Text>
-                          <Text className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wide">
-                            Guide
-                          </Text>
+                        <Text className="text-sm font-bold text-[#0c141d] dark:text-white">{plan.title}</Text>
+                        <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          {loc ? `${loc}, Egypt` : plan.theme}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center justify-between mt-1">
+                        <Text className="text-green-500 font-bold text-sm tracking-wide">
+                          {plan.price === 0 ? "Free" : `$${plan.price}`}
+                        </Text>
+                        <View className="bg-primary px-4 py-2 rounded-lg">
+                          <Text className="text-white text-[12px] font-bold">View Plan</Text>
                         </View>
                       </View>
-                      <Text className="text-sm font-bold text-[#0c141d] dark:text-white">{plan.title}</Text>
-                      <Text className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {plan.segments?.[0]?.places?.[0]?.governorate?.name || plan.theme}
-                      </Text>
                     </View>
-                    <View className="flex-row items-center justify-between mt-1">
-                      <Text className="text-primary font-bold text-sm tracking-wide">
-                        {plan.price === 0 ? "Free" : `$${plan.price}`}
-                      </Text>
-                      <View className="bg-primary px-4 py-2 rounded-lg">
-                        <Text className="text-white text-[12px] font-bold">View Plan</Text>
-                      </View>
-                    </View>
-                  </View>
-                </Pressable>
-              ))}
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         )}

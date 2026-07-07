@@ -4,10 +4,9 @@ import type { BalanceResponse, TransactionHistoryResponse } from "@/types";
 
 export const paymentService = {
   chargeAccount: async (amount: number): Promise<void> => {
-    const response = await api.post(ENDPOINTS.payments.charge, {}, {
+    await api.post(ENDPOINTS.payments.charge, {}, {
       params: { ammount: amount },
     });
-    console.log("chargeAccount response:", response.status, response.data);
   },
 
   getBalance: async (): Promise<BalanceResponse> => {

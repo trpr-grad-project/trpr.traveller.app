@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import {
+  Appearance,
   Pressable,
   ScrollView,
   StatusBar,
-  Switch,
   Text,
   View,
 } from "react-native";
@@ -14,6 +14,7 @@ import { useColorScheme } from "nativewind";
 
 import { useAuth } from "@/context/AuthContext";
 import BackButton from "@/components/BackButton";
+import { saveColorScheme } from "@/utils/storage";
 
 const SECTIONS = [
   {
@@ -21,14 +22,14 @@ const SECTIONS = [
     items: [
       { icon: "person" as const, label: "Personal Information", route: "/settings/personal-information" },
       { icon: "lock" as const, label: "Change Password", route: "/settings/change-password" },
-      { icon: "link" as const, label: "Linked Accounts", route: "/settings/linked-accounts" },
     ],
   },
   {
     title: "Preferences",
     items: [
-      { icon: "language" as const, label: "Language", route: "/settings/language", value: "English" },
+      { icon: "language" as const, label: "Language", route: "/settings/language" },
       { icon: "favorite-border" as const, label: "Travel Interests", route: "/settings/interests" },
+      { icon: "dark-mode" as const, label: "Dark Mode", key: "darkMode" as const },
     ],
   },
   {
@@ -38,34 +39,10 @@ const SECTIONS = [
     ],
   },
   {
-    title: "Notifications",
-    toggle: true,
-    items: [
-      { icon: "flight" as const, label: "Trip Updates", key: "tripUpdates" as const },
-      { icon: "chat" as const, label: "Messages", key: "messages" as const },
-      { icon: "campaign" as const, label: "Promotions", key: "promotions" as const },
-    ],
-  },
-  {
-    title: "Privacy & Security",
-    items: [
-      { icon: "block" as const, label: "Blocked users", route: "/settings/blocked-users" },
-      { icon: "delete-forever" as const, label: "Delete account", route: "/settings/delete-account", destructive: true },
-    ],
-  },
-  {
     title: "Payments",
     items: [
       { icon: "credit-card" as const, label: "My Card", route: "/settings/my-card" },
       { icon: "receipt-long" as const, label: "Billing history", route: "/settings/billing-history" },
-    ],
-  },
-  {
-    title: "Support",
-    items: [
-      { icon: "help" as const, label: "Help Center", route: "/settings/help-center" },
-      { icon: "mail-outline" as const, label: "Contact Support", route: "/settings/contact-support" },
-      { icon: "report-problem" as const, label: "Report a problem", route: "/settings/report-problem" },
     ],
   },
   {
@@ -82,11 +59,6 @@ export default function SettingsScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const { signOut } = useAuth();
-  const [toggles, setToggles] = useState({ tripUpdates: true, messages: true, promotions: false });
-
-  const toggleSwitch = (key: keyof typeof toggles) => {
-    setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
@@ -110,7 +82,11 @@ export default function SettingsScreen() {
                   <Pressable
                     key={item.label}
                     onPress={() => {
-                      if (!section.toggle && "route" in item && item.route) {
+                      if ("key" in item && item.key === "darkMode") {
+                        const next = colorScheme === "dark" ? "light" : "dark";
+                        Appearance.setColorScheme(next);
+                        saveColorScheme(next);
+                      } else if ("route" in item && item.route) {
                         router.push(item.route as any);
                       }
                     }}
@@ -134,19 +110,14 @@ export default function SettingsScreen() {
                     >
                       {item.label}
                     </Text>
-                    {"value" in item && item.value && (
+                    {"key" in item && item.key === "darkMode" ? (
+                      <Text className="text-xs font-medium text-sub-dark mr-1">
+                        {colorScheme === "dark" ? "On" : "Off"}
+                      </Text>
+                    ) : "value" in item && item.value ? (
                       <Text className="text-xs font-medium text-sub-dark mr-1">{item.value}</Text>
-                    )}
-                    {section.toggle && "key" in item ? (
-                      <Switch
-                        value={toggles[item.key as keyof typeof toggles]}
-                        onValueChange={() => toggleSwitch(item.key as keyof typeof toggles)}
-                        trackColor={{ false: "#d1d5db", true: "#359EFF80" }}
-                        thumbColor={toggles[item.key as keyof typeof toggles] ? "#359EFF" : "#f4f3f4"}
-                      />
-                    ) : (
-                      <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
-                    )}
+                    ) : null}
+                    <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
                   </Pressable>
                 );
               })}

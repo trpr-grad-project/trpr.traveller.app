@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   StatusBar,
   Text,
@@ -14,6 +15,7 @@ import BackButton from "@/components/BackButton";
 import { getUserId } from "@/utils/storage";
 import { useTripLocations } from "@/hooks/useTripLocations";
 import { useLocationStore } from "@/store/locationStore";
+import { useTripDetails } from "@/hooks/useTripDetails";
 
 function generateMapHtml(
   locations: { lat: number; lng: number; userId: string; isSelf: boolean }[],
@@ -137,28 +139,74 @@ export default function LiveTripMapUserView() {
   const isDark = colorScheme === "dark";
   const webRef = useRef<WebView>(null);
 
-  const locations = useTripLocations(tripId ?? "");
   const currentUserId = getUserId();
   const selfLat = useLocationStore((s) => s.currentLatitude);
   const selfLng = useLocationStore((s) => s.currentLongitude);
   const locationError = useLocationStore((s) => s.gpsError);
 
+  const { data: trip, isLoading: tripLoading } = useTripDetails(tripId ?? "");
+  const locations = useTripLocations(tripId ?? "");
+
+  const participants = useMemo(() => {
+    const locs = locations ?? [];
+    const byUserId = new Map(locs.map((l) => [l.userId, l]));
+
+    if (!trip) {
+      return locs.map((l) => ({
+        userId: l.userId,
+        firstName: null as string | null,
+        lastName: null as string | null,
+        latitude: l.latitude,
+        longitude: l.longitude,
+        updatedAt: l.updatedAt,
+      }));
+    }
+
+    const seen = new Set<string>();
+    const result: {
+      userId: string;
+      firstName: string | null;
+      lastName: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      updatedAt: number | null;
+    }[] = [];
+
+    const add = (u: { id: string; firstName: string; lastName: string }) => {
+      if (seen.has(u.id)) return;
+      seen.add(u.id);
+      const loc = byUserId.get(u.id);
+      result.push({
+        userId: u.id,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        latitude: loc?.latitude ?? null,
+        longitude: loc?.longitude ?? null,
+        updatedAt: loc?.updatedAt ?? null,
+      });
+    };
+
+    add(trip.createdByUser);
+    trip.approvedParticipants?.forEach(add);
+    return result;
+  }, [trip, locations]);
+
   const mapLocations = useMemo(
     () =>
-      locations
+      participants
         .filter(
-          (l) =>
-            l.userId !== currentUserId &&
-            typeof l.latitude === "number" &&
-            typeof l.longitude === "number",
+          (p) =>
+            p.userId !== currentUserId &&
+            p.latitude !== null &&
+            p.longitude !== null,
         )
-        .map((l) => ({
-          lat: l.latitude,
-          lng: l.longitude,
-          userId: l.userId,
+        .map((p) => ({
+          lat: p.latitude!,
+          lng: p.longitude!,
+          userId: p.userId,
           isSelf: false,
         })),
-    [locations, currentUserId],
+    [participants, currentUserId],
   );
 
   const prevLocationsRef = useRef<string>("");
@@ -191,7 +239,7 @@ export default function LiveTripMapUserView() {
     webRef.current?.injectJavaScript("map.zoomOut();true;");
   }, []);
 
-  const participantCount = locations.length;
+  const participantCount = participants.length;
 
   return (
     <View className="flex-1 bg-slate-200" style={{ paddingTop: insets.top }}>
@@ -274,9 +322,12 @@ export default function LiveTripMapUserView() {
           <Text className="text-lg font-bold text-slate-900">
             Trip Participants
           </Text>
+          {tripLoading && (
+            <ActivityIndicator size="small" color="#359EFF" />
+          )}
         </View>
 
-        {locations.length === 0 && !locationError && (
+        {participants.length === 0 && !locationError && !tripLoading && (
           <View className="items-center py-6">
             <MaterialIcons name="people-outline" size={32} color="#94a3b8" />
             <Text className="text-sm text-slate-400 mt-2">
@@ -285,9 +336,18 @@ export default function LiveTripMapUserView() {
           </View>
         )}
 
-        {locations.map((loc) => (
+        {participants.length === 0 && tripLoading && (
+          <View className="items-center py-6">
+            <ActivityIndicator size="large" color="#359EFF" />
+            <Text className="text-sm text-slate-400 mt-2">
+              Loading trip data...
+            </Text>
+          </View>
+        )}
+
+        {participants.map((p) => (
           <View
-            key={loc.userId}
+            key={p.userId}
             className="flex-row items-center gap-3 bg-slate-50 rounded-xl p-3 mb-2"
           >
             <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
@@ -295,10 +355,14 @@ export default function LiveTripMapUserView() {
             </View>
             <View className="flex-1">
               <Text className="font-semibold text-slate-900 text-sm">
-                {loc.userId === currentUserId ? "You" : `Participant`}
+                {p.userId === currentUserId ? "You" : (p.firstName ?? "Participant")}
               </Text>
               <Text className="text-sub-light text-xs">
-                {new Date(loc.updatedAt).toLocaleTimeString()}
+                {p.userId === currentUserId
+                  ? "Now"
+                  : p.latitude !== null
+                    ? new Date(p.updatedAt!).toLocaleTimeString()
+                    : "Waiting for location..."}
               </Text>
             </View>
             <View className="w-2 h-2 rounded-full bg-green-500" />

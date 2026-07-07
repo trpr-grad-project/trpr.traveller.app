@@ -48,6 +48,10 @@ export const ENDPOINTS = {
     all: "/users",
   },
 
+  review: {
+    create: "/review/",
+  },
+
   notifications: "/notifications",
 
   payments: {

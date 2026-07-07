@@ -29,8 +29,6 @@ export class NotificationSync {
 
   async syncAllNotifications(): Promise<void> {
     await this.mutex.acquire("notifications", async () => {
-      console.log("Notification full sync started");
-
       let cursor: string | undefined;
       let hasNextPage = true;
 
@@ -46,10 +44,7 @@ export class NotificationSync {
         cursor = response.nextCursor ?? undefined;
         hasNextPage = response.hasNextPage;
 
-        console.log("Notification sync page", response.items.length);
       }
-
-      console.log("Notification full sync completed");
       this.notify("notifications");
     });
   }
@@ -61,8 +56,6 @@ export class NotificationSync {
     let hasNextPage = false;
 
     await this.mutex.acquire("notifications", async () => {
-      console.log("Notification sync started");
-
       const response = await notificationsApi.getNotifications({
         pageSize: PAGE_SIZE,
         lastNotificationId: options?.lastNotificationId,
@@ -73,7 +66,6 @@ export class NotificationSync {
       const repo = createNotificationRepository();
       await repo.insertMany(response.items);
 
-      console.log("Notification sync completed", response.items.length);
       this.notify("notifications");
     });
 
@@ -88,7 +80,6 @@ export class NotificationSync {
       typeof notification.id !== "string" ||
       typeof notification.sequenceNumber !== "number"
     ) {
-      console.log("Invalid notification payload ignored", payload);
       return;
     }
 
@@ -97,21 +88,16 @@ export class NotificationSync {
     const incomingSeq = notification.sequenceNumber;
 
     if (incomingSeq === localHighest + 1) {
-      console.log("Inserting continuous notification", notification.id);
       await repo.insert(notification);
       this.notify("notifications");
       return;
     }
 
     if (incomingSeq <= localHighest) {
-      console.log("Duplicate notification ignored", notification.id);
       return;
     }
 
-    console.log("Notification gap detected", {
-      local: localHighest,
-      incoming: incomingSeq,
-    });
+
 
     let cursor: string | undefined;
     let recovered = false;
@@ -138,7 +124,6 @@ export class NotificationSync {
       cursor = response.nextCursor ?? undefined;
     }
 
-    console.log("Notification gap recovery completed");
     this.notify("notifications");
   }
 }

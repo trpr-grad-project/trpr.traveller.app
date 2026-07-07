@@ -15,6 +15,7 @@ type TripCardProps = {
   image: string;
   title: string;
   info: string;
+  location?: string;
   badgeLabel: string;
   badgeVariant?: BadgeVariant;
   onPress?: () => void;
@@ -25,6 +26,7 @@ export default function TripCard({
   image,
   title,
   info,
+  location,
   badgeLabel,
   badgeVariant = "company",
   onPress,
@@ -65,8 +67,13 @@ export default function TripCard({
           <Text className="text-slate-500 dark:text-slate-400 text-sm font-medium">
             {info}
           </Text>
+          {location && (
+            <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+              {location}
+            </Text>
+          )}
           {price && (
-            <Text className="text-primary font-bold text-sm mt-1">
+            <Text className="text-green-500 font-bold text-sm mt-1">
               {price}
             </Text>
           )}

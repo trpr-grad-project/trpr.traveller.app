@@ -7,5 +7,6 @@ export interface INotificationRepository {
   getLatestSequenceNumber(): Promise<number>;
   getLatestNotificationId(): Promise<string | null>;
   exists(id: string): Promise<boolean>;
+  getById(id: string): Promise<Notification | null>;
   clear(): Promise<void>;
 }

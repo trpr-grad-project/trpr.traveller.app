@@ -105,7 +105,7 @@ export default function GuideBidsScreen() {
                     <Text className="text-xs text-primary font-semibold">{bid.specialty}</Text>
                   </View>
                   <View className="items-end">
-                    <Text className="text-primary font-bold text-base">{bid.price}</Text>
+                    <Text className="text-green-500 font-bold text-base">{bid.price}</Text>
                     <Text className="text-xs text-slate-500 dark:text-gray-400">{bid.priceUnit}</Text>
                   </View>
                 </View>

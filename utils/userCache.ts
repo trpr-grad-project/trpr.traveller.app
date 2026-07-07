@@ -9,6 +9,10 @@ class UserCache {
     return this.cache.get(userId) ?? null;
   }
 
+  clear(): void {
+    this.cache.clear();
+  }
+
   getDisplayName(userId: string): string | null {
     const entry = this.cache.get(userId);
     if (!entry) return null;

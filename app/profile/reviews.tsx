@@ -1,60 +1,41 @@
 import React from "react";
-import { ScrollView, StatusBar, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
+import { useQuery } from "@tanstack/react-query";
 
+import { useAuth } from "@/context/AuthContext";
+import api from "@/services/api";
+import { ENDPOINTS } from "@/services/endpoints";
+import type { ProfileMyProfileResponse } from "@/types";
 import BackButton from "@/components/BackButton";
-
-const REVIEWS = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    initials: "SJ",
-    rating: 5,
-    text: "Alex was an incredible guide! His knowledge of ancient Egyptian history made the tour unforgettable. He took us to all the best spots and even shared hidden gems that weren't on the itinerary. Highly recommend for anyone visiting Luxor!",
-    date: "Jun 12, 2026",
-    tour: "Luxor Temple Discovery",
-  },
-  {
-    id: "2",
-    name: "Marcus Chen",
-    initials: "MC",
-    rating: 4,
-    text: "Great experience overall. The Nile cruise was beautiful and the organization was flawless. Would have loved a bit more time at the Temple of Karnak, but everything else was perfect. The sunset view from the felucca was breathtaking.",
-    date: "May 28, 2026",
-    tour: "Nile Sunset Felucca Tour",
-  },
-  {
-    id: "3",
-    name: "Emily Rodriguez",
-    initials: "ER",
-    rating: 5,
-    text: "Absolutely phenomenal! The Giza Pyramids tour exceeded all expectations. Alex arranged early access so we could watch the sunrise over the pyramids — a memory I'll cherish forever. The camel ride through the desert was the cherry on top!",
-    date: "May 15, 2026",
-    tour: "Giza Pyramids Guided Tour",
-  },
-];
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <View className="flex-row gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <MaterialIcons
-          key={star}
-          name={star <= rating ? "star" : "star-outline"}
-          size={16}
-          color={star <= rating ? "#f59e0b" : "#cbd5e1"}
-        />
-      ))}
-    </View>
-  );
-}
 
 export default function ReviewsScreen() {
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { user } = useAuth();
+
+  const { data: myProfile, isLoading } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: async (): Promise<ProfileMyProfileResponse> => {
+      const res = await api.get(ENDPOINTS.profile.myProfile);
+      return res.data;
+    },
+    enabled: !!user,
+  });
+
+  const reviews = myProfile?.profile?.reviews ?? [];
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center" style={{ paddingTop: insets.top }}>
+        <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+        <ActivityIndicator size="large" color="#359EFF" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
@@ -68,27 +49,19 @@ export default function ReviewsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        {REVIEWS.map((review) => (
-          <View
-            key={review.id}
-            className="bg-white dark:bg-neutral-dark rounded-2xl border border-slate-100 dark:border-slate-800 p-5 mb-4 shadow-sm"
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center gap-3">
-                <View className="w-10 h-10 rounded-full bg-primary items-center justify-center">
-                  <Text className="text-white font-bold text-sm">{review.initials}</Text>
-                </View>
-                <View>
-                  <Text className="text-sm font-bold text-[#0c141d] dark:text-white">{review.name}</Text>
-                  <Stars rating={review.rating} />
-                </View>
+        {reviews.length === 0 && (
+          <View className="items-center py-12">
+            <MaterialIcons name="rate-review" size={48} color="#94a3b8" />
+            <Text className="text-sm text-slate-400 dark:text-slate-500 mt-3 text-center">No reviews yet.</Text>
+          </View>
+        )}
+        {reviews.map((review, index) => (
+          <View key={index} className="bg-white dark:bg-slate-800 rounded-xl p-3.5 border border-slate-50 dark:border-slate-700 mb-3">
+            <View className="flex-row items-start gap-2">
+              <View className="w-6 h-6 rounded-full bg-primary/10 items-center justify-center mt-0.5 shrink-0">
+                <MaterialIcons name="format-quote" size={12} color="#359EFF" />
               </View>
-              <Text className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{review.date}</Text>
-            </View>
-            <Text className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-3">{review.text}</Text>
-            <View className="flex-row items-center gap-1.5">
-              <MaterialIcons name="tour" size={14} color="#359EFF" />
-              <Text className="text-xs font-semibold text-primary">{review.tour}</Text>
+              <Text className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed flex-1">{review}</Text>
             </View>
           </View>
         ))}

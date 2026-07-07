@@ -15,20 +15,15 @@ export function resetTripHubInitialization(): void {
 
 export async function initializeTripHub(): Promise<void> {
   if (_initialized) {
-    console.log("Trip hub initialization already initialized");
     return;
   }
 
   if (_initializing) {
-    console.log("Trip hub initialization already in progress");
     return _initializing;
   }
 
-  console.log("Trip hub initialization started");
-
   const userId = getUserId();
   if (!userId) {
-    console.log("Trip hub initialization skipped: no user");
     return;
   }
 
@@ -40,7 +35,6 @@ export async function initializeTripHub(): Promise<void> {
       await tripConnection.initialize(userId);
       _initialized = true;
       useTripHubStore.getState().setConnectionState("connected");
-      console.log("Trip hub initialization complete");
     } catch (error) {
       useTripHubStore.getState().setConnectionState("disconnected");
       console.error("Trip hub initialization failed", error);
@@ -57,16 +51,12 @@ export async function initializeTripHub(): Promise<void> {
 export async function reconnectTripHub(): Promise<void> {
   const userId = getUserId();
   if (!userId || !_initialized) {
-    console.log("Trip hub reconnect skipped: no user or not initialized");
     return;
   }
 
   if (tripConnection.isConnected()) {
-    console.log("Trip hub reconnect skipped: already connected");
     return;
   }
-
-  console.log("Trip hub foreground reconnect attempt");
 
   useTripHubStore.getState().setConnectionState("connecting");
   useTripHubStore.getState().setIsConnecting(true);
@@ -74,7 +64,6 @@ export async function reconnectTripHub(): Promise<void> {
   try {
     await tripConnection.initialize(userId);
     useTripHubStore.getState().setConnectionState("connected");
-    console.log("Trip hub foreground reconnect complete");
   } catch (error) {
     useTripHubStore.getState().setConnectionState("disconnected");
     console.error("Trip hub foreground reconnect failed", error);
@@ -86,10 +75,8 @@ export async function reconnectTripHub(): Promise<void> {
 export async function refreshTripsToday(): Promise<void> {
   const userId = getUserId();
   if (!userId) {
-    console.log("Trip hub refresh skipped: no user");
     return;
   }
-  console.log("Trip hub refresh: disconnecting and reconnecting");
   useTripHubStore.getState().setConnectionState("connecting");
   useTripHubStore.getState().setIsConnecting(true);
   try {
@@ -98,7 +85,6 @@ export async function refreshTripsToday(): Promise<void> {
     await tripConnection.initialize(userId);
     _initialized = true;
     useTripHubStore.getState().setConnectionState("connected");
-    console.log("Trip hub refresh complete");
   } catch (error) {
     useTripHubStore.getState().setConnectionState("disconnected");
     console.error("Trip hub refresh failed", error);
@@ -108,7 +94,6 @@ export async function refreshTripsToday(): Promise<void> {
 }
 
 export async function disconnectTripHub(): Promise<void> {
-  console.log("Trip hub logout cleanup");
   _initializing = null;
   await tripConnection.disconnect();
   resetTripHubInitialization();

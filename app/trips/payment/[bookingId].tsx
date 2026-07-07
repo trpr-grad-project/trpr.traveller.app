@@ -71,7 +71,7 @@ export default function PaymentScreen() {
             ))}
             <View className="border-t border-slate-100 dark:border-slate-700 pt-3 flex-row justify-between">
               <Text className="text-base font-bold text-[#0c141d] dark:text-white">Total Amount</Text>
-              <Text className="text-base font-bold text-primary">$320</Text>
+              <Text className="text-base font-bold text-green-500">$320</Text>
             </View>
           </View>
         </View>

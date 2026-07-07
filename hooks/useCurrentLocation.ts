@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import * as Location from "expo-location";
 import { getUserId } from "@/utils/storage";
-import { haversine } from "@/utils/distance";
 import { createTripLocationRepository } from "@/database/repositories/tripLocationRepositoryImpl";
 import { tripLocationSync } from "@/services/trip/tripLocationSync";
 import { useLocationStore } from "@/store/locationStore";
@@ -9,7 +8,6 @@ import type { TripLocation } from "@/types";
 
 let _subscription: Location.LocationSubscription | null = null;
 let _tripId: string | null = null;
-let _threshold = 15;
 
 async function onPositionUpdate(loc: Location.LocationObject): Promise<void> {
   const userId = getUserId();
@@ -17,19 +15,6 @@ async function onPositionUpdate(loc: Location.LocationObject): Promise<void> {
 
   const { latitude: newLat, longitude: newLng } = loc.coords;
   useLocationStore.getState().setCurrentPosition(newLat, newLng);
-
-  const repo = createTripLocationRepository();
-  let prev: TripLocation | null = null;
-  try {
-    prev = await repo.getByTripIdAndUserId(_tripId, userId);
-  } catch {
-    /* ignore read errors */
-  }
-
-  if (prev) {
-    const dist = haversine(prev.latitude, prev.longitude, newLat, newLng);
-    if (dist < _threshold) return;
-  }
 
   const entry: TripLocation = {
     tripId: _tripId,
@@ -39,6 +24,7 @@ async function onPositionUpdate(loc: Location.LocationObject): Promise<void> {
     updatedAt: Date.now(),
   };
 
+  const repo = createTripLocationRepository();
   try {
     await repo.upsert(entry);
   } catch (e) {
@@ -51,7 +37,6 @@ async function onPositionUpdate(loc: Location.LocationObject): Promise<void> {
 
 export async function startLocationSharing(
   tripId: string,
-  threshold = 15,
 ): Promise<void> {
   if (_subscription) {
     if (_tripId === tripId) return;
@@ -59,7 +44,6 @@ export async function startLocationSharing(
   }
 
   _tripId = tripId;
-  _threshold = threshold;
 
   useLocationStore.getState().setGpsError(null);
 

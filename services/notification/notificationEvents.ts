@@ -7,7 +7,6 @@ export function handleReceiveNotification(payload: unknown): void {
 }
 
 export function handleReconnected(): void {
-  console.log("SignalR notification reconnected, syncing");
   notificationSync.syncNotifications().catch((error) => {
     console.error("SignalR notification reconnect sync failed", error);
   });

@@ -97,7 +97,7 @@ export default function ConfirmGuideScreen() {
           ))}
           <View className="border-t border-slate-100 dark:border-slate-700 pt-3 flex-row justify-between">
             <Text className="font-bold text-slate-900 dark:text-white">Total</Text>
-            <Text className="font-bold text-primary text-lg">$504</Text>
+            <Text className="font-bold text-green-500 text-lg">$504</Text>
           </View>
         </View>
       </ScrollView>

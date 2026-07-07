@@ -18,20 +18,15 @@ export function resetChatInitialization(): void {
 
 export async function initializeChat(): Promise<void> {
   if (_initialized) {
-    console.log("chat initialization already initialized");
     return;
   }
 
   if (_initializing) {
-    console.log("chat initialization already in progress");
     return _initializing;
   }
 
-  console.log("chat initialization started");
-
   const userId = getUserId();
   if (!userId) {
-    console.log("chat initialization skipped: no user");
     return;
   }
 
@@ -43,8 +38,6 @@ export async function initializeChat(): Promise<void> {
       await chatConnection.initialize(userId);
       _initialized = true;
       useP2pChatStore.getState().setConnectionState("connected");
-      console.log("chat initialization complete");
-
       // Cache user names (best-effort, may fail if caller is not Admin)
       usersService.getAll().then((users) => {
         userCache.populateFromUsersList(users);
@@ -68,16 +61,12 @@ export async function initializeChat(): Promise<void> {
 export async function reconnectChat(): Promise<void> {
   const userId = getUserId();
   if (!userId || !_initialized) {
-    console.log("chat reconnect skipped: no user or not initialized");
     return;
   }
 
   if (chatConnection.isConnected()) {
-    console.log("chat reconnect skipped: already connected");
     return;
   }
-
-  console.log("chat foreground reconnect attempt");
 
   useP2pChatStore.getState().setConnectionState("connecting");
   useP2pChatStore.getState().setIsConnecting(true);
@@ -85,8 +74,6 @@ export async function reconnectChat(): Promise<void> {
   try {
     await chatConnection.initialize(userId);
     useP2pChatStore.getState().setConnectionState("connected");
-    console.log("chat foreground reconnect complete");
-
     usersService.getAll().then((users) => {
       userCache.populateFromUsersList(users);
     }).catch(() => {});
@@ -99,7 +86,6 @@ export async function reconnectChat(): Promise<void> {
 }
 
 export async function disconnectChat(): Promise<void> {
-  console.log("chat logout cleanup");
   _initializing = null;
   await chatConnection.disconnect();
   resetChatInitialization();
