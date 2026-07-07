@@ -15,11 +15,11 @@ import { useColorScheme } from "nativewind";
 import { useTripHubStore } from "@/store/tripHubStore";
 import { STATUS_TO_LABEL, STATUS_COLORS } from "@/utils/tripSegments";
 import BackButton from "@/components/BackButton";
-import { UPLOADS_URL } from "@/utils/constants";
+import { resolveImageUrl, UPLOADS_URL } from "@/utils/constants";
 import type { TripTodayItem } from "@/types/trip-hub";
 
 function tripImageUrl(filename: string): string {
-  return `${UPLOADS_URL}/uploads/${filename}`;
+  return resolveImageUrl(`${UPLOADS_URL}/uploads/${filename}`);
 }
 
 function formatStartTime(dateStr: string): string {

@@ -74,8 +74,6 @@ export default function CreateTripStep3() {
 
       const result = await getTripSuggestion(params);
 
-      console.log("RAW SUGGESTION RESPONSE:", JSON.stringify(result, null, 2));
-
       const dayMap = (result as any).data ?? (result as any).days ?? result;
 
       Object.entries(dayMap).forEach(([dayKey, dayData]: [string, any]) => {

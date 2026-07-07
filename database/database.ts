@@ -4,10 +4,10 @@ import { MIGRATION_STATEMENTS, SCHEMA_STATEMENTS } from "./schema";
 let _db: SQLite.SQLiteDatabase | null = null;
 let _currentUserId: string | null = null;
 
-export function setDatabaseUser(userId: string | null): void {
+export async function setDatabaseUser(userId: string | null): Promise<void> {
   if (_currentUserId === userId) return;
   if (_db) {
-    _db.closeAsync();
+    await _db.closeAsync();
     _db = null;
   }
   _currentUserId = userId;

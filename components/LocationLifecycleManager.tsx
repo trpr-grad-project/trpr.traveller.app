@@ -40,7 +40,6 @@ export default function LocationLifecycleManager() {
           nextState === "active"
         ) {
           if (!tripConnection.isConnected()) {
-            console.log("Location lifecycle: trip connection not connected");
           }
           const tripsToday = useTripHubStore.getState().tripsToday;
           if (tripsToday.some((t) => t.status === "Started") && !isWatchingRef.current) {

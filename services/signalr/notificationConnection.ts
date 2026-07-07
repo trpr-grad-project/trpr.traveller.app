@@ -13,14 +13,11 @@ export class NotificationConnection {
 
   async initialize(userId: string): Promise<void> {
     if (this.initialized && this.userId === userId && this.isConnected()) {
-      console.log("Notification connection already initialized");
       return;
     }
 
-    console.log("Notification connection initialization started");
     await this.connect(userId);
     this.initialized = true;
-    console.log("Notification connection initialization completed");
   }
 
   async connect(userId: string): Promise<void> {
@@ -46,26 +43,21 @@ export class NotificationConnection {
       .build();
 
     this.connection.onreconnecting((error) => {
-      console.log("SignalR notification reconnecting", error?.message);
       useNotificationStore.getState().setConnectionState("reconnecting");
     });
 
     this.connection.onreconnected((connectionId) => {
-      console.log("SignalR notification reconnected", connectionId);
       useNotificationStore.getState().setConnectionState("connected");
       handleReconnected();
     });
 
     this.connection.onclose((error) => {
-      console.log("SignalR notification closed", error?.message);
       useNotificationStore.getState().setConnectionState("disconnected");
     });
 
     this.registerListeners();
 
-    console.log("SignalR notification connecting...");
     await this.connection.start();
-    console.log("SignalR notification connected");
   }
 
   private registerListeners(): void {
@@ -75,8 +67,6 @@ export class NotificationConnection {
     this.connection.on("ReceiveNotification", (payload: unknown) => {
       handleReceiveNotification(payload);
     });
-
-    console.log("SignalR notification listeners registered");
   }
 
   async disconnect(): Promise<void> {

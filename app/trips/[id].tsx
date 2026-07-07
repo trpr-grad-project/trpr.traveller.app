@@ -156,6 +156,7 @@ export default function TripDetailsScreen() {
   const isEndDay = todayStr >= endDateStr;
   const isStarted = trip.status === "Started";
   const isFinished = trip.status === "Finished";
+  const isBidding = trip.status === "Bidding";
   const isPaidTripType = trip.price > 0 &&
     (trip.creatorRoles.includes("Company") || trip.creatorRoles.includes("Guide"));
 
@@ -163,6 +164,9 @@ export default function TripDetailsScreen() {
   let buttonDisabled: boolean;
   if (isFinished) {
     buttonTitle = "Completed";
+    buttonDisabled = true;
+  } else if (isBidding) {
+    buttonTitle = "In Bidding";
     buttonDisabled = true;
   } else if (isStarted) {
     if (isCreator) {

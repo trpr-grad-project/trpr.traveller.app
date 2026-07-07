@@ -15,14 +15,11 @@ export class ChatConnection {
 
   async initialize(userId: string): Promise<void> {
     if (this.initialized && this.userId === userId && this.isConnected()) {
-      console.log("Chat connection already initialized");
       return;
     }
 
-    console.log("Chat connection initialization started");
     await this.connect(userId);
     this.initialized = true;
-    console.log("Chat connection initialization completed");
   }
 
   async connect(userId: string): Promise<void> {
@@ -48,27 +45,22 @@ export class ChatConnection {
       .build();
 
     this.connection.onreconnecting((error) => {
-      console.log("SignalR reconnecting", error?.message);
       useP2pChatStore.getState().setConnectionState("reconnecting");
     });
 
     this.connection.onreconnected(async (connectionId) => {
-      console.log("SignalR reconnected", connectionId);
       useP2pChatStore.getState().setConnectionState("connected");
       handleReconnected();
       await this.listenToAllConversations();
     });
 
     this.connection.onclose((error) => {
-      console.log("SignalR closed", error?.message);
       useP2pChatStore.getState().setConnectionState("disconnected");
     });
 
     this.registerListeners();
 
-    console.log("SignalR connecting...");
     await this.connection.start();
-    console.log("SignalR connected");
 
     await this.listenToAllConversations();
   }
@@ -78,25 +70,20 @@ export class ChatConnection {
 
     this.connection.off("UserConnected");
     this.connection.on("UserConnected", (payload: string) => {
-      console.log("UserConnected event received", payload);
       handleUserConnected(payload);
     });
 
     this.connection.off("ReceiveMessage");
     this.connection.on("ReceiveMessage", (payload: unknown) => {
-      console.log("ReceiveMessage received, forwarding to sync");
       handleReceiveMessage(payload);
     });
 
     this.connection.off("NewChatCreated");
     this.connection.on("NewChatCreated", async (payload: { id: string }) => {
-      console.log("NewChatCreated received", payload);
       if (!payload?.id) return;
       await this.listenToConversation(payload.id);
       handleNewChatCreated(payload).catch(console.error);
     });
-
-    console.log("SignalR listeners registered");
   }
 
   async listenToConversation(conversationId: string): Promise<void> {
@@ -104,11 +91,9 @@ export class ChatConnection {
       !this.connection ||
       this.connection.state !== signalR.HubConnectionState.Connected
     ) {
-      console.log("Cannot listen to conversation, not connected");
       return;
     }
     await this.connection.invoke("ListenToConversation", conversationId);
-    console.log("Listening to conversation", conversationId);
   }
 
   async listenToAllConversations(): Promise<void> {
@@ -119,7 +104,6 @@ export class ChatConnection {
     for (const conv of conversations) {
       await this.listenToConversation(conv.id).catch(console.error);
     }
-    console.log("Listening to all existing conversations", conversations.length);
   }
 
   async disconnect(): Promise<void> {

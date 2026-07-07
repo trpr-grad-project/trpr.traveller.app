@@ -199,9 +199,6 @@ export default function AIChatScreen() {
 
           {/* Input box */}
           <View className="flex-row items-end gap-2 bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-            <Pressable className="p-2 text-gray-400 rounded-full">
-              <MaterialIcons name="add-a-photo" size={24} color="#9ca3af" />
-            </Pressable>
             <TextInput
               value={input}
               onChangeText={setInput}

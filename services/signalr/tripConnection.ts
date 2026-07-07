@@ -15,14 +15,11 @@ export class TripConnection {
 
   async initialize(userId: string): Promise<void> {
     if (this.initialized && this.userId === userId && this.isConnected()) {
-      console.log("Trip connection already initialized");
       return;
     }
 
-    console.log("Trip connection initialization started");
     await this.connect(userId);
     this.initialized = true;
-    console.log("Trip connection initialization completed");
   }
 
   async connect(userId: string): Promise<void> {
@@ -48,20 +45,17 @@ export class TripConnection {
       .build();
 
     this.connection.onreconnecting((error) => {
-      console.log("SignalR trip reconnecting", error?.message);
       useTripHubStore.getState().setConnectionState("reconnecting");
       useLocationStore.getState().setConnectionState("reconnecting");
     });
 
     this.connection.onreconnected((connectionId) => {
-      console.log("SignalR trip reconnected", connectionId);
       useTripHubStore.getState().setConnectionState("connected");
       useLocationStore.getState().setConnectionState("connected");
       this.startPeriodicLocationSend();
     });
 
     this.connection.onclose((error) => {
-      console.log("SignalR trip closed", error?.message);
       useTripHubStore.getState().setConnectionState("disconnected");
       useLocationStore.getState().setConnectionState("disconnected");
       this.stopPeriodicLocationSend();
@@ -69,9 +63,7 @@ export class TripConnection {
 
     this.registerListeners();
 
-    console.log("SignalR trip connecting...");
     await this.connection.start();
-    console.log("SignalR trip connected");
 
     this.startPeriodicLocationSend();
   }
@@ -88,8 +80,6 @@ export class TripConnection {
     this.connection.on("LocationUpdated", (payload: unknown) => {
       tripLocationSync.handleLocationUpdated(payload).catch(console.error);
     });
-
-    console.log("SignalR trip listeners registered");
   }
 
   async sendLocation(
@@ -148,17 +138,14 @@ export class TripConnection {
 
     const { gpsError } = useLocationStore.getState();
     if (gpsError) {
-      console.log("Periodic send skipped: location error", gpsError);
       return;
     }
 
     const coords = this.getCurrentCoords();
     if (!coords) {
-      console.log("Periodic send skipped: no location data");
       return;
     }
 
-    console.log("Sending locations for started trips", tripsIds, coords.lat, coords.lng);
     this.sendLocation(tripsIds, coords.lat, coords.lng);
   }
 

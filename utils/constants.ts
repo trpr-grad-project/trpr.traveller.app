@@ -3,19 +3,19 @@ import { Platform } from "react-native";
 // Platform-specific API URL
 const REMOTE_URL = process.env.EXPO_PUBLIC_API_URL_REMOTE;
 const LOCAL_URL =
-  process.env.EXPO_PUBLIC_API_URL_LOCAL || "http://localhost:5000/users/api/v1";
+  process.env.EXPO_PUBLIC_API_URL_LOCAL || "http://srv1807577.hstgr.cloud:5001/api/v1";
 
 export const API_URL = Platform.select({
-  android: REMOTE_URL || "http://10.0.2.2:5000/users/api/v1",
+  android: REMOTE_URL || "http://srv1807577.hstgr.cloud:5001/api/v1",
   ios: LOCAL_URL,
   default: LOCAL_URL,
 });
 
 // Uploads server — separate from API, typically a file server on port 9000
-const UPLOADS_LOCAL = process.env.EXPO_PUBLIC_UPLOADS_URL || "http://localhost:9000";
+const UPLOADS_LOCAL = process.env.EXPO_PUBLIC_UPLOADS_URL || "http://srv1807577.hstgr.cloud:9000";
 
 export const UPLOADS_URL = Platform.select({
-  android: process.env.EXPO_PUBLIC_UPLOADS_URL || "http://10.0.2.2:9000",
+  android: process.env.EXPO_PUBLIC_UPLOADS_URL || "http://srv1807577.hstgr.cloud:9000",
   ios: UPLOADS_LOCAL,
   default: UPLOADS_LOCAL,
 });

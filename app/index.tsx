@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ActivityIndicator, View } from "react-native";
 
 export default function Index() {
-  const { isLoading } = useAuth();
+  const { isLoading, session } = useAuth();
 
   if (isLoading) {
     return (
@@ -13,6 +13,9 @@ export default function Index() {
     );
   }
 
-  // Always route to traveler dashboard
+  if (!session) {
+    return <Redirect href="/(auth)" />;
+  }
+
   return <Redirect href="/(traveler)" />;
 }

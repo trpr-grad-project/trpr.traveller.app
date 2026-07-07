@@ -55,13 +55,9 @@ export class ChatSync {
   async createConversation(
     request: CreateConversationRequest,
   ): Promise<ConversationPreview> {
-    console.log("Creating conversation");
-
     const conversation = await conversationsApi.createConversation(request);
     const convRepo = createConversationRepository();
     await convRepo.insertOrUpdateConversation(conversation);
-
-    console.log("Conversation created", conversation.id);
 
     this.notify("conversations");
 
@@ -72,8 +68,6 @@ export class ChatSync {
     conversationId: string,
     messageContent: string,
   ): Promise<MessageItem | null> {
-    console.log("Sending message", conversationId);
-
     try {
       const message = await messagesApi.sendMessage(conversationId, {
         messageContent,
@@ -93,14 +87,11 @@ export class ChatSync {
         sentAt: message.sentAtUtc,
       });
 
-      console.log("Message stored locally", message.id);
-
       this.notify("messages", conversationId);
       this.notify("conversations");
 
       return message;
     } catch (error) {
-      console.log("Send failed, queueing as pending", error);
       const pendingRepo = createPendingMessageRepository();
       await pendingRepo.insertPendingMessage({
         id: `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -135,7 +126,6 @@ export class ChatSync {
         await pendingRepo.deletePendingMessage(pending.id);
         this.notify("messages", pending.conversationId);
         this.notify("conversations");
-        console.log("Pending message sent", pending.id);
       } catch (error) {
         await pendingRepo.incrementRetryCount(
           pending.id,
@@ -154,8 +144,6 @@ export class ChatSync {
     let hasNextPage = false;
 
     await this.mutex.acquire("conversations", async () => {
-      console.log("Conversation sync started");
-
       const response = await conversationsApi.getConversations(options);
       nextCursor = response.nextCursor;
       hasNextPage = response.hasNextPage;
@@ -198,8 +186,6 @@ export class ChatSync {
         }
       }
 
-      console.log("Conversation sync completed", response.items.length);
-
       this.notify("conversations");
     });
 
@@ -214,8 +200,6 @@ export class ChatSync {
     let hasNextPage = false;
 
     await this.mutex.acquire(conversationId, async () => {
-      console.log("Message sync started", conversationId);
-
       const response = await messagesApi.getMessages({
         conversationId,
         ...options,
@@ -250,12 +234,6 @@ export class ChatSync {
         });
       }
 
-      console.log(
-        "Message sync completed",
-        conversationId,
-        response.items.length,
-      );
-
       this.notify("messages", conversationId);
       this.notify("conversations");
     });
@@ -281,7 +259,6 @@ export class ChatSync {
     const localConv = await convRepo.findConversation(conversationId);
 
     if (!localConv) {
-      console.log("Conversation not found locally, fetching messages", conversationId);
       await this.syncConversationMessages(conversationId);
       return;
     }
@@ -293,7 +270,6 @@ export class ChatSync {
     const incomingSeq = parseInt(String(msg.sequenceNumber ?? "0"), 10);
 
     if (incomingSeq === localSeq + 1) {
-      console.log("Inserting continuous message", msg.id);
       await msgRepo.insertMessage({
         id: msg.id,
         sequenceNumber: String(msg.sequenceNumber),
@@ -316,15 +292,12 @@ export class ChatSync {
     }
 
     if (incomingSeq <= localSeq) {
-      console.log("Duplicate ignored", msg.id);
       return;
     }
 
-    console.log("Gap detected", { local: localSeq, incoming: incomingSeq });
     await this.syncConversationMessages(conversationId, {
       afterSequence: String(localSeq),
     });
-    console.log("Gap recovery completed", conversationId);
   }
 }
 
