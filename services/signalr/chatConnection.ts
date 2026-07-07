@@ -2,6 +2,7 @@ import * as signalR from "@microsoft/signalr";
 import { API_URL } from "@/utils/constants";
 import { useP2pChatStore } from "@/store/chatStore";
 import {
+  handleNewChatCreated,
   handleReceiveMessage,
   handleUserConnected,
   handleReconnected,
@@ -51,10 +52,11 @@ export class ChatConnection {
       useP2pChatStore.getState().setConnectionState("reconnecting");
     });
 
-    this.connection.onreconnected((connectionId) => {
+    this.connection.onreconnected(async (connectionId) => {
       console.log("SignalR reconnected", connectionId);
       useP2pChatStore.getState().setConnectionState("connected");
       handleReconnected();
+      await this.listenToAllConversations();
     });
 
     this.connection.onclose((error) => {
@@ -67,6 +69,8 @@ export class ChatConnection {
     console.log("SignalR connecting...");
     await this.connection.start();
     console.log("SignalR connected");
+
+    await this.listenToAllConversations();
   }
 
   private registerListeners(): void {
@@ -84,7 +88,38 @@ export class ChatConnection {
       handleReceiveMessage(payload);
     });
 
+    this.connection.off("NewChatCreated");
+    this.connection.on("NewChatCreated", async (payload: { id: string }) => {
+      console.log("NewChatCreated received", payload);
+      if (!payload?.id) return;
+      await this.listenToConversation(payload.id);
+      handleNewChatCreated(payload).catch(console.error);
+    });
+
     console.log("SignalR listeners registered");
+  }
+
+  async listenToConversation(conversationId: string): Promise<void> {
+    if (
+      !this.connection ||
+      this.connection.state !== signalR.HubConnectionState.Connected
+    ) {
+      console.log("Cannot listen to conversation, not connected");
+      return;
+    }
+    await this.connection.invoke("ListenToConversation", conversationId);
+    console.log("Listening to conversation", conversationId);
+  }
+
+  async listenToAllConversations(): Promise<void> {
+    const { createConversationRepository } = await import(
+      "@/database/repositories/conversationRepositoryImpl"
+    );
+    const conversations = await createConversationRepository().findAllConversations();
+    for (const conv of conversations) {
+      await this.listenToConversation(conv.id).catch(console.error);
+    }
+    console.log("Listening to all existing conversations", conversations.length);
   }
 
   async disconnect(): Promise<void> {

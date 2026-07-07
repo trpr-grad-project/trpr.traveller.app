@@ -1,9 +1,8 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
   Pressable,
   StatusBar,
   Text,
@@ -73,7 +72,21 @@ export default function AIChatScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const [input, setInput] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", (e) =>
+      setKeyboardHeight(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardHeight(0),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const {
     sendMessage,
@@ -97,13 +110,8 @@ export default function AIChatScreen() {
   }, []);
 
   return (
-      <KeyboardAvoidingView
-        className="flex-1 bg-background-light dark:bg-background-dark"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top : 0}
-      >
+    <View className="flex-1 bg-background-light dark:bg-background-dark">
       <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
-
       <View className="flex-1" style={{ paddingTop: insets.top }}>
         {/* Header */}
         <View className="flex-row items-center justify-between p-4 bg-background-light/90 dark:bg-background-dark/90 border-b border-gray-200 dark:border-gray-800">
@@ -182,7 +190,7 @@ export default function AIChatScreen() {
         {/* Footer */}
         <View
           className="bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-gray-800 pt-2 px-4"
-          style={{ paddingBottom: insets.bottom + 16 }}
+          style={{ paddingBottom: keyboardHeight + insets.bottom + 16 }}
         >
           {/* Quick prompts */}
           {!hasMessages && (
@@ -222,7 +230,7 @@ export default function AIChatScreen() {
           </View>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

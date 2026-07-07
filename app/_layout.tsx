@@ -4,6 +4,8 @@ import { toastConfig } from "@/config/toast.config";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import ChatLifecycleManager from "@/components/ChatLifecycleManager";
 import NotificationLifecycleManager from "@/components/NotificationLifecycleManager";
+import TripLifecycleManager from "@/components/TripLifecycleManager";
+import LocationLifecycleManager from "@/components/LocationLifecycleManager";
 import OfflineQueueProcessor from "@/components/OfflineQueueProcessor";
 import "@/global.css";
 import {
@@ -81,6 +83,8 @@ function RootLayoutContent({ fontsLoaded }: { fontsLoaded: boolean }) {
       <OfflineQueueProcessor />
       <ChatLifecycleManager />
       <NotificationLifecycleManager />
+      <TripLifecycleManager />
+      <LocationLifecycleManager />
       <Stack screenOptions={{ headerShown: false }} />
     </>
   );

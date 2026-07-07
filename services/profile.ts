@@ -1,4 +1,5 @@
 import {
+  ProfileMyProfileResponse,
   ProfileSetupDataResponse,
   ProfileSetupRequest,
   ProfileSetupResponse,
@@ -22,8 +23,22 @@ export const profileService = {
   },
 
   getProfile: async (): Promise<ProfileSetupResponse> => {
-    const response = await api.get(ENDPOINTS.profile.main);
-    return response.data;
+    const response = await api.get<ProfileMyProfileResponse>(
+      ENDPOINTS.profile.myProfile,
+    );
+    const d = response.data;
+    return {
+      id: d.profile.id,
+      bio: d.profile.bio,
+      languages: d.profile.languages,
+      interests: d.profile.interests,
+      vibes: d.profile.vibes,
+      notificationSettings: {
+        tripUpdates: null,
+        messages: null,
+        promotions: null,
+      },
+    };
   },
 
   updateProfile: async (

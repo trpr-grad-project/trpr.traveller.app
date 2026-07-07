@@ -1,18 +1,80 @@
-import React, { useState } from "react";
-import { Image, Pressable, ScrollView, StatusBar, Switch, Text, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  Text,
+  View,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import BackButton from "@/components/BackButton";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
+import { Image } from "expo-image";
+import { createConversationRepository } from "@/database/repositories/conversationRepositoryImpl";
+import { tripService } from "@/services/trips";
+import { resolveImageUrl } from "@/utils/constants";
+import type { TripCreatorUser } from "@/types/trip-creation";
+
+const AVATAR_COLORS = ["#359EFF", "#FF6B6B", "#4CAF50", "#FF9800", "#9C27B0", "#00BCD4", "#F44336", "#3F51B5"];
+
+function avatarColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function getInitials(firstName?: string, lastName?: string): string {
+  return `${firstName?.charAt(0) ?? ""}${lastName?.charAt(0) ?? ""}`.toUpperCase() || "?";
+}
 
 export default function GroupChatSettingsScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [muteNotifs, setMuteNotifs] = useState(true);
-  const [pinChat, setPinChat] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [tripTitle, setTripTitle] = useState<string | null>(null);
+  const [tripImageUrl, setTripImageUrl] = useState<string | null>(null);
+  const [members, setMembers] = useState<TripCreatorUser[]>([]);
+
+  const fetchData = useCallback(async () => {
+    if (!id) return;
+    try {
+      const convRepo = createConversationRepository();
+      const conv = await convRepo.findConversation(id);
+      const tripId = conv?.tripId;
+
+      if (tripId) {
+        const trip = await tripService.getTripById(tripId);
+        setTripTitle(trip.title);
+        setTripImageUrl(trip.imagesUrls?.[0] ?? null);
+        setMembers(trip.approvedParticipants ?? []);
+      } else {
+        setTripTitle(conv?.title ?? "Group Chat");
+        setTripImageUrl(conv?.imageUrl ?? null);
+        setMembers([]);
+      }
+    } catch (error) {
+      console.error("[GroupChatSettings] Failed to load", error);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }, [fetchData]);
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
@@ -24,95 +86,74 @@ export default function GroupChatSettingsScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}>
-        <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-50 dark:border-slate-700 items-center gap-4">
-          <View className="w-20 h-20 rounded-2xl overflow-hidden">
-            <Image
-              source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBRrXE--YB_mmudPLrM_t4jzT02PWTfh9Ztqs8LRcqtODG6vCGkpSbONPzZb2He6QkbXqYojzzfX0qEhz0rqp23zP9ge0yoStSW0jvBYsvYPs9-IYWzAKKcyn_dQm49mRlu-tsWKgaoPYgKuNyTg7dHr7oUxt_sDMkmgmVdqtGYoMMmWKXCH_-DgyvDSakTjzcIn6zKfSH9dKrASVvXiJ8d7YL2e7UKJC3JIzuEmyHGiQsIbP0dciJA9qT-y0xMWSioXmnjdLAKxkQk" }}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
-          </View>
-          <View className="items-center">
-            <Text className="text-lg font-bold text-[#0c141d] dark:text-white">Giza Expedition 2024</Text>
-            <Pressable>
-              <Text className="text-sm font-semibold text-primary mt-1">View Group Info</Text>
-            </Pressable>
-          </View>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#359EFF" />
         </View>
-
-        <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-50 dark:border-slate-700">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-sm font-bold text-[#0c141d] dark:text-white">Members (5)</Text>
-            <Pressable>
-              <Text className="text-xs font-semibold text-primary">View All</Text>
-            </Pressable>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#359EFF" />
+          }
+        >
+          <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-50 dark:border-slate-700 items-center gap-4">
+            {tripImageUrl ? (
+              <View className="w-20 h-20 rounded-2xl overflow-hidden">
+                <Image
+                  source={{ uri: resolveImageUrl(tripImageUrl) }}
+                  className="w-full h-full"
+                  contentFit="cover"
+                />
+              </View>
+            ) : (
+              <View
+                className="w-20 h-20 rounded-2xl items-center justify-center"
+                style={{ backgroundColor: avatarColor(id ?? "") }}
+              >
+                <Text className="text-white text-2xl font-bold">{tripTitle?.charAt(0).toUpperCase() ?? "?"}</Text>
+              </View>
+            )}
+            <Text className="text-lg font-bold text-[#0c141d] dark:text-white text-center">
+              {tripTitle ? `${tripTitle} Trip Chat` : "Trip Chat"}
+            </Text>
           </View>
-          <View className="flex-row items-center gap-2">
-            <View className="flex-row" style={{ gap: -8 }}>
-              {[1, 2, 3].map((i) => (
-                <View key={i} className="w-10 h-10 rounded-full overflow-hidden border-2 border-white dark:border-background-dark">
-                  <Image
-                    source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuD08lVoan8JB_tWKncwWGbr5BwasPlqL-zEmYJxYLHHdvtNWv2IHqa40dZj4E0X9TPaKTjGhLD_3QKz_EdYkZ8D7C1dbjKAsa77fNynWQ-0OoFL4Btki3iQlR03JUZxwE0BmtCj7i24qAA1NjmxENSrH3uuTaLJ58pErS-0HTCMC4w5rrb7fZerWyRXHr6lwsw1aqsq2t94QHfTt8ds2KINiMOjkIoOOZpe5HvaA6qhhOGp6RF42rRY1fKcQ45JSjRGHpo0Xa9xIy1U" }}
-                    className="w-full h-full"
-                    resizeMode="cover"
-                  />
-                </View>
-              ))}
-              <View className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 border-2 border-white dark:border-background-dark items-center justify-center">
-                <Text className="text-xs font-bold text-slate-500">+2</Text>
+
+          {members.length > 0 && (
+            <View className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-50 dark:border-slate-700">
+              <Text className="text-sm font-bold text-[#0c141d] dark:text-white mb-4">
+                Members ({members.length})
+              </Text>
+              <View className="gap-3">
+                {members.map((member) => {
+                  const name = `${member.firstName} ${member.lastName}`.trim();
+                  return (
+                    <View key={member.id} className="flex-row items-center gap-3">
+                      <View
+                        className="w-10 h-10 rounded-full items-center justify-center"
+                        style={{ backgroundColor: avatarColor(member.id) }}
+                      >
+                        <Text className="text-white text-xs font-bold">{getInitials(member.firstName, member.lastName)}</Text>
+                      </View>
+                      <Text className="text-sm font-medium text-[#0c141d] dark:text-white flex-1">
+                        {name || member.userName || `User #${member.id.slice(-4)}`}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
-            <Pressable className="w-10 h-10 rounded-full bg-primary/10 border-2 border-white dark:border-background-dark items-center justify-center">
-              <MaterialIcons name="person-add" size={18} color="#359EFF" />
-            </Pressable>
-          </View>
-        </View>
+          )}
 
-        <View className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-50 dark:border-slate-700 overflow-hidden">
-          <View className="px-5 py-4 flex-row items-center justify-between">
-            <Text className="text-sm font-medium text-[#0c141d] dark:text-white">Mute Notifications</Text>
-            <Switch value={muteNotifs} onValueChange={setMuteNotifs} trackColor={{ false: "#e2e8f0", true: "#93c5fd" }} thumbColor={muteNotifs ? "#359EFF" : "#f1f5f9"} />
-          </View>
-          <View className="h-px bg-slate-100 dark:bg-slate-700 mx-5" />
-          <View className="px-5 py-4 flex-row items-center justify-between">
-            <Text className="text-sm font-medium text-[#0c141d] dark:text-white">Pin Chat</Text>
-            <Switch value={pinChat} onValueChange={setPinChat} trackColor={{ false: "#e2e8f0", true: "#93c5fd" }} thumbColor={pinChat ? "#359EFF" : "#f1f5f9"} />
-          </View>
-          <View className="h-px bg-slate-100 dark:bg-slate-700 mx-5" />
-          <Pressable className="px-5 py-4 flex-row items-center justify-between">
-            <Text className="text-sm font-medium text-[#0c141d] dark:text-white">Search in Conversation</Text>
-            <MaterialIcons name="chevron-right" size={20} color="#cbd5e1" />
-          </Pressable>
-        </View>
-
-        <View className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-50 dark:border-slate-700 overflow-hidden">
-          {[
-            { label: "Photos & Videos", count: "24" },
-            { label: "Shared Links", count: "12" },
-            { label: "Files", count: "5" },
-            { label: "Shared Plans", count: "3" },
-          ].map((item, i) => (
-            <View key={item.label}>
-              <Pressable className="px-5 py-4 flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                  <Text className="text-sm font-medium text-[#0c141d] dark:text-white">{item.label}</Text>
-                </View>
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-xs text-slate-400">{item.count}</Text>
-                  <MaterialIcons name="chevron-right" size={20} color="#cbd5e1" />
-                </View>
-              </Pressable>
-              {i < 3 && <View className="h-px bg-slate-100 dark:bg-slate-700 mx-5" />}
+          {members.length === 0 && !loading && (
+            <View className="items-center py-8">
+              <MaterialIcons name="people-outline" size={48} color="#94a3b8" />
+              <Text className="text-sm text-slate-400 mt-2">No member data available</Text>
             </View>
-          ))}
-        </View>
-
-        <Pressable className="flex-row items-center justify-center gap-2 py-4 rounded-xl border border-red-200 dark:border-red-900 bg-white dark:bg-slate-800">
-          <MaterialIcons name="logout" size={20} color="#ef4444" />
-          <Text className="text-sm font-bold text-red-500">Leave Group</Text>
-        </Pressable>
-      </ScrollView>
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }

@@ -51,6 +51,7 @@ export interface TripDraftState {
   setMapLocation: (loc: MapLocation) => void;
   setDayCount: (n: number) => void;
   addPlacesToDay: (dayIndex: number, placeIds: number[]) => void;
+  setDayPlaces: (dayIndex: number, placeIds: number[]) => void;
   removePlaceFromDay: (dayIndex: number, placeId: number) => void;
   setDayDuration: (dayIndex: number, hours: number) => void;
   setDayDate: (dayIndex: number, date: string | null) => void;
@@ -133,6 +134,15 @@ export const useTripDraftStore = create<TripDraftState>()((set, get) => ({
       const newIds = placeIds.filter((id) => !existing.has(id));
       return { ...d, placeIds: [...d.placeIds, ...newIds] };
     });
+    set({ days: updated });
+  },
+
+  setDayPlaces: (dayIndex, placeIds) => {
+    const { days } = get();
+    if (dayIndex < 0 || dayIndex >= days.length) return;
+    const updated = days.map((d, i) =>
+      i !== dayIndex ? d : { ...d, placeIds },
+    );
     set({ days: updated });
   },
 

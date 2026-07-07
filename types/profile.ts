@@ -62,3 +62,23 @@ export interface ProfileSetupResponse {
   vibes: ProfileVibe[];
   notificationSettings: NotificationSettings;
 }
+
+export interface ProfileMyProfileResponse {
+  id: string;
+  userName: string;
+  firstName: string;
+  lastName: string;
+  isVerified: boolean;
+  twoFactorEnabled: boolean;
+  roles: string[];
+  profile: {
+    id: string;
+    bio: string;
+    rating: number | null;
+    reviews: number | null;
+    languages: ProfileLanguage[];
+    interests: ProfileInterest[];
+    vibes: ProfileVibe[];
+    avatarUrl: string;
+  };
+}

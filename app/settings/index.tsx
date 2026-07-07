@@ -32,6 +32,12 @@ const SECTIONS = [
     ],
   },
   {
+    title: "Content",
+    items: [
+      { icon: "place" as const, label: "My Places", route: "/settings/my-places" },
+    ],
+  },
+  {
     title: "Notifications",
     toggle: true,
     items: [
@@ -50,6 +56,7 @@ const SECTIONS = [
   {
     title: "Payments",
     items: [
+      { icon: "credit-card" as const, label: "My Card", route: "/settings/my-card" },
       { icon: "receipt-long" as const, label: "Billing history", route: "/settings/billing-history" },
     ],
   },

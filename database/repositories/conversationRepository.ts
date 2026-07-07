@@ -18,4 +18,5 @@ export interface IConversationRepository {
     id: string,
     message: ConversationPreview["lastMessage"],
   ): Promise<void>;
+  updateTripId(id: string, tripId: string): Promise<void>;
 }

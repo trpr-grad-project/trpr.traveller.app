@@ -1,6 +1,6 @@
 import { useColorScheme } from "nativewind";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { StatusBar, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, StatusBar, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { WebView } from "react-native-webview";
@@ -137,44 +137,46 @@ export default function MapScreen() {
         </Text>
       </View>
 
-      <View className="flex-1">
-        <WebView
-          ref={webRef}
-          source={{ html: MAP_HTML }}
-          style={{ flex: 1, backgroundColor: "transparent" }}
-          onMessage={handleMessage}
-          javaScriptEnabled
-          scrollEnabled={false}
-          bounces={false}
-        />
-      </View>
-
-      <View className="bg-white dark:bg-background-dark px-4 py-4 border-t border-slate-100 dark:border-slate-800">
-        <View>
-          <Text className="text-xs font-semibold text-slate-500 mb-1">
-            Radius (meters)
-          </Text>
-          <TextInput
-            value={radius}
-            onChangeText={(t) => {
-              setRadius(t.replace(/[^0-9]/g, ""));
-              setError(null);
-            }}
-            keyboardType="number-pad"
-            placeholder="1000"
-            placeholderTextColor="#94a3b8"
-            className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm font-medium text-[#0c141d] dark:text-white"
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
+        <View className="flex-1">
+          <WebView
+            ref={webRef}
+            source={{ html: MAP_HTML }}
+            style={{ flex: 1, backgroundColor: "transparent" }}
+            onMessage={handleMessage}
+            javaScriptEnabled
+            scrollEnabled={false}
+            bounces={false}
           />
         </View>
 
-        {error && (
-          <Text className="text-xs text-red-500 mt-2">{error}</Text>
-        )}
+        <View className="bg-white dark:bg-background-dark px-4 py-4 border-t border-slate-100 dark:border-slate-800">
+          <View>
+            <Text className="text-xs font-semibold text-slate-500 mb-1">
+              Radius (meters)
+            </Text>
+            <TextInput
+              value={radius}
+              onChangeText={(t) => {
+                setRadius(t.replace(/[^0-9]/g, ""));
+                setError(null);
+              }}
+              keyboardType="number-pad"
+              placeholder="1000"
+              placeholderTextColor="#94a3b8"
+              className="w-full h-12 px-4 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm font-medium text-[#0c141d] dark:text-white"
+            />
+          </View>
 
-        <View className="mt-3">
-          <PrimaryButton title="Confirm Location" onPress={handleConfirm} />
+          {error && (
+            <Text className="text-xs text-red-500 mt-2">{error}</Text>
+          )}
+
+          <View className="mt-3">
+            <PrimaryButton title="Confirm Location" onPress={handleConfirm} />
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }

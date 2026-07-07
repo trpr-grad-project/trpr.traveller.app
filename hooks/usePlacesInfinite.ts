@@ -3,7 +3,7 @@ import { placesService } from "@/services/places";
 import { useTripDraftStore } from "@/store/tripCreation";
 import { useEffect, useState } from "react";
 
-export function usePlacesInfinite(search: string, pageSize = 20) {
+export function usePlacesInfinite(search: string, pageSize = 20, myPlacesOnly = false) {
   const governorateId = useTripDraftStore((s) => s.governorateId);
   const mapLocation = useTripDraftStore((s) => s.mapLocation);
 
@@ -17,6 +17,7 @@ export function usePlacesInfinite(search: string, pageSize = 20) {
   const query = useInfiniteQuery({
     queryKey: [
       "places",
+      myPlacesOnly,
       governorateId,
       mapLocation?.lat,
       mapLocation?.lng,
@@ -33,7 +34,9 @@ export function usePlacesInfinite(search: string, pageSize = 20) {
       }
       if (debouncedSearch.length > 0) params.Title = debouncedSearch;
       if (pageParam !== undefined) params.LastPlaceId = pageParam;
-      return placesService.search(params);
+      return myPlacesOnly
+        ? placesService.getMyPlaces(params)
+        : placesService.search(params);
     },
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage: any, _allPages, lastPageParam) => {

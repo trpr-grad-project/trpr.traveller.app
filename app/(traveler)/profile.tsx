@@ -52,7 +52,7 @@ export default function ProfileScreen() {
                 <MaterialIcons name="photo-camera" size={14} color="white" />
               </Pressable>
             </View>
-            <Text className="text-2xl font-bold font-jakarta-bold text-[#0c141d] dark:text-white w-full text-center" numberOfLines={1}>{`${firstName} ${lastName}`.trim() || "Traveler"}</Text>
+            <Text className="text-2xl font-bold font-jakarta-bold text-[#0c141d] dark:text-white w-full text-center tracking-wide" numberOfLines={1}>{`${firstName} ${lastName}`.trim() || "Traveler"}</Text>
             <View className="flex-row items-center gap-1 mt-1">
               <MaterialIcons name="star" size={16} color="#eab308" />
               <Text className="text-sm font-bold text-slate-700 dark:text-slate-200">4.9</Text>

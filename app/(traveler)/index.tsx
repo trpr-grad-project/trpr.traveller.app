@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -15,22 +15,43 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 import TripCard, { SOFT_SHADOW } from "@/components/TripCard";
-import { router } from "expo-router";
+import TripsTodayFAB from "@/components/TripsTodayFAB";
+import { router, useFocusEffect } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useHomeTrips } from "@/hooks/useHomeTrips";
 import { useUnreadCount } from "@/hooks/useUnreadCount";
+import { notificationSync } from "@/services/notification/notificationSync";
+import { refreshTripsToday } from "@/services/trip/initializeTripHub";
 import { resolveImageUrl } from "@/utils/constants";
-
-const THEMES = ["History", "Romantic", "Adventure", "Family"];
 
 export default function TravelerHome() {
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const [search, setSearch] = useState("");
-  const [selectedTheme, setSelectedTheme] = useState("History");
 
   const { data, isLoading, isError, refetch, isRefetching } = useHomeTrips();
   const { hasUnread } = useUnreadCount();
+  const queryClient = useQueryClient();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshTripsToday().catch(console.error);
+    }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      notificationSync.syncNotifications().then(() => {
+        queryClient.invalidateQueries({ queryKey: ["notifications", "unreadCount"] });
+      }).catch(console.error);
+    }, [queryClient]),
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+  const upcomingByCompany = (data?.byCompany.items ?? []).filter((t) => t.startDate >= today);
+  const upcomingShared = (data?.shared.items ?? []).filter((t) => t.startDate >= today);
+  const upcomingByGuide = (data?.byGuide.items ?? []).filter((t) => t.startDate >= today);
 
   if (isLoading && !data) {
     return (
@@ -54,7 +75,7 @@ export default function TravelerHome() {
           className="mt-6 bg-primary rounded-xl py-3 px-8"
         >
           {({ pressed }) => (
-            <Text className="text-white font-bold text-sm" style={{ opacity: pressed ? 0.7 : 1 }}>
+            <Text className="text-white font-bold text-sm tracking-wide" style={{ opacity: pressed ? 0.7 : 1 }}>
               Retry
             </Text>
           )}
@@ -84,7 +105,7 @@ export default function TravelerHome() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: 96 }}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#359EFF" />
         }
@@ -131,7 +152,7 @@ export default function TravelerHome() {
                   className="w-full h-full rounded-xl overflow-hidden flex-row items-center justify-center gap-2"
                 >
                   <MaterialIcons name="add" size={22} color="white" />
-                  <Text className="text-white text-base font-semibold">Create Your Trip</Text>
+                  <Text className="text-white text-base font-semibold tracking-wide">Create Your Trip</Text>
                   <View className="absolute top-0 left-0 right-0 h-[1px] bg-white/25" pointerEvents="none" />
                 </LinearGradient>
               )}
@@ -143,7 +164,7 @@ export default function TravelerHome() {
         </View>
 
         {/* Featured Trips by Companies */}
-        {data?.byCompany.items && data.byCompany.items.length > 0 && (
+        {upcomingByCompany.length > 0 && (
           <View className="mt-6">
             <View className="flex-row items-center justify-between px-4 pb-2">
               <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
@@ -158,7 +179,7 @@ export default function TravelerHome() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 16 }}
             >
-              {data.byCompany.items.map((trip) => (
+              {upcomingByCompany.map((trip) => (
                 <TripCard
                   key={trip.tripId}
                   image={resolveImageUrl(trip.imagesUrls?.[0] ?? "")}
@@ -175,38 +196,20 @@ export default function TravelerHome() {
           </View>
         )}
 
-        {/* Popular Themes */}
-        <View className="mt-8">
-          <Text className="text-[#0c141d] dark:text-white text-lg font-bold px-4 pb-4">Popular Themes</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-          >
-            {THEMES.map((theme) => (
-              <Pressable
-                key={theme}
-                onPress={() => setSelectedTheme(theme)}
-                className={`px-6 py-3 rounded-full ${
-                  selectedTheme === theme
-                    ? "bg-primary/10 border border-primary/20"
-                    : "bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-bold ${
-                    selectedTheme === theme ? "text-primary" : "text-slate-600 dark:text-slate-400"
-                  }`}
-                >
-                  {theme}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
+        {upcomingByCompany.length === 0 && upcomingShared.length === 0 && upcomingByGuide.length === 0 && (
+          <View className="flex-1 items-center justify-center py-20 px-6">
+            <MaterialIcons name="explore-off" size={56} color="#94a3b8" />
+            <Text className="text-base font-semibold text-slate-500 dark:text-slate-400 mt-4 text-center">
+              There are no trips yet
+            </Text>
+            <Text className="text-sm text-slate-400 dark:text-slate-500 mt-1 text-center">
+              Create your first trip or explore featured trips.
+            </Text>
+          </View>
+        )}
 
         {/* Shared Plans */}
-        {data?.shared.items && data.shared.items.length > 0 && (
+        {upcomingShared.length > 0 && (
           <View className="mt-8">
             <View className="px-4 pb-2">
               <View className="flex-row items-center justify-between">
@@ -217,7 +220,7 @@ export default function TravelerHome() {
                   <Text className="text-primary text-sm font-semibold">See all</Text>
                 </Pressable>
               </View>
-              <Text className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
+              <Text className="text-[12px] text-slate-500 dark:text-slate-500 mt-0.5 leading-tight">
                 Join trips created by other travelers and explore new experiences together.
               </Text>
             </View>
@@ -226,7 +229,7 @@ export default function TravelerHome() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 16 }}
             >
-              {data.shared.items.map((plan) => (
+              {upcomingShared.map((plan) => (
                 <TripCard
                   key={plan.tripId}
                   image={resolveImageUrl(plan.imagesUrls?.[0] ?? "")}
@@ -244,7 +247,7 @@ export default function TravelerHome() {
         )}
 
         {/* Plans by Local Guides */}
-        {data?.byGuide.items && data.byGuide.items.length > 0 && (
+        {upcomingByGuide.length > 0 && (
           <View className="mt-8 px-4">
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-[#0c141d] dark:text-white text-lg font-bold leading-tight tracking-tight">
@@ -255,7 +258,7 @@ export default function TravelerHome() {
               </Pressable>
             </View>
             <View className="gap-4">
-              {data.byGuide.items.map((plan) => (
+              {upcomingByGuide.map((plan) => (
                 <Pressable
                   key={plan.tripId}
                   onPress={() => router.push(`/trips/${plan.tripId}`)}
@@ -286,7 +289,7 @@ export default function TravelerHome() {
                       </Text>
                     </View>
                     <View className="flex-row items-center justify-between mt-1">
-                      <Text className="text-primary font-bold text-sm">
+                      <Text className="text-primary font-bold text-sm tracking-wide">
                         {plan.price === 0 ? "Free" : `$${plan.price}`}
                       </Text>
                       <View className="bg-primary px-4 py-2 rounded-lg">
@@ -300,6 +303,7 @@ export default function TravelerHome() {
           </View>
         )}
       </ScrollView>
+      <TripsTodayFAB />
     </View>
   );
 }

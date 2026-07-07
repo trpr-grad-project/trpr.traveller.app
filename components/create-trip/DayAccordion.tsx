@@ -1,4 +1,4 @@
-import DateTimePicker from "@react-native-community/datetimepicker";
+import PlatformDateTimePicker from "@/components/PlatformDateTimePicker";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Platform, Pressable, Text, TextInput, View } from "react-native";
@@ -109,17 +109,14 @@ export default function DayAccordion({
                     <MaterialIcons name="chevron-right" size={18} color="#94a3b8" />
                   </Pressable>
                   {dayDatePickerIndex === i && (
-                    <DateTimePicker
+                    <PlatformDateTimePicker
                       value={dayDatePickerDate}
-                      mode={Platform.OS === "ios" ? "datetime" : "date"}
-                      display={Platform.OS === "ios" ? "spinner" : "default"}
-                      onChange={(_event, selectedDate) => {
+                      onChange={(date) => {
+                        setDayDatePickerDate(date);
+                        onDayDateChange(i, formatRFC3339(date));
                         if (Platform.OS === "android") setDayDatePickerIndex(null);
-                        if (selectedDate) {
-                          setDayDatePickerDate(selectedDate);
-                          onDayDateChange(i, formatRFC3339(selectedDate));
-                        }
                       }}
+                      onCancel={() => setDayDatePickerIndex(null)}
                     />
                   )}
                 </View>

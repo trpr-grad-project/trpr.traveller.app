@@ -1,4 +1,4 @@
-import DateTimePicker from "@react-native-community/datetimepicker";
+import PlatformDateTimePicker from "@/components/PlatformDateTimePicker";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
@@ -473,22 +473,19 @@ export default function CreateTripStep1() {
               <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
             </Pressable>
             {showDatePicker && (
-              <DateTimePicker
+              <PlatformDateTimePicker
                 value={datePickerDate}
-                mode={Platform.OS === "ios" ? "datetime" : "date"}
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                minimumDate={Platform.OS === "ios" ? new Date(new Date().setHours(0, 0, 0, 0)) : new Date()}
-                onChange={(_event, selectedDate) => {
-                  if (Platform.OS === "android") setShowDatePicker(false);
-                  if (selectedDate) {
-                    setDatePickerDate(selectedDate);
-                    draft.setStartDate(formatRFC3339(selectedDate));
-                    if (!draft.endDate || selectedDate > endDatePickerDate) {
-                      setEndDatePickerDate(selectedDate);
-                      draft.setEndDate(formatRFC3339(selectedDate));
-                    }
+                minimumDate={new Date()}
+                onChange={(date) => {
+                  setDatePickerDate(date);
+                  draft.setStartDate(formatRFC3339(date));
+                  if (!draft.endDate || date > endDatePickerDate) {
+                    setEndDatePickerDate(date);
+                    draft.setEndDate(formatRFC3339(date));
                   }
+                  if (Platform.OS === "android") setShowDatePicker(false);
                 }}
+                onCancel={() => setShowDatePicker(false)}
               />
             )}
           </View>
@@ -514,18 +511,15 @@ export default function CreateTripStep1() {
               <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
             </Pressable>
             {showEndDatePicker && (
-              <DateTimePicker
+              <PlatformDateTimePicker
                 value={endDatePickerDate}
-                mode={Platform.OS === "ios" ? "datetime" : "date"}
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                minimumDate={draft.startDate ? new Date(draft.startDate) : Platform.OS === "ios" ? new Date(new Date().setHours(0, 0, 0, 0)) : new Date()}
-                onChange={(_event, selectedDate) => {
+                minimumDate={draft.startDate ? new Date(draft.startDate) : new Date()}
+                onChange={(date) => {
+                  setEndDatePickerDate(date);
+                  draft.setEndDate(formatRFC3339(date));
                   if (Platform.OS === "android") setShowEndDatePicker(false);
-                  if (selectedDate) {
-                    setEndDatePickerDate(selectedDate);
-                    draft.setEndDate(formatRFC3339(selectedDate));
-                  }
                 }}
+                onCancel={() => setShowEndDatePicker(false)}
               />
             )}
           </View>

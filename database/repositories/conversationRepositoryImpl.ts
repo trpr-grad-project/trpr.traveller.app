@@ -7,6 +7,7 @@ function toRow(conversation: ConversationPreview) {
     id: conversation.id,
     title: conversation.title,
     imageUrl: conversation.imageUrl,
+    tripId: conversation.tripId ?? null,
     lastMessageId: conversation.lastMessage?.id ?? null,
     lastMessageText: conversation.lastMessage?.text ?? null,
     lastMessageSenderId: conversation.lastMessage?.senderId ?? null,
@@ -22,6 +23,7 @@ function fromRow(row: {
   id: string;
   title: string | null;
   imageUrl: string | null;
+  tripId: string | null;
   lastMessageId: string | null;
   lastMessageText: string | null;
   lastMessageSenderId: string | null;
@@ -39,6 +41,7 @@ function fromRow(row: {
     id: row.id,
     title: row.title,
     imageUrl: row.imageUrl,
+    tripId: row.tripId ?? undefined,
     lastMessage: row.lastMessageId
       ? {
           id: row.lastMessageId,
@@ -60,13 +63,14 @@ export function createConversationRepository(): IConversationRepository {
       const row = toRow(conversation);
       await db.runAsync(
         `INSERT OR REPLACE INTO conversations
-          (id, title, imageUrl, lastMessageId, lastMessageText, lastMessageSenderId,
+          (id, title, imageUrl, tripId, lastMessageId, lastMessageText, lastMessageSenderId,
            lastMessageSequence, lastMessageSentAt, lastReadSequence, unreadCount, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           row.id,
           row.title,
           row.imageUrl,
+          row.tripId,
           row.lastMessageId,
           row.lastMessageText,
           row.lastMessageSenderId,
@@ -85,13 +89,14 @@ export function createConversationRepository(): IConversationRepository {
         const row = toRow(conversation);
         await db.runAsync(
           `INSERT OR REPLACE INTO conversations
-            (id, title, imageUrl, lastMessageId, lastMessageText, lastMessageSenderId,
+            (id, title, imageUrl, tripId, lastMessageId, lastMessageText, lastMessageSenderId,
              lastMessageSequence, lastMessageSentAt, lastReadSequence, unreadCount, updatedAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             row.id,
             row.title,
             row.imageUrl,
+            row.tripId,
             row.lastMessageId,
             row.lastMessageText,
             row.lastMessageSenderId,
@@ -111,6 +116,7 @@ export function createConversationRepository(): IConversationRepository {
         id: string;
         title: string | null;
         imageUrl: string | null;
+        tripId: string | null;
         lastMessageId: string | null;
         lastMessageText: string | null;
         lastMessageSenderId: string | null;
@@ -132,6 +138,7 @@ export function createConversationRepository(): IConversationRepository {
         id: string;
         title: string | null;
         imageUrl: string | null;
+        tripId: string | null;
         lastMessageId: string | null;
         lastMessageText: string | null;
         lastMessageSenderId: string | null;
@@ -240,6 +247,14 @@ export function createConversationRepository(): IConversationRepository {
           new Date().toISOString(),
           id,
         ],
+      );
+    },
+
+    updateTripId: async (id, tripId) => {
+      const db = await getDatabase();
+      await db.runAsync(
+        `UPDATE conversations SET tripId = ?, updatedAt = ? WHERE id = ?`,
+        [tripId, new Date().toISOString(), id],
       );
     },
   };

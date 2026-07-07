@@ -11,6 +11,12 @@ export function handleReceiveMessage(message: unknown): void {
   });
 }
 
+export async function handleNewChatCreated(payload: { id: string }): Promise<void> {
+  if (!payload?.id) return;
+  console.log("New chat created, syncing conversation", payload.id);
+  await chatSync.syncConversationMessages(payload.id);
+}
+
 export function handleReconnected(): void {
   console.log("SignalR reconnected, syncing conversations");
   chatSync.syncConversations().catch((error) => {

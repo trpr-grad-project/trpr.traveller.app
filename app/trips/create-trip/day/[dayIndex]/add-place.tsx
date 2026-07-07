@@ -28,6 +28,7 @@ export default function AddPlaceScreen() {
 
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [myPlacesMode, setMyPlacesMode] = useState(false);
 
   const draftDays = useTripDraftStore((s) => s.days);
   const addPlacesToDay = useTripDraftStore((s) => s.addPlacesToDay);
@@ -43,7 +44,7 @@ export default function AddPlaceScreen() {
     isLoading,
     isError,
     error,
-  } = usePlacesInfinite(search);
+  } = usePlacesInfinite(search, 20, myPlacesMode);
 
   useEffect(() => {
     if (isError) {
@@ -105,9 +106,23 @@ export default function AddPlaceScreen() {
 
       <View className="flex-row items-center border-b border-slate-100 dark:border-slate-800 px-4 pt-4 pb-4">
         <BackButton iconSize={18} iconName="arrow-back-ios-new" />
-        <Text className="flex-1 text-center mr-8 text-lg font-bold text-[#0c141d] dark:text-white">
+        <Text className="flex-1 text-center text-lg font-bold text-[#0c141d] dark:text-white">
           Add Places - Day {idx + 1}
         </Text>
+        <Pressable
+          onPress={() => {
+            setMyPlacesMode((prev) => !prev);
+            setSearch("");
+            setSelectedIds(new Set());
+          }}
+          className="p-1"
+        >
+          <MaterialIcons
+            name={myPlacesMode ? "person-pin" : "person-outline"}
+            size={24}
+            color={myPlacesMode ? "#359EFF" : "#94a3b8"}
+          />
+        </Pressable>
       </View>
 
       <View className="px-4 pt-3 pb-2">

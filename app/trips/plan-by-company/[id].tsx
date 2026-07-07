@@ -9,6 +9,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useTripDetails } from "@/hooks/useTripDetails";
 import { useJoinTrip } from "@/hooks/useJoinTrip";
+import { checkSufficientBalance } from "@/utils/balanceCheck";
 import { resolveImageUrl } from "@/utils/constants";
 import type { TripResponse } from "@/types";
 
@@ -281,6 +282,8 @@ export default function PlanByCompanyScreen() {
           isLoading={joinMutation.isPending}
           onPress={async () => {
             if (!isCreator && !isApproved && !isPending) {
+              const hasBalance = await checkSufficientBalance(trip.price);
+              if (!hasBalance) return;
               setJoinRequested(true);
               try {
                 await joinMutation.mutateAsync(id);

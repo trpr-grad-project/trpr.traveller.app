@@ -91,13 +91,6 @@ export default function GuideProfileScreen() {
               <MaterialIcons name="person-add" size={18} color="#359EFF" />
               <Text className="text-sm font-bold text-primary">Follow</Text>
             </Pressable>
-            <Pressable
-              onPress={() => router.push(`/chat/${id}`)}
-              className="flex-1 flex-row items-center justify-center gap-2 h-12 rounded-xl bg-primary"
-            >
-              <MaterialIcons name="chat" size={18} color="white" />
-              <Text className="text-sm font-bold text-white">Message</Text>
-            </Pressable>
           </View>
         </View>
 

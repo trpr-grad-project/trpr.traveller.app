@@ -8,6 +8,7 @@ export const ENDPOINTS = {
 
   profile: {
     main: "/Profile/me",
+    myProfile: "/Profile/my-profile",
     formData: "/Profile/form-data",
     resetPassword: "/Profile/me/password-reset",
   },
@@ -31,11 +32,14 @@ export const ENDPOINTS = {
     start: "/trip/start/",
     end: "/trip/end/",
     acceptParticipant: "/trip/accept",
+    suggestion: "/trip/suggestion",
+    acceptBid: "/bidding",
   },
 
   place: {
     formData: "/places/form-data",
     search: "/places",
+    myPlaces: "/places/me",
   },
 
   users: {
@@ -43,4 +47,10 @@ export const ENDPOINTS = {
   },
 
   notifications: "/notifications",
+
+  payments: {
+    charge: "/payments",
+    balance: "/payments/balance",
+    history: "/payments/history",
+  },
 } as const;

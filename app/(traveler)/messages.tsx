@@ -3,10 +3,9 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StatusBar, Text
 import { MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { useConversations } from "@/hooks/useConversations";
-
-const FILTERS = ["All", "Groups", "Unread"];
 
 function formatRelativeTime(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -45,22 +44,21 @@ export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
 
   const { conversations, isLoading, isRefreshing, refresh, hasNextPage, loadMore } = useConversations();
 
+  useFocusEffect(
+    useCallback(() => {
+      refresh().catch(console.error);
+    }, [refresh]),
+  );
+
   const filtered = useMemo(() => {
-    let list = conversations;
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((c) => (c.title ?? "").toLowerCase().includes(q));
-    }
-    if (filter === "Unread") {
-      list = list.filter((c) => parseInt(c.unreadCount, 10) > 0);
-    }
-    return list;
-  }, [conversations, search, filter]);
+    if (!search.trim()) return conversations;
+    const q = search.toLowerCase();
+    return conversations.filter((c) => (c.title ?? "").toLowerCase().includes(q));
+  }, [conversations, search]);
 
   const renderItem = ({ item: conv }: { item: (typeof conversations)[number] }) => {
     const unread = parseInt(conv.unreadCount, 10);
@@ -84,14 +82,14 @@ export default function MessagesScreen() {
               className="w-14 h-14 rounded-xl items-center justify-center"
               style={{ backgroundColor: avatarColor(conv.id) }}
             >
-              <Text className="text-white text-lg font-bold">{getInitials(conv.title)}</Text>
+              <Text className="text-white text-lg font-bold tracking-wide">{getInitials(conv.title)}</Text>
             </View>
           )}
         </View>
         <View className="flex-1 ml-4">
           <View className="flex-row justify-between items-baseline mb-0.5">
             <Text
-              className="font-bold text-[#0c141d] dark:text-white flex-1 mr-2"
+              className="font-bold text-[#0c141d] dark:text-white flex-1 mr-2 tracking-wide"
               numberOfLines={1}
             >
               {conv.title ?? "Group Chat"}
@@ -102,7 +100,7 @@ export default function MessagesScreen() {
           </View>
           <View className="flex-row justify-between items-center">
             <Text
-              className="text-sm text-slate-500 dark:text-slate-400 flex-1 mr-2 leading-5"
+              className="text-sm text-slate-500 dark:text-slate-400 flex-1 mr-2 leading-5 tracking-wide"
               numberOfLines={1}
             >
               {conv.lastMessage?.text ?? "No messages yet"}
@@ -138,25 +136,6 @@ export default function MessagesScreen() {
           />
         </View>
 
-        <View className="px-4 pb-4">
-          <View className="flex-row bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-            {FILTERS.map((f) => (
-              <Pressable
-                key={f}
-                onPress={() => setFilter(f)}
-                className={`flex-1 py-1.5 rounded-lg ${filter === f ? "bg-white dark:bg-slate-700 shadow-sm" : ""}`}
-              >
-                <Text
-                  className={`text-xs font-semibold text-center ${
-                    filter === f ? "text-primary" : "text-slate-500 dark:text-slate-400"
-                  }`}
-                >
-                  {f}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
       </View>
 
       <Pressable
@@ -167,7 +146,7 @@ export default function MessagesScreen() {
           <MaterialIcons name="photo-camera" size={22} color="#359EFF" />
         </View>
         <View className="flex-1">
-          <Text className="text-sm font-bold text-[#0c141d] dark:text-white">Recognize a monument</Text>
+          <Text className="text-sm font-bold text-[#0c141d] dark:text-white tracking-wide">Recognize a monument</Text>
           <Text className="text-xs text-slate-500 dark:text-slate-400">Snap a photo to identify any monument</Text>
         </View>
         <MaterialIcons name="chevron-right" size={20} color="#94a3b8" />
@@ -202,7 +181,7 @@ export default function MessagesScreen() {
               <Text className="text-lg font-semibold text-slate-500 dark:text-slate-400 mt-4 text-center">
                 No conversations yet
               </Text>
-              <Text className="text-sm text-slate-400 dark:text-slate-500 mt-1 text-center">
+              <Text className="text-sm text-slate-400 dark:text-slate-500 mt-1 text-center tracking-wide">
                 Find people to start chatting
               </Text>
             </View>
@@ -225,7 +204,7 @@ export default function MessagesScreen() {
         }}
       >
         <MaterialIcons name="auto-awesome" size={20} color="white" />
-        <Text className="text-white text-sm font-semibold">Trip Assistant</Text>
+        <Text className="text-white text-sm font-semibold tracking-wide">Trip Assistant</Text>
       </Pressable>
     </View>
   );

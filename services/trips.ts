@@ -53,6 +53,13 @@ export const tripService = {
     return response.data;
   },
 
+  respondToBid: async (tripId: string, biddingId: string, _isApproved: boolean) => {
+    const response = await api.post(
+      `${ENDPOINTS.trip.acceptBid}/${tripId}/select/${biddingId}`,
+    );
+    return response.data;
+  },
+
   uploadImages: async (formData: FormData) => {
     const response = await api.post(ENDPOINTS.trip.uploadImages, formData, {
       headers: { "Content-Type": "multipart/form-data" },
