@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -29,6 +29,7 @@ import { useRespondToParticipant } from "@/hooks/useRespondToParticipant";
 import { useRespondToBid } from "@/hooks/useRespondToBid";
 import { STATUS_TO_LABEL, STATUS_COLORS } from "@/utils/tripSegments";
 import { resolveImageUrl } from "@/utils/constants";
+import { usePendingJoins } from "@/store/pendingJoins";
 import type { TripResponse } from "@/types";
 
 function getTripLocation(trip: TripResponse): string {
@@ -86,6 +87,13 @@ export default function TripDetailsScreen() {
   const [expandedDesc, setExpandedDesc] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const screenWidth = Dimensions.get("window").width;
+  const pendingJoinIds = usePendingJoins((s) => s.ids);
+
+  useEffect(() => {
+    if (trip?.approvedParticipants?.some((p) => p.id === user?.id)) {
+      usePendingJoins.getState().remove(id ?? "");
+    }
+  }, [trip, user, id]);
 
   const handleImageScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -139,7 +147,8 @@ export default function TripDetailsScreen() {
   const todayStr = new Date().toISOString().slice(0, 10);
   const isStartDay = trip.startDate?.startsWith(todayStr) ?? false;
   const isApproved = trip.approvedParticipants?.some((p) => p.id === user?.id) ?? false;
-  const isPending = trip.pendingParticipants?.some((p) => p.id === user?.id) ?? false;
+  const isPending = (trip.pendingParticipants?.some((p) => p.id === user?.id) ?? false)
+    || pendingJoinIds.includes(id ?? "");
   const tripDays = parseInt(trip.tripTime, 10) || 1;
   const endDateObj = new Date(trip.startDate);
   endDateObj.setDate(endDateObj.getDate() + tripDays - 1);
@@ -279,7 +288,7 @@ export default function TripDetailsScreen() {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: isStarted ? 200 : 120 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -355,7 +364,7 @@ export default function TripDetailsScreen() {
           </View>
 
           {/* Host Card */}
-          {creator && (
+          {creator && !isCreator && (
             <View className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700 mb-6">
               <View className="flex-row items-center gap-4">
                 <View className="w-14 h-14 rounded-xl bg-primary/10 items-center justify-center">
@@ -365,7 +374,7 @@ export default function TripDetailsScreen() {
                 </View>
                 <View className="flex-1">
                   <View className="flex-row items-center gap-1.5">
-                    <Text className="text-base font-bold text-[#0c141d] dark:text-white">
+                    <Text className="text-base font-bold text-[#0c141d] dark:text-white flex-shrink" numberOfLines={1}>
                       {creator.firstName} {creator.lastName}
                     </Text>
                     <MaterialIcons name="verified" size={16} color="#22c55e" />
@@ -828,6 +837,7 @@ export default function TripDetailsScreen() {
               setJoinRequested(true);
               try {
                 await joinMutation.mutateAsync(id);
+                usePendingJoins.getState().add(id);
               } catch {
                 setJoinRequested(false);
               }

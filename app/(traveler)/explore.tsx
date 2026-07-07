@@ -1,18 +1,15 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StatusBar, Text, TextInput, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useHomeTrips } from "@/hooks/useHomeTrips";
+import { useTripFormData } from "@/hooks/useTripFormData";
 import { resolveImageUrl } from "@/utils/constants";
 import type { MyTrip } from "@/types";
 
-const CATEGORIES = ["All", "Adventure", "Culture", "Beach", "Nature", "Historical"];
-
 const SORT_OPTIONS = [
-  { label: "Popular", value: "popular" },
-  { label: "Highest Rated", value: "rating" },
   { label: "Price: Low to High", value: "price_asc" },
   { label: "Price: High to Low", value: "price_desc" },
 ];
@@ -52,7 +49,7 @@ function mapTrip(item: MyTrip, section: SectionKey): TripCardData {
     location: item.segments?.[0]?.places?.[0]?.governorate?.name ?? "",
     duration: item.tripTime || "",
     price: item.price === 0 ? "Free" : `$${item.price}`,
-    category: (item.theme ?? "").toUpperCase(),
+    category: item.theme ?? "",
     type,
     typeValue,
     image: resolveImageUrl(item.imagesUrls?.[0] ?? ""),
@@ -74,10 +71,16 @@ export default function ExploreScreen() {
   const [search, setSearch] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
-  const [selectedSort, setSelectedSort] = useState("popular");
+  const [selectedSort, setSelectedSort] = useState("price_asc");
   const [selectedType, setSelectedType] = useState("all");
 
+  const params = useLocalSearchParams<{ type?: string }>();
+  useEffect(() => {
+    if (params.type) setSelectedType(params.type);
+  }, [params.type]);
+
   const { data, isLoading, isError, refetch } = useHomeTrips();
+  const { data: tripFormData } = useTripFormData();
 
   const allTrips = useMemo<TripCardData[]>(() => {
     if (!data) return [];
@@ -88,19 +91,36 @@ export default function ExploreScreen() {
     return result;
   }, [data]);
 
+  const themeChips = useMemo(() => {
+    const themes = (tripFormData?.themes ?? []).map((t) => t.name).sort();
+    return ["All", ...themes];
+  }, [tripFormData]);
+
   const selectedTypeLabel = TYPE_OPTIONS.find((o) => o.value === selectedType)?.label ?? "All Trips";
 
   const today = new Date().toISOString().slice(0, 10);
 
   const filtered = allTrips.filter((t) => {
     if (t.startDate < today) return false;
-    if (selectedCat !== "All" && t.category !== selectedCat.toUpperCase()) return false;
+    if (selectedCat !== "All" && t.category !== selectedCat) return false;
     if (selectedType === "company" && t.typeValue !== "company") return false;
     if (selectedType === "guide" && t.typeValue !== "guide") return false;
     if (selectedType === "shared" && t.typeValue !== "shared") return false;
     if (search && !t.title.toLowerCase().includes(search.toLowerCase()) && !t.location.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const sorted = useMemo(() => {
+    const list = [...filtered];
+    if (selectedSort === "price_asc" || selectedSort === "price_desc") {
+      list.sort((a, b) => {
+        const pa = a.price === "Free" ? 0 : parseFloat(a.price.replace("$", "")) || 0;
+        const pb = b.price === "Free" ? 0 : parseFloat(b.price.replace("$", "")) || 0;
+        return selectedSort === "price_asc" ? pa - pb : pb - pa;
+      });
+    }
+    return list;
+  }, [filtered, selectedSort]);
 
   if (isLoading && !data) {
     return (
@@ -144,17 +164,15 @@ export default function ExploreScreen() {
           </Text>
         </View>
 
-        <View className="relative pb-4">
-          <View className="absolute inset-y-0 left-0 pl-3 items-center justify-center z-10">
+        <View className="pb-4">
+          <View className="flex-row items-center bg-slate-100 dark:bg-slate-800 rounded-xl pl-3">
             <MaterialIcons name="search" size={20} color="#94a3b8" />
-          </View>
-          <View className="bg-slate-100 dark:bg-slate-800 rounded-xl">
             <TextInput
               value={search}
               onChangeText={setSearch}
               placeholder="Search trips or destinations"
               placeholderTextColor="#94a3b8"
-              className="w-full pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white"
+              className="flex-1 pl-2 pr-4 py-3 text-sm text-slate-900 dark:text-white"
             />
           </View>
         </View>
@@ -166,7 +184,7 @@ export default function ExploreScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, gap: 8, alignItems: "flex-start" }}
         >
-          {CATEGORIES.map((cat) => (
+          {themeChips.map((cat) => (
             <Pressable
               key={cat}
               onPress={() => setSelectedCat(cat)}
@@ -187,7 +205,7 @@ export default function ExploreScreen() {
           className="flex-row items-center gap-1"
         >
           <Text className="text-[#4F4F4F] dark:text-slate-300 text-sm font-medium">
-            Sort by: <Text className="text-primary ml-1 tracking-wide">{SORT_OPTIONS.find((o) => o.value === selectedSort)?.label ?? "Popular"}</Text>
+            Sort by: <Text className="text-primary ml-1 tracking-wide">{SORT_OPTIONS.find((o) => o.value === selectedSort)?.label ?? "Price: Low to High"}</Text>
           </Text>
           <MaterialIcons name="expand-more" size={18} color="#359EFF" />
         </Pressable>
@@ -269,7 +287,7 @@ export default function ExploreScreen() {
           </View>
         )}
 
-        {filtered.length === 0 && (
+        {sorted.length === 0 && (
           <View className="items-center py-12">
             <MaterialIcons name="search-off" size={48} color="#94a3b8" />
             <Text className="text-sm text-slate-400 dark:text-slate-500 mt-3 text-center">
@@ -278,7 +296,7 @@ export default function ExploreScreen() {
           </View>
         )}
 
-        {filtered.map((trip) => (
+        {sorted.map((trip) => (
           <Pressable
             key={trip.id}
             onPress={() => router.push(`/trips/${trip.id}`)}
@@ -298,7 +316,7 @@ export default function ExploreScreen() {
                 <Text className="font-bold text-lg text-[#0c141d] dark:text-white leading-tight">{trip.title}</Text>
                 <Text className="text-sm text-slate-500 font-medium">{trip.location ? `${trip.location} · ` : ""}{trip.duration}</Text>
               </View>
-              <Text className="text-lg font-bold text-primary">{trip.price}</Text>
+              <Text className="text-lg font-bold text-green-500">{trip.price}</Text>
             </View>
           </Pressable>
         ))}

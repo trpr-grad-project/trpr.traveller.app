@@ -117,8 +117,8 @@ export default function UserProfileScreen() {
             </View>
           )}
 
-          <View className="flex-row items-center gap-1.5">
-            <Text className="text-xl font-bold text-[#0c141d] dark:text-white">
+          <View className="flex-row items-center gap-1.5 max-w-full">
+            <Text className="text-xl font-bold text-[#0c141d] dark:text-white flex-shrink" numberOfLines={1}>
               {profile.firstName} {profile.lastName}
             </Text>
             {profile.isVerified && (

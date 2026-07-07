@@ -119,7 +119,7 @@ export default function PlanByGuideScreen() {
                 <Text className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">{trip.tripTime}</Text>
               )}
             </View>
-            <Text className="text-2xl font-bold text-primary">
+            <Text className="text-2xl font-bold text-green-500">
               {trip.price === 0 ? "Free" : `$${trip.price}`}
             </Text>
           </View>

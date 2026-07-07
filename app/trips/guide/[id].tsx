@@ -120,7 +120,7 @@ export default function GuideProfileScreen() {
                 </View>
                 <Text className="text-sm font-bold text-[#0c141d] dark:text-white leading-tight">{trip.title}</Text>
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-sm font-bold text-primary">{trip.price}</Text>
+                  <Text className="text-sm font-bold text-green-500">{trip.price}</Text>
                   <Text className="text-[10px] text-slate-400">{trip.duration}</Text>
                 </View>
               </Pressable>

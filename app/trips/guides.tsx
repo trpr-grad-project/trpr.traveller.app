@@ -104,7 +104,7 @@ export default function GuidesScreen() {
                 <View className="flex-row justify-between items-start">
                   <View className="flex-1">
                     <Text className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{guide.name}</Text>
-                    <Text className="text-xs text-primary font-bold uppercase tracking-wide mt-0.5">{guide.specialty}</Text>
+                    <Text className="text-xs text-primary font-bold uppercase mt-0.5">{guide.specialty}</Text>
                   </View>
                   <View className="flex-row items-center gap-1 bg-yellow-50 dark:bg-yellow-900/20 px-1.5 py-0.5 rounded-md">
                     <MaterialIcons name="star" size={14} color="#eab308" />

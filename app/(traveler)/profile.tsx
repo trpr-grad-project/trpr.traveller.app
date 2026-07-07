@@ -1,22 +1,21 @@
-import React from "react";
-import { Image, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
+import React, { useMemo } from "react";
+import { ActivityIndicator, Image, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 import { router } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/context/AuthContext";
+import api from "@/services/api";
+import { ENDPOINTS } from "@/services/endpoints";
+import { tripService } from "@/services/trips";
+import { resolveImageUrl } from "@/utils/constants";
+import type { ProfileMyProfileResponse } from "@/types";
 
-const CREATED_PLANS = [
-  { id: "1", title: "Luxor Ancient Wonders", tag: "Historical", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCuvSvG6yW3GPtGrB5y0OG69QGWi70n2y_eTIJ8NRAQSF0_UA6iauWcG9biqzIOLJNmd2qH0e_RUGxt9a2zIhykR8tJhetFP7vfefnwvfy6kSC2gXR8EEfTAidldgoY2aQABAg9HJh8ahSGjS0OL1rGQ_5H-vXb2W7C7ttTh1UzeBdFQIFo4LRgTEkEG7h9ELM-HEi6UX9ND0vWz2joEKaGyxkgGDgGv5C8E3yINsLQc_w5TPWfvEdUBGgz7g_-YEySUXJXX8R81be5", members: "1/5", isPublic: true },
-  { id: "2", title: "Cairo Night Markets", tag: "Culture", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDDhMcBHM7uZqiaN9CTWAIeg69VIoZC5se9-ebAw9ms2pOoIPMcnqY8Loun7PhuNIEfDk4kJsQN7D988C8RlFFBrS9ws0GdhSIWE5CoYLcIwfoCE8HBMAxPPz_FhViIKBCEI6l7564jH7pJqFZU_xseH9JCXua6YeUM57yBUP_Hpzp0x-oL2sTrgmbwX0ZfaKuoQMQIIwfpgNjCeH2V45nNdSraFXYrPSE36Opxs3FpJPMrdWxdP6joKcHUtSPzVBvFdkiaJUqP44de", members: "Private", isPublic: false },
-];
-
-const SAVED_TRIPS = [
-  { id: "1", title: "Dahab Blue Hole", tag: "Adventure", duration: "4 days", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDDhMcBHM7uZqiaN9CTWAIeg69VIoZC5se9-ebAw9ms2pOoIPMcnqY8Loun7PhuNIEfDk4kJsQN7D988C8RlFFBrS9ws0GdhSIWE5CoYLcIwfoCE8HBMAxPPz_FhViIKBCEI6l7564jH7pJqFZU_xseH9JCXua6YeUM57yBUP_Hpzp0x-oL2sTrgmbwX0ZfaKuoQMQIIwfpgNjCeH2V45nNdSraFXYrPSE36Opxs3FpJPMrdWxdP6joKcHUtSPzVBvFdkiaJUqP44de" },
-  { id: "2", title: "Alexandria Coast", tag: "Relax", duration: "2 days", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDShsx8ILlSwntA8HJBSPvIrFi9Yo56bJPBHMAhD5yvI6n3VdRvJQnbirJcS-4luNvIkcJ-IlbO4nLB4jrKC2aejMkvtUZG01fpd9E0MspnKo4mbNpIAoXFeYFIJXcVyEqSekaY7BSA-W3tqbutkJ77hCIKksBvv33d6ocZG91dZumuz2pAhv24peeSYmFGOdKw74_O71sXSBGDbn8zVvEar4cD_D7mZ9REYkZRPfLh3orrE7aX9gIK29Qmw-ddDJZZ7K3XGYAhX9aL" },
-  { id: "3", title: "The Valley Peaks", tag: "Hiking", duration: "5 days", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCuvSvG6yW3GPtGrB5y0OG69QGWi70n2y_eTIJ8NRAQSF0_UA6iauWcG9biqzIOLJNmd2qH0e_RUGxt9a2zIhykR8tJhetFP7vfefnwvfy6kSC2gXR8EEfTAidldgoY2aQABAg9HJh8ahSGjS0OL1rGQ_5H-vXb2W7C7ttTh1UzeBdFQIFo4LRgTEkEG7h9ELM-HEi6UX9ND0vWz2joEKaGyxkgGDgGv5C8E3yINsLQc_w5TPWfvEdUBGgz7g_-YEySUXJXX8R81be5" },
-];
+function getInitials(firstName?: string, lastName?: string): string {
+  return `${firstName?.charAt(0) ?? ""}${lastName?.charAt(0) ?? ""}`.toUpperCase() || "?";
+}
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -24,9 +23,46 @@ export default function ProfileScreen() {
   const isDark = colorScheme === "dark";
   const { user } = useAuth();
 
-  const firstName = user?.firstName ?? "";
-  const lastName = user?.lastName ?? "";
-  const initial = firstName.charAt(0).toUpperCase();
+  const { data: myProfile, isLoading } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: async (): Promise<ProfileMyProfileResponse> => {
+      const res = await api.get(ENDPOINTS.profile.myProfile);
+      return res.data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: myTrips } = useQuery({
+    queryKey: ["my-trips"],
+    queryFn: () => tripService.getMyTrips(),
+    enabled: !!user,
+  });
+
+  const createdPlans = useMemo(() => {
+    if (!myTrips || !user) return [];
+    return myTrips
+      .filter((trip) => trip.createdByUser === user.id)
+      .map((trip) => ({
+        id: trip.tripId,
+        title: trip.title,
+        tag: trip.theme,
+        image: resolveImageUrl(trip.imagesUrls?.[0] ?? ""),
+        isPublic: trip.tripVisibility === "Public",
+        members: trip.tripVisibility === "Public" ? `${trip.maxParticipantsCount} max` : "Private",
+      }));
+  }, [myTrips, user]);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-background-light dark:bg-background-dark items-center justify-center" style={{ paddingTop: insets.top }}>
+        <StatusBar translucent backgroundColor="transparent" barStyle={isDark ? "light-content" : "dark-content"} />
+        <ActivityIndicator size="large" color="#359EFF" />
+      </View>
+    );
+  }
+
+  const pd = myProfile?.profile;
+  const initials = getInitials(myProfile?.firstName, myProfile?.lastName);
 
   return (
     <View className="flex-1 bg-background-light dark:bg-background-dark" style={{ paddingTop: insets.top }}>
@@ -45,21 +81,88 @@ export default function ProfileScreen() {
 
           <View className="w-full flex-col items-center">
             <View className="relative mb-4">
-              <View className="w-24 h-24 rounded-full bg-primary items-center justify-center border-4 border-white dark:border-neutral-dark shadow-md">
-                <Text className="text-white text-4xl font-bold">{initial}</Text>
-              </View>
+              {pd?.avatarUrl ? (
+                <View className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-neutral-dark shadow-md">
+                  <Image source={{ uri: pd.avatarUrl }} className="w-full h-full" resizeMode="cover" />
+                </View>
+              ) : (
+                <View className="w-24 h-24 rounded-full bg-primary items-center justify-center border-4 border-white dark:border-neutral-dark shadow-md">
+                  <Text className="text-white text-4xl font-bold">{initials}</Text>
+                </View>
+              )}
               <Pressable className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary border-2 border-white items-center justify-center shadow-sm">
                 <MaterialIcons name="photo-camera" size={14} color="white" />
               </Pressable>
             </View>
-            <Text className="text-2xl font-bold font-jakarta-bold text-[#0c141d] dark:text-white w-full text-center tracking-wide" numberOfLines={1}>{`${firstName} ${lastName}`.trim() || "Traveler"}</Text>
-            <View className="flex-row items-center gap-1 mt-1">
-              <MaterialIcons name="star" size={16} color="#eab308" />
-              <Text className="text-sm font-bold text-slate-700 dark:text-slate-200">4.9</Text>
-              <Text className="text-sm text-slate-400 font-medium">(24 reviews)</Text>
-            </View>
+            <Text className="text-2xl font-bold font-jakarta-bold text-[#0c141d] dark:text-white w-full text-center tracking-wide" numberOfLines={1}>
+              {myProfile ? `${myProfile.firstName} ${myProfile.lastName}`.trim() : "Traveler"}
+            </Text>
+            {pd?.rating != null ? (
+              <View className="flex-row items-center gap-1 mt-1">
+                <MaterialIcons name="star" size={16} color="#eab308" />
+                <Text className="text-sm font-bold text-slate-700 dark:text-slate-200">{pd.rating.toFixed(1)}</Text>
+                {pd.reviews?.length > 0 && (
+                  <Text className="text-sm text-slate-400 font-medium">({pd.reviews.length} reviews)</Text>
+                )}
+              </View>
+            ) : (
+              <View className="flex-row items-center gap-1 mt-1">
+                <Text className="text-sm text-slate-400 font-medium">—</Text>
+              </View>
+            )}
           </View>
         </View>
+
+        {/* Bio */}
+        {pd?.bio ? (
+          <View className="mx-4 mb-4 bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-50 dark:border-slate-700">
+            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Bio</Text>
+            <Text className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{pd.bio}</Text>
+          </View>
+        ) : null}
+
+        {/* Languages */}
+        {pd?.languages?.length > 0 && (
+          <View className="mx-4 mb-4">
+            <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Languages</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {pd.languages.map((lang) => (
+                <View key={lang.id} className="flex-row items-center gap-1.5 bg-white dark:bg-slate-800 rounded-full px-3.5 py-2 border border-slate-50 dark:border-slate-700">
+                  <Text className="text-sm font-medium text-slate-700 dark:text-slate-300">{lang.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Interests */}
+        {pd?.interests?.length > 0 && (
+          <View className="mx-4 mb-4">
+            <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Interests</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {pd.interests.map((interest) => (
+                <View key={interest.id} className="flex-row items-center gap-1.5 bg-primary/10 rounded-full px-3.5 py-2 border border-primary/20">
+                  <Text className="text-sm font-medium text-primary">{interest.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Vibes */}
+        {pd?.vibes?.length > 0 && (
+          <View className="mx-4 mb-4">
+            <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Vibes</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {pd.vibes.map((vibe) => (
+                <View key={vibe.id} className="bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-50 dark:border-slate-700" style={{ minWidth: 120 }}>
+                  <Text className="text-sm font-bold text-slate-800 dark:text-white">{vibe.name}</Text>
+                  <Text className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">{vibe.description}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         <View className="px-6 mb-6">
           <Pressable
@@ -73,7 +176,7 @@ export default function ProfileScreen() {
                 </View>
                 <View>
                   <Text className="text-sm font-bold text-[#0c141d] dark:text-white">My Trips</Text>
-                  <Text className="text-xs text-slate-400 mt-0.5">11 total trips</Text>
+                  <Text className="text-xs text-slate-400 mt-0.5">View your trips</Text>
                 </View>
               </View>
               <MaterialIcons name="chevron-right" size={20} color="#cbd5e1" />
@@ -89,10 +192,10 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 16 }}>
-            {CREATED_PLANS.map((plan) => (
+            {createdPlans.slice(0, 5).map((plan) => (
               <Pressable
                 key={plan.id}
-                onPress={() => router.push(`/trips/planCreated/${plan.id}`)}
+                onPress={() => router.push(`/trips/${plan.id}`)}
                 className="min-w-[240px] bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-50 dark:border-slate-700 shadow-sm"
               >
                 <View className="flex-row gap-3">
@@ -122,61 +225,27 @@ export default function ProfileScreen() {
           </ScrollView>
         </View>
 
-        <View className="mb-6">
-          <View className="flex-row items-center justify-between px-6 mb-4">
-            <Text className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Saved Trips</Text>
-            <Pressable onPress={() => router.push("/profile/saved-trips")}>
-              <Text className="text-primary text-[10px] font-bold uppercase tracking-wider">View All</Text>
-            </Pressable>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 16 }}>
-            {SAVED_TRIPS.map((trip) => (
-              <Pressable key={trip.id} className="min-w-[140px]">
-                <View className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden mb-3 shadow-sm">
-                  <Image source={{ uri: trip.image }} className="w-full h-full" resizeMode="cover" />
-                  <View className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full">
-                    <MaterialIcons name="bookmark" size={16} color="#359EFF" />
-                  </View>
-                </View>
-                <Text className="text-xs font-bold text-[#0c141d] dark:text-white truncate">{trip.title}</Text>
-                <Text className="text-[10px] text-slate-400 mt-0.5">{trip.tag} • {trip.duration}</Text>
+        {/* Reputations */}
+        {pd?.reviews?.length > 0 && (
+          <View className="px-6 mb-4">
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Reputation</Text>
+              <Pressable onPress={() => router.push("/profile/reviews")}>
+                <Text className="text-primary text-[10px] font-bold uppercase tracking-wider">View all</Text>
               </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-
-        <View className="px-6">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Reputation</Text>
-            <Pressable onPress={() => router.push("/profile/reviews")}>
-              <Text className="text-primary text-[10px] font-bold uppercase tracking-wider">View all</Text>
-            </Pressable>
-          </View>
-          <View className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-50 dark:border-slate-700 shadow-sm">
-            <Text className="text-base font-bold text-[#0c141d] dark:text-white mb-4">Plan Reviews</Text>
-            <View className="flex-row gap-4">
-              <View className="w-12 h-12 rounded-full overflow-hidden bg-primary/10 items-center justify-center flex-shrink-0">
-                <Text className="text-lg font-bold text-primary">A</Text>
-              </View>
-              <View className="flex-1">
-                <View className="flex-row items-center justify-between mb-1">
-                  <Text className="text-sm font-bold text-[#0c141d] dark:text-white">Amira K.</Text>
-                  <View className="flex-row">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <MaterialIcons key={i} name="star" size={14} color="#eab308" />
-                    ))}
-                  </View>
-                </View>
-                <Text className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
-                  {"\u201C"}Excellent coordination for the Luxor Ancient Wonders plan!{"\u201D"}
-                </Text>
-                <Text className="text-[10px] text-slate-300 dark:text-slate-600 mt-2 uppercase font-bold tracking-tight">
-                  Luxor Ancient Wonders
-                </Text>
-              </View>
             </View>
+            {pd.reviews.slice(0, 3).map((review, index) => (
+              <View key={index} className="bg-white dark:bg-slate-800 rounded-xl p-3.5 border border-slate-50 dark:border-slate-700 mb-2">
+                <View className="flex-row items-start gap-2">
+                  <View className="w-6 h-6 rounded-full bg-primary/10 items-center justify-center mt-0.5 shrink-0">
+                    <MaterialIcons name="format-quote" size={12} color="#359EFF" />
+                  </View>
+                  <Text className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed flex-1">{review}</Text>
+                </View>
+              </View>
+            ))}
           </View>
-        </View>
+        )}
       </ScrollView>
     </View>
   );

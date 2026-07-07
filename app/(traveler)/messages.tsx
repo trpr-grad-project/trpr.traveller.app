@@ -89,7 +89,7 @@ export default function MessagesScreen() {
         <View className="flex-1 ml-4">
           <View className="flex-row justify-between items-baseline mb-0.5">
             <Text
-              className="font-bold text-[#0c141d] dark:text-white flex-1 mr-2 tracking-wide"
+              className="font-bold text-[#0c141d] dark:text-white flex-1 mr-2 tracking-wide flex-shrink"
               numberOfLines={1}
             >
               {conv.title ?? "Group Chat"}
@@ -100,7 +100,7 @@ export default function MessagesScreen() {
           </View>
           <View className="flex-row justify-between items-center">
             <Text
-              className="text-sm text-slate-500 dark:text-slate-400 flex-1 mr-2 leading-5 tracking-wide"
+              className="text-sm text-slate-500 dark:text-slate-400 flex-1 mr-2 leading-5 tracking-wide flex-shrink"
               numberOfLines={1}
             >
               {conv.lastMessage?.text ?? "No messages yet"}

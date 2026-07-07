@@ -66,6 +66,14 @@ export function createNotificationRepository(): INotificationRepository {
       return (row?.count ?? 0) > 0;
     },
 
+    getById: async (id) => {
+      const db = await getDatabase();
+      return db.getFirstAsync<Notification>(
+        `SELECT * FROM notifications WHERE id = ?`,
+        [id],
+      );
+    },
+
     clear: async () => {
       const db = await getDatabase();
       await db.runAsync("DELETE FROM notifications");
