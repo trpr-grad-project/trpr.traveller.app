@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -28,8 +27,6 @@ export default function TravelerHome() {
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [search, setSearch] = useState("");
-
   const { data, isLoading, isError, refetch, isRefetching } = useHomeTrips();
   const { hasUnread } = useUnreadCount();
   const queryClient = useQueryClient();
@@ -110,24 +107,8 @@ export default function TravelerHome() {
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#359EFF" />
         }
       >
-        {/* Search + Create Plan */}
-        <View className="px-4 py-2 mt-2 gap-4">
-          <Pressable
-            onPress={() => router.push("/trips/locationSelect")}
-            className="flex-row items-center h-12 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 px-4"
-            style={SOFT_SHADOW}
-          >
-            <MaterialIcons name="search" size={20} color="#94a3b8" />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search cities, areas, or landmarks"
-              placeholderTextColor="#94a3b8"
-              className="flex-1 px-2 text-base text-[#0c141d] dark:text-white"
-              pointerEvents="none"
-            />
-          </Pressable>
-
+        {/* Create Plan */}
+        <View className="px-4 py-2 mt-2">
           <View className="gap-2">
             <Pressable
               onPress={() => router.push("/trips/create-trip")}
@@ -185,7 +166,6 @@ export default function TravelerHome() {
                   image={resolveImageUrl(trip.imagesUrls?.[0] ?? "")}
                   title={trip.title}
                   info={trip.tripTime || "N/A"}
-                  rating="0"
                   badgeLabel="BY COMPANY"
                   badgeVariant="company"
                   price={trip.price === 0 ? "Free" : `$${trip.price}`}
@@ -235,7 +215,6 @@ export default function TravelerHome() {
                   image={resolveImageUrl(plan.imagesUrls?.[0] ?? "")}
                   title={plan.title}
                   info={plan.tripTime || "N/A"}
-                  rating="0"
                   badgeLabel="GROUP TRIP"
                   badgeVariant="group"
                   price={plan.price === 0 ? "Free" : `$${plan.price}`}

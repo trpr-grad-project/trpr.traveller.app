@@ -240,28 +240,7 @@ export default function TripDetailsScreen() {
           <View className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
             <BackButton iconSize={18} iconName="chevron-left" className="!min-w-0 !min-h-0 w-10 h-10" />
           </View>
-          <View className="flex-row gap-2">
-            <Pressable className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
-              {({ pressed }) => (
-                <MaterialIcons
-                  name="share"
-                  size={20}
-                  color="white"
-                  style={{ opacity: pressed ? 0.6 : 1 }}
-                />
-              )}
-            </Pressable>
-            <Pressable className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md items-center justify-center">
-              {({ pressed }) => (
-                <MaterialIcons
-                  name="favorite-border"
-                  size={20}
-                  color="white"
-                  style={{ opacity: pressed ? 0.6 : 1 }}
-                />
-              )}
-            </Pressable>
-          </View>
+          <View />
         </View>
 
         {/* Pagination dots */}
@@ -330,7 +309,7 @@ export default function TripDetailsScreen() {
                 </View>
               )}
             </View>
-            <Text className="text-2xl font-bold text-primary">
+            <Text className="text-2xl font-bold text-green-500">
               {trip.price === 0 ? "Free" : `$${trip.price}`}
             </Text>
           </View>
@@ -391,17 +370,12 @@ export default function TripDetailsScreen() {
                     </Text>
                     <MaterialIcons name="verified" size={16} color="#22c55e" />
                   </View>
-                  {creator.rating && (
-                    <View className="flex-row items-center gap-1 mt-0.5">
-                      <MaterialIcons name="star" size={14} color="#eab308" />
-                      <Text className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                        {creator.rating.toFixed(1)}
-                      </Text>
-                    </View>
-                  )}
-                  <Text className="text-xs text-slate-400 mt-0.5">
-                    @{creator.userName}
-                  </Text>
+                  <View className="flex-row items-center gap-1 mt-0.5">
+                    <MaterialIcons name="star" size={14} color="#eab308" />
+                    <Text className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                      {creator.rating ? creator.rating.toFixed(1) : "—"}
+                    </Text>
+                  </View>
                 </View>
                 <Pressable
                   onPress={() => router.push(`/trips/user/${creator.id}`)}
@@ -805,7 +779,7 @@ export default function TripDetailsScreen() {
       >
         <View className="flex-row items-center justify-between mb-3">
           <View>
-            <Text className="text-lg font-bold text-[#0c141d] dark:text-white">
+            <Text className="text-lg font-bold text-green-500">
               {trip.price === 0 ? "Free" : `$${trip.price}`}
             </Text>
             {!isCreator && (

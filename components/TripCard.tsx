@@ -1,4 +1,3 @@
-import { MaterialIcons } from "@expo/vector-icons";
 import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
 
@@ -16,7 +15,6 @@ type TripCardProps = {
   image: string;
   title: string;
   info: string;
-  rating: string;
   badgeLabel: string;
   badgeVariant?: BadgeVariant;
   onPress?: () => void;
@@ -27,7 +25,6 @@ export default function TripCard({
   image,
   title,
   info,
-  rating,
   badgeLabel,
   badgeVariant = "company",
   onPress,
@@ -58,12 +55,6 @@ export default function TripCard({
               }`}
             >
               {badgeLabel}
-            </Text>
-          </View>
-          <View className="absolute top-3 right-3 bg-white/90 dark:bg-black/50 px-2 py-1 rounded-lg flex-row items-center gap-1">
-            <MaterialIcons name="star" size={14} color="#eab308" />
-            <Text className="text-xs font-bold text-[#0c141d] dark:text-slate-100">
-              {rating}
             </Text>
           </View>
         </View>

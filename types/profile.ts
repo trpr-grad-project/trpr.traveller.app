@@ -75,7 +75,7 @@ export interface ProfileMyProfileResponse {
     id: string;
     bio: string;
     rating: number | null;
-    reviews: number | null;
+    reviews: string[];
     languages: ProfileLanguage[];
     interests: ProfileInterest[];
     vibes: ProfileVibe[];

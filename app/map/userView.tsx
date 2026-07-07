@@ -68,6 +68,7 @@ function buildMarkerHtml(userId, bg, label){
 
 function renderLocations(locs, selfLat, selfLng){
   Object.keys(markers).forEach(function(id){
+    if(id==='__self__') return;
     if(!locs.find(function(l){return l.userId===id;})){
       map.removeLayer(markers[id]);
       delete markers[id];
@@ -93,6 +94,21 @@ function renderLocations(locs, selfLat, selfLng){
     bounds.push([l.lat,l.lng]);
   });
   if(selfLat!==null&&selfLng!==null){
+    var selfId='__self__';
+    var existing=markers[selfId];
+    var icon=L.divIcon({
+      html:buildMarkerHtml(selfId,'#359EFF',''),
+      className:'marker-icon',
+      iconSize:[36,36],
+      iconAnchor:[18,18]
+    });
+    if(existing){
+      existing.setLatLng([selfLat,selfLng]);
+      existing.setIcon(icon);
+    }else{
+      var mkr=L.marker([selfLat,selfLng],{icon:icon,zIndexOffset:2000}).addTo(map);
+      markers[selfId]=mkr;
+    }
     bounds.push([selfLat,selfLng]);
   }
   if(bounds.length===1){

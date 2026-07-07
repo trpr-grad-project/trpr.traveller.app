@@ -3,7 +3,6 @@ import { ENDPOINTS } from "./endpoints";
 import type { HomeTripsResponse, MyTrip } from "@/types";
 
 export const tripService = {
-
   getTripFormData: async () => {
     const response = await api.get(ENDPOINTS.trip.formData);
     return response.data;
@@ -44,7 +43,11 @@ export const tripService = {
     return response.data;
   },
 
-  acceptParticipant: async (tripId: string, userId: string, isApproved: boolean) => {
+  acceptParticipant: async (
+    tripId: string,
+    userId: string,
+    isApproved: boolean,
+  ) => {
     const response = await api.put(ENDPOINTS.trip.acceptParticipant, {
       isApproved,
       tripId,
@@ -53,7 +56,11 @@ export const tripService = {
     return response.data;
   },
 
-  respondToBid: async (tripId: string, biddingId: string, _isApproved: boolean) => {
+  respondToBid: async (
+    tripId: string,
+    biddingId: string,
+    _isApproved: boolean,
+  ) => {
     const response = await api.post(
       `${ENDPOINTS.trip.acceptBid}/${tripId}/select/${biddingId}`,
     );
@@ -65,5 +72,15 @@ export const tripService = {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
+  },
+
+  sendLocationAPI: async (tripId: string, lat: number, long: number) => {
+    return api.post(ENDPOINTS.trip.location, null, {
+      params: {
+        tripId: tripId,
+        Lat: lat,
+        Long: long,
+      },
+    });
   },
 };
