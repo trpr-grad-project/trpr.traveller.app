@@ -163,8 +163,13 @@ export default function TripDetailsScreen() {
   let buttonTitle: string;
   let buttonDisabled: boolean;
   if (isFinished) {
-    buttonTitle = "Completed";
-    buttonDisabled = true;
+    if (isApproved) {
+      buttonTitle = "Rate Participants";
+      buttonDisabled = false;
+    } else {
+      buttonTitle = "Completed";
+      buttonDisabled = true;
+    }
   } else if (isBidding) {
     buttonTitle = "In Bidding";
     buttonDisabled = true;
@@ -523,7 +528,7 @@ export default function TripDetailsScreen() {
                       {p.firstName} {p.lastName}
                     </Text>
                     <Text className="text-[11px] text-slate-400 mb-4" numberOfLines={1}>
-                      @{p.userName}
+                      {p.userName}
                     </Text>
                     <View className="flex-row gap-2">
                       <Pressable
@@ -829,8 +834,11 @@ export default function TripDetailsScreen() {
           isLoading={joinMutation.isPending || startTripMutation.isPending || endTripMutation.isPending}
           className={isCreator && isStarted ? "!bg-red-500" : ""}
           onPress={async () => {
-            if (isCreator && isStarted) {
+            if (isApproved && isFinished) {
+              router.push(`/trips/rate-participants/${id}`);
+            } else if (isCreator && isStarted) {
               await endTripMutation.mutateAsync(id);
+              router.replace(`/trips/rate-participants/${id}`);
             } else if (isCreator) {
               await startTripMutation.mutateAsync(id);
             } else if (!isApproved && !isPending) {

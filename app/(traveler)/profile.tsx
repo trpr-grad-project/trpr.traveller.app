@@ -1,10 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StatusBar, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { router, useFocusEffect } from "expo-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
@@ -23,6 +23,8 @@ export default function ProfileScreen() {
   const isDark = colorScheme === "dark";
   const { user } = useAuth();
 
+  const queryClient = useQueryClient();
+
   const { data: myProfile, isLoading } = useQuery({
     queryKey: ["my-profile"],
     queryFn: async (): Promise<ProfileMyProfileResponse> => {
@@ -37,6 +39,13 @@ export default function ProfileScreen() {
     queryFn: () => tripService.getMyTrips(),
     enabled: !!user,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["my-trips"] });
+    }, [queryClient]),
+  );
 
   const createdPlans = useMemo(() => {
     if (!myTrips || !user) return [];

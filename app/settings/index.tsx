@@ -27,7 +27,7 @@ const SECTIONS = [
   {
     title: "Preferences",
     items: [
-      { icon: "language" as const, label: "Language", route: "/settings/language", value: "English" },
+      { icon: "language" as const, label: "Language", route: "/settings/language" },
       { icon: "favorite-border" as const, label: "Travel Interests", route: "/settings/interests" },
       { icon: "dark-mode" as const, label: "Dark Mode", key: "darkMode" as const },
     ],

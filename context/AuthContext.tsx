@@ -14,7 +14,15 @@ import {
   setOnUnauthenticated,
   setApiUserId,
 } from "@/services";
-import { setChatUserId } from "@/store/chatStore";
+import { useP2pChatStore, setChatUserId } from "@/store/chatStore";
+import { useTripDraftStore } from "@/store/tripCreation";
+import { usePlaceDraftStore } from "@/store/placeDraft";
+import { useLocationStore } from "@/store/locationStore";
+import { useTripHubStore } from "@/store/tripHubStore";
+import { useNotificationStore } from "@/store/notificationStore";
+import { usePendingJoins } from "@/store/pendingJoins";
+import { queryClient } from "@/providers/query-provider";
+import { clearQueue } from "@/utils/offlineQueue";
 import { initializeChat, disconnectChat } from "@/services/chat/initializeChat";
 import {
   initializeNotifications,
@@ -93,6 +101,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(null);
     setUser(null);
     setProfileSetupCompletedState(null);
+
+    useTripDraftStore.getState().reset();
+    usePlaceDraftStore.getState().reset();
+    useLocationStore.getState().reset();
+    useTripHubStore.getState().reset();
+    useNotificationStore.getState().reset();
+    useP2pChatStore.getState().reset();
+    usePendingJoins.setState({ ids: [] });
+
+    queryClient.clear();
+    userCache.clear();
+    clearQueue();
 
     await disconnectChat();
     await disconnectNotifications();
@@ -194,6 +214,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await initializeNotifications().catch(console.error);
       await initializeTripHub().catch(console.error);
     }
+
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    queryClient.invalidateQueries({ queryKey: ["my-trips"] });
   }, []);
 
   // Auth methods
@@ -253,6 +276,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await initializeChat().catch(console.error);
     await initializeNotifications().catch(console.error);
     await initializeTripHub().catch(console.error);
+
+    queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+    queryClient.invalidateQueries({ queryKey: ["my-trips"] });
   }, []);
 
   // Context value

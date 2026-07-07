@@ -17,22 +17,6 @@ export type SyncListener = (
   conversationId?: string,
 ) => void;
 
-/**
- * Synchronization engine for P2P chat.
- *
- * Architecture principles:
- * - REST is the source of truth. Synchronization fetches data from REST and writes to SQLite.
- * - SQLite is the single source of truth for the UI. Hooks read exclusively from SQLite.
- * - SignalR is a transport-only notification layer. It never drives state directly — it calls
- *   into the same sync methods used by REST, which write to SQLite.
- * - Sequence numbers are the authoritative ordering mechanism. Timestamps are never used for
- *   ordering or gap detection. This is critical because timestamps can skew between clients.
- * - Duplicate SignalR events are expected (sender receives their own message echo). The system
- *   handles this via INSERT OR IGNORE (primary key dedup) and sequence comparison (skip if
- *   incoming <= local).
- * - Gap recovery uses AfterSequence to fetch all missed messages from REST in one call.
- *   Multiple messages may arrive in the gap response — never assume exactly one missing message.
- */
 export class ChatSync {
   private listeners = new Set<SyncListener>();
   private mutex = new PerKeyMutex();
@@ -241,7 +225,7 @@ export class ChatSync {
     return { nextCursor: nextCursor!, hasNextPage: hasNextPage! };
   }
 
-  /** @internal called from chatEvents, mutex is inside syncConversationMessages */
+  // called from chatEvents, mutex is inside syncConversationMessages
   async handleReceiveMessage(message: unknown): Promise<void> {
     const msg = message as {
       id: string;

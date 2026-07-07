@@ -18,7 +18,8 @@ export function useTripLocations(tripId: string) {
   const query = useQuery({
     queryKey: ["trip-locations", tripId],
     queryFn: () => createTripLocationRepository().getByTripId(tripId),
-    staleTime: Infinity,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
