@@ -10,26 +10,24 @@ import { tripConnection } from "@/services/signalr/tripConnection";
 
 export default function LocationLifecycleManager() {
   const appState = useRef(AppState.currentState);
-  const activeTripIdRef = useRef<string | null>(null);
+  const isWatchingRef = useRef(false);
 
   useEffect(() => {
     const tripsToday = useTripHubStore.getState().tripsToday;
-    const started = tripsToday.find((t) => t.status === "Started");
-    if (started) {
-      activeTripIdRef.current = started.id;
-      useLocationStore.getState().setActiveTripId(started.id);
-      startLocationSharing(started.id).catch(console.error);
+    if (tripsToday.some((t) => t.status === "Started")) {
+      isWatchingRef.current = true;
+      useLocationStore.getState().setActiveTripId(tripsToday[0].id);
+      startLocationSharing(tripsToday[0].id).catch(console.error);
     }
 
     const unsubTrips = useTripHubStore.subscribe((state) => {
-      const s = state.tripsToday.find((t) => t.status === "Started");
-      const id = s?.id ?? null;
-      if (id && id !== activeTripIdRef.current) {
-        activeTripIdRef.current = id;
-        useLocationStore.getState().setActiveTripId(id);
-        startLocationSharing(id).catch(console.error);
-      } else if (!id && activeTripIdRef.current) {
-        activeTripIdRef.current = null;
+      const hasStarted = state.tripsToday.some((t) => t.status === "Started");
+      if (hasStarted && !isWatchingRef.current) {
+        isWatchingRef.current = true;
+        useLocationStore.getState().setActiveTripId(state.tripsToday[0].id);
+        startLocationSharing(state.tripsToday[0].id).catch(console.error);
+      } else if (!hasStarted && isWatchingRef.current) {
+        isWatchingRef.current = false;
         stopLocationSharing().catch(console.error);
       }
     });
@@ -44,12 +42,11 @@ export default function LocationLifecycleManager() {
           if (!tripConnection.isConnected()) {
             console.log("Location lifecycle: trip connection not connected");
           }
-          const s = useTripHubStore.getState().tripsToday.find(
-            (t) => t.status === "Started",
-          );
-          if (s && !activeTripIdRef.current) {
-            activeTripIdRef.current = s.id;
-            startLocationSharing(s.id).catch(console.error);
+          const tripsToday = useTripHubStore.getState().tripsToday;
+          if (tripsToday.some((t) => t.status === "Started") && !isWatchingRef.current) {
+            isWatchingRef.current = true;
+            useLocationStore.getState().setActiveTripId(tripsToday[0].id);
+            startLocationSharing(tripsToday[0].id).catch(console.error);
           }
         }
         appState.current = nextState;

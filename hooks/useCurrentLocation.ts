@@ -4,7 +4,6 @@ import { getUserId } from "@/utils/storage";
 import { haversine } from "@/utils/distance";
 import { createTripLocationRepository } from "@/database/repositories/tripLocationRepositoryImpl";
 import { tripLocationSync } from "@/services/trip/tripLocationSync";
-import { tripConnection } from "@/services/signalr/tripConnection";
 import { useLocationStore } from "@/store/locationStore";
 import type { TripLocation } from "@/types";
 
@@ -48,9 +47,6 @@ async function onPositionUpdate(loc: Location.LocationObject): Promise<void> {
   }
 
   tripLocationSync.updateCache(entry);
-  tripConnection.sendLocation(_tripId, newLat, newLng).catch(() => {
-    /* offline — will resume on reconnect */
-  });
 }
 
 export async function startLocationSharing(

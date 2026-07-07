@@ -11,6 +11,7 @@ export const ENDPOINTS = {
     myProfile: "/Profile/my-profile",
     formData: "/Profile/form-data",
     resetPassword: "/Profile/me/password-reset",
+    byId: "/Profile/",
   },
 
   conversation: {
@@ -34,6 +35,7 @@ export const ENDPOINTS = {
     acceptParticipant: "/trip/accept",
     suggestion: "/trip/suggestion",
     acceptBid: "/bidding",
+    location: "/trip/location"
   },
 
   place: {

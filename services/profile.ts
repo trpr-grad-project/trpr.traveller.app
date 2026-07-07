@@ -1,4 +1,4 @@
-import {
+import type {
   ProfileMyProfileResponse,
   ProfileSetupDataResponse,
   ProfileSetupRequest,
@@ -51,6 +51,11 @@ export const profileService = {
   resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
     data.password = data.password.trim();
     const response = await api.put(ENDPOINTS.profile.resetPassword, data);
+    return response.data;
+  },
+
+  getProfileById: async (id: string): Promise<ProfileMyProfileResponse> => {
+    const response = await api.get(`${ENDPOINTS.profile.byId}${id}`);
     return response.data;
   },
 };

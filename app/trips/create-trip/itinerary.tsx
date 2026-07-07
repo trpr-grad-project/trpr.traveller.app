@@ -74,11 +74,18 @@ export default function CreateTripStep3() {
 
       const result = await getTripSuggestion(params);
 
-      for (let i = 0; i < Math.min(result.length, draft.days.length); i++) {
-        const places = result[i];
-        draft.setDayPlaces(i, places.map((p) => p.id));
-        places.forEach((p) => draft.setPlaceName(p.id, p.title));
-      }
+      console.log("RAW SUGGESTION RESPONSE:", JSON.stringify(result, null, 2));
+
+      const dayMap = (result as any).data ?? (result as any).days ?? result;
+
+      Object.entries(dayMap).forEach(([dayKey, dayData]: [string, any]) => {
+        const dayIndex = parseInt(dayKey) - 1;
+        if (isNaN(dayIndex) || dayIndex < 0 || dayIndex >= draft.days.length) return;
+        const places = dayData?.itinerary?.places ?? dayData?.places ?? [];
+        if (places.length === 0) return;
+        draft.setDayPlaces(dayIndex, places.map((p: any) => p.id));
+        places.forEach((p: any) => draft.setPlaceName(p.id, p.title));
+      });
 
       Toast.show({
         type: "success",

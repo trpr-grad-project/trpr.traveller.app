@@ -30,7 +30,6 @@ type TripCardData = {
   location: string;
   duration: string;
   price: string;
-  rating: string;
   category: string;
   type: string;
   typeValue: string;
@@ -53,7 +52,6 @@ function mapTrip(item: MyTrip, section: SectionKey): TripCardData {
     location: item.segments?.[0]?.places?.[0]?.governorate?.name ?? "",
     duration: item.tripTime || "",
     price: item.price === 0 ? "Free" : `$${item.price}`,
-    rating: "0",
     category: (item.theme ?? "").toUpperCase(),
     type,
     typeValue,
@@ -288,10 +286,6 @@ export default function ExploreScreen() {
           >
             <View className="relative rounded-2xl overflow-hidden shadow-sm" style={{ aspectRatio: 16 / 10 }}>
               <Image source={{ uri: trip.image }} className="w-full h-full" resizeMode="cover" />
-              <View className="absolute top-3 right-3 flex-row items-center gap-1 bg-white/95 dark:bg-black/70 backdrop-blur px-2 py-1 rounded-lg">
-                <MaterialIcons name="star" size={12} color="#eab308" />
-                <Text className="text-[11px] font-bold text-slate-900 dark:text-white">{trip.rating}</Text>
-              </View>
               <View className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/95 dark:bg-black/70 backdrop-blur border border-primary/20">
                 <Text className="text-[10px] font-bold text-primary tracking-wider uppercase">{trip.category}</Text>
               </View>
